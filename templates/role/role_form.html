@@ -1,0 +1,249 @@
+﻿<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <!-- penting untuk responsive di HP -->
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>
+            {{ if .Title }}
+                {{ .Title }}
+            {{ else }}
+                Stock Hadiah App
+            {{ end }}
+        </title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            main a {
+                color: #f26419;
+            }
+            main a:hover {
+                color: #dc5a15;
+            }
+        </style>
+
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+
+            <div class="flex min-h-screen flex-1 flex-col">
+                {{ template "header" . }}
+
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Settings / Roles</p>
+                                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Roles</h1>
+                            </div>
+                        </div>
+
+                        <form id="role-form" method="post" action="/role" class="space-y-6">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                {{ if .Error }}
+                                <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                                    {{ .Error }}
+                                </div>
+                                {{ end }}
+                                <div class="grid gap-6 md:grid-cols-3">
+                                    <div>
+                                        <label for="role-name" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Name <span class="text-rose-500">*</span></label>
+                                        <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="role-name" name="name" placeholder="e.g. admin" required>
+                                    </div>
+                                    <div>
+                                        <label for="guard-name" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Guard Name</label>
+                                        <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="guard-name" name="guard_name" value="web" placeholder="web">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Select All</label>
+                                        <label class="flex items-center gap-2 text-sm text-slate-600">
+                                            <input class="h-4 w-4 rounded border-slate-300 text-[#f26419] focus:ring-brand-500" type="checkbox" id="switch-select-all">
+                                            Enables/Disables all Permissions for this role
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <div class="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <h2 class="text-base font-semibold text-slate-900">Permissions</h2>
+                                    <small id="selected-counter" class="text-xs text-slate-400">Selected: 0 / {{ .TotalPermissions }}</small>
+                                </div>
+
+                                <div class="mt-4 space-y-4">
+                                    {{ range $index, $group := .PermissionGroups }}
+                                    {{ $headingID := printf "heading_%s" $group.Key }}
+                                    {{ $collapseID := printf "collapse_%s" $group.Key }}
+                                    <div class="accordion-item rounded-2xl border border-slate-200 bg-slate-50/40">
+                                        <details open>
+                                            <summary class="flex cursor-pointer items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-slate-700" id="{{ $headingID }}">
+                                                <span class="text-capitalize">{{ $group.Label }}</span>
+                                                <span class="text-xs font-medium text-slate-400">({{ len $group.Permissions }} perms)</span>
+                                            </summary>
+                                            <div id="{{ $collapseID }}" class="border-t border-slate-200 px-4 py-4">
+                                                <div class="flex items-center justify-between">
+                                                    <label class="flex items-center gap-2 text-sm text-slate-600">
+                                                        <input class="h-4 w-4 rounded border-slate-300 text-[#f26419] focus:ring-brand-500" type="checkbox" id="group_{{ $group.Key }}">
+                                                        Select all
+                                                    </label>
+                                                </div>
+                                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                                    {{ range $permIndex, $perm := $group.Permissions }}
+                                                    <label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                                                        <input class="h-4 w-4 rounded border-slate-300 text-[#f26419] focus:ring-brand-500" type="checkbox" id="perm_{{ $perm.ID }}" name="permissions" value="{{ $perm.ID }}" data-permission-name="{{ $perm.Name }}">
+                                                        {{ $perm.Name }}
+                                                    </label>
+                                                    {{ end }}
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                    {{ else }}
+                                    <p class="text-sm text-slate-500">Belum ada permission tersedia.</p>
+                                    {{ end }}
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                                <a href="/role" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancel</a>
+                                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">
+                                    <i class="bx bx-save text-base"></i>
+                                    Save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </main>
+
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <!-- JAVASCRIPT -->
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+
+        <!-- Sweet Alerts js -->
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function closeSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.add('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!document.querySelector('[data-modal].flex')) {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                }
+
+                function openSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                toggleButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        if (sidebar.classList.contains('-translate-x-full')) {
+                            openSidebar();
+                        } else {
+                            closeSidebar();
+                        }
+                    });
+                });
+
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
+
+                const masterToggle = document.getElementById('switch-select-all');
+                const permissionCheckboxes = Array.from(document.querySelectorAll('input[id^="perm_"]'));
+                const groupCheckboxes = Array.from(document.querySelectorAll('input[id^="group_"]'));
+                const selectedCounter = document.getElementById('selected-counter');
+                const totalPermissions = permissionCheckboxes.length;
+
+                const updateSelectedCounter = () => {
+                    if (!selectedCounter) return;
+                    const selectedCount = permissionCheckboxes.filter((cb) => cb.checked).length;
+                    selectedCounter.textContent = `Selected: ${selectedCount} / ${totalPermissions}`;
+                };
+
+                const syncMasterToggle = () => {
+                    if (!masterToggle) return;
+                    const checkedCount = permissionCheckboxes.filter((cb) => cb.checked).length;
+                    masterToggle.checked = checkedCount === totalPermissions && totalPermissions > 0;
+                    masterToggle.indeterminate = checkedCount > 0 && checkedCount < totalPermissions;
+                };
+
+                const syncGroupToggle = (groupContainer) => {
+                    if (!groupContainer) return;
+                    const groupCheckbox = groupContainer.querySelector('input[id^="group_"]');
+                    const groupPermissions = Array.from(groupContainer.querySelectorAll('input[id^="perm_"]'));
+                    if (!groupCheckbox || groupPermissions.length === 0) return;
+
+                    const checkedCount = groupPermissions.filter((cb) => cb.checked).length;
+                    groupCheckbox.checked = checkedCount === groupPermissions.length;
+                    groupCheckbox.indeterminate = checkedCount > 0 && checkedCount < groupPermissions.length;
+                };
+
+                groupCheckboxes.forEach((groupCheckbox) => {
+                    groupCheckbox.addEventListener('change', (event) => {
+                        const groupContainer = event.target.closest('.accordion-item');
+                        if (!groupContainer) return;
+
+                        const groupPermissions = Array.from(groupContainer.querySelectorAll('input[id^="perm_"]'));
+                        groupPermissions.forEach((permCheckbox) => { permCheckbox.checked = event.target.checked; });
+                        syncGroupToggle(groupContainer);
+                        syncMasterToggle();
+                        updateSelectedCounter();
+                    });
+
+                    syncGroupToggle(groupCheckbox.closest('.accordion-item'));
+                });
+
+                permissionCheckboxes.forEach((permCheckbox) => {
+                    permCheckbox.addEventListener('change', (event) => {
+                        const groupContainer = event.target.closest('.accordion-item');
+                        syncGroupToggle(groupContainer);
+                        syncMasterToggle();
+                        updateSelectedCounter();
+                    });
+                });
+
+                if (masterToggle) {
+                    masterToggle.addEventListener('change', (event) => {
+                        groupCheckboxes.forEach((checkbox) => {
+                            checkbox.checked = event.target.checked;
+                            checkbox.indeterminate = false;
+                        });
+                        permissionCheckboxes.forEach((checkbox) => { checkbox.checked = event.target.checked; });
+                        syncMasterToggle();
+                        updateSelectedCounter();
+                    });
+                }
+
+                updateSelectedCounter();
+                syncMasterToggle();
+            });
+        </script>
+    </body>
+</html>
+
+
+

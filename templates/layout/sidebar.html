@@ -1,0 +1,116 @@
+{{ define "sidebar" }}
+<aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 flex w-[15.5rem] max-w-[85vw] -translate-x-full flex-col border-r border-slate-200 bg-white px-4 pb-6 pt-5 shadow-2xl transition-transform duration-200 ease-out lg:static lg:shrink-0 lg:translate-x-0 lg:shadow-none">
+    <div class="flex items-center justify-between px-2 pb-5">
+        <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-auth-500 text-xs font-semibold uppercase tracking-widest text-white" style="background-color: #f97316;">
+                MK
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Manna Kampus</p>
+                <p class="text-sm font-semibold text-slate-800">Asetra</p>
+            </div>
+        </div>
+        <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 lg:hidden" data-sidebar-toggle aria-label="Close sidebar">
+            <i class="bx bx-x text-2xl"></i>
+        </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto pr-1">
+        <ul class="mt-2 space-y-1">
+            <li>
+                <a href="{{ baseURL "/dashboard" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if eq .Page "dashboard" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "dashboard" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <i class="bx bx-grid-alt text-xl"></i>
+                    <span key="t-dashboards">Dashboard</span>
+                </a>
+            </li>
+            <!-- <li>
+                <a href="#" class="flex items-center gap-4 rounded-2xl px-4 py-3 text-[15px] font-semibold text-slate-600 transition hover:bg-slate-100/70 hover:text-slate-800">
+                    <i class="bx bx-sitemap text-xl"></i>
+                    <span>Workflow Admin</span>
+                </a>
+            </li> -->
+            <li>
+                <a href="{{ baseURL "/stores" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if eq .Page "store" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "store" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <i class="bx bxs-store text-xl"></i>
+                    <span>Store</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-[#f26419] sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px]">
+                    <i class="bx bx-file text-xl"></i>
+                    <span>Document Types</span>
+                </a>
+            </li>
+            {{ if index .Permissions "role_management_access" }}
+            <li>
+                <a href="{{ baseURL "/role" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if or (eq .Page "role") (eq .Page "roleForm") (eq .Page "roleEdit") }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if or (eq .Page "role") (eq .Page "roleForm") (eq .Page "roleEdit") }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <i class="bx bx-user text-xl"></i>
+                    <span>User Roles</span>
+                </a>
+            </li>
+            {{ end }}
+            {{ if index .Permissions "user_management_access" }}
+            <li>
+                <a href="{{ baseURL "/users" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if eq .Page "user" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "user" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <i class="bx bx-id-card text-xl"></i>
+                    <span>Users</span>
+                </a>
+            </li>
+            {{ end }}
+            <li class="space-y-1">
+                <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-[14px] font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-[#f26419] sm:px-4 sm:py-4 sm:text-[15px]" data-submenu-toggle="reports-submenu" aria-expanded="false" aria-controls="reports-submenu">
+                    <span class="flex items-center gap-3 sm:gap-4">
+                        <i class="bx bx-bar-chart-square text-xl"></i>
+                        <span>Reports</span>
+                    </span>
+                    <i class="bx bx-chevron-down text-xl text-slate-400" data-submenu-icon></i>
+                </button>
+                <ul id="reports-submenu" class="mt-1 hidden space-y-1 border-l border-slate-200 pl-4" style="margin-left: 1rem;">
+                    <li>
+                        <a href="#" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-brand-50 hover:text-[#f26419]">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>Daily Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-brand-50 hover:text-[#f26419]">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>Monthly Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-brand-50 hover:text-[#f26419]">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>Yearly Report</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+</aside>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var submenuToggles = document.querySelectorAll('[data-submenu-toggle]');
+
+        submenuToggles.forEach(function (toggle) {
+            toggle.addEventListener('click', function () {
+                var submenuId = toggle.getAttribute('data-submenu-toggle');
+                var submenu = document.getElementById(submenuId);
+                var icon = toggle.querySelector('[data-submenu-icon]');
+
+                if (!submenu) return;
+
+                var isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+                toggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+                submenu.classList.toggle('hidden', isExpanded);
+
+                if (icon) {
+                    icon.classList.toggle('bx-chevron-down', isExpanded);
+                    icon.classList.toggle('bx-chevron-up', !isExpanded);
+                }
+            });
+        });
+    });
+</script>
+{{ end }}

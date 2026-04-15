@@ -1,0 +1,182 @@
+﻿<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <!-- penting untuk responsive di HP -->
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>
+            {{ if .Title }}
+                {{ .Title }}
+            {{ else }}
+                Stock Hadiah App
+            {{ end }}
+        </title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            main a {
+                color: #f26419;
+            }
+            main a:hover {
+                color: #dc5a15;
+            }
+        </style>
+
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Settings / Roles</p>
+                                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Roles</h1>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <h2 class="text-base font-semibold text-slate-900">Daftar Role</h2>
+                                <a href="/roleForm" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]">
+                                    <i class="bx bx-plus text-base"></i>
+                                    New Role
+                                </a>
+                            </div>
+                            <div class="p-4">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[720px] text-sm">
+                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left font-semibold">No</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Name Role</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Jumlah Permission</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Jumlah User</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Updated At</th>
+                                                <th class="px-3 py-2 text-left font-semibold">#</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {{ range $i, $role := .roles }}
+                                            <tr class="hover:bg-slate-50/70">
+                                                <td class="px-3 py-3 text-slate-500">{{ no $i 1 }}</td>
+                                                <td class="px-3 py-3 font-semibold text-slate-700">{{ $role.Name }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $role.PermissionCount }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $role.UserCount }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $role.UpdatedAt }}</td>
+                                                <td class="px-3 py-3">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <a href="/role/{{ $role.ID }}/edit" class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100">
+                                                            <i class="bx bx-pen text-sm"></i>
+                                                            Edit
+                                                        </a>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 btn-delete-role" data-url="/role/delete/{{ $role.ID }}" data-role-name="{{ $role.Name }}">
+                                                            <i class="bx bx-trash text-sm"></i>
+                                                            Del
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr>
+                                                <td colspan="6" class="px-3 py-6 text-center text-sm text-slate-500">Belum ada data role</td>
+                                            </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <!-- JAVASCRIPT -->
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+
+        <!-- Sweet Alerts js -->
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function closeSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.add('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!document.querySelector('[data-modal].flex')) {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                }
+
+                function openSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                toggleButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        if (sidebar.classList.contains('-translate-x-full')) {
+                            openSidebar();
+                        } else {
+                            closeSidebar();
+                        }
+                    });
+                });
+
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
+
+                var deleteButtons = document.querySelectorAll('.btn-delete-role');
+                deleteButtons.forEach(function (btn) {
+                    btn.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        var roleName = btn.getAttribute('data-role-name') || 'role';
+                        var targetUrl = btn.getAttribute('data-url');
+
+                        Swal.fire({
+                            title: 'Hapus role ini?',
+                            text: 'Role ' + roleName + ' akan dihapus secara permanen.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Ya, hapus',
+                            cancelButtonText: 'Batal'
+                        }).then(function (result) {
+                            if (result.isConfirmed && targetUrl) {
+                                window.location.href = targetUrl;
+                            }
+                        });
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
+
+
+

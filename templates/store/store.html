@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>
+            {{ if .Title }}
+                {{ .Title }}
+            {{ else }}
+                Stock Hadiah App
+            {{ end }}
+        </title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            main a {
+                color: #f26419;
+            }
+            main a:hover {
+                color: #dc5a15;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Settings / Stores</p>
+                                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Stores</h1>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <h2 class="text-base font-semibold text-slate-900">Daftar Store</h2>
+                                <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]" data-modal-open="storeModal">
+                                    <i class="bx bx-plus text-base"></i>
+                                    New Store
+                                </button>
+                            </div>
+                            <div class="p-4">
+                                {{ if .Error }}
+                                <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                                    {{ .Error }}
+                                </div>
+                                {{ end }}
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[720px] text-sm">
+                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left font-semibold">No</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Store ID</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Kode</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Nama Store</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Alamat</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Status</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Updated At</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {{ range $i, $store := .stores }}
+                                            <tr class="hover:bg-slate-50/70">
+                                                <td class="px-3 py-3 text-slate-500">{{ no $i 1 }}</td>
+                                                <td class="px-3 py-3 font-semibold text-slate-700">{{ $store.StoreID }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $store.StoreCode }}</td>
+                                                <td class="px-3 py-3 font-semibold text-slate-700">{{ $store.StoreName }}</td>
+                                                <td class="px-3 py-3 text-slate-600">
+                                                    <span class="block whitespace-normal break-words leading-5" style="max-width: 16rem;" title="{{ $store.StoreAddress }}">{{ $store.StoreAddress }}</span>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    {{ if $store.IsActive }}
+                                                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">{{ $store.IsActiveLabel }}</span>
+                                                    {{ else }}
+                                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">{{ $store.IsActiveLabel }}</span>
+                                                    {{ end }}
+                                                </td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $store.UpdatedAtDisplay }}</td>
+                                                <td class="px-3 py-3">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <button type="button"
+                                                            class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 btn-edit-store"
+                                                            data-store-id="{{ $store.StoreID }}"
+                                                            data-store-code="{{ $store.StoreCode }}"
+                                                            data-store-name="{{ $store.StoreName }}"
+                                                            data-store-address="{{ $store.StoreAddress }}"
+                                                            data-is-active="{{ if $store.IsActive }}1{{ else }}0{{ end }}">
+                                                            <i class="bx bx-pen text-sm"></i>
+                                                            Edit
+                                                        </button>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 btn-delete-store" data-url="/stores/delete/{{ $store.StoreID }}" data-store-name="{{ $store.StoreName }}">
+                                                            <i class="bx bx-trash text-sm"></i>
+                                                            Del
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr>
+                                                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-500">Belum ada data store</td>
+                                            </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <div data-modal class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6" id="storeModal">
+            <div class="absolute inset-0 bg-slate-900/50" data-modal-close></div>
+            <div class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:p-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h2 class="text-lg font-semibold text-slate-900">New Store Form</h2>
+                    <button type="button" class="text-slate-400 transition hover:text-slate-600" data-modal-close>
+                        <i class="bx bx-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <form action="/stores" method="post" class="mt-6 space-y-6">
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="store_id" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Store ID</label>
+                                <input type="number" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="store_id" name="store_id" required>
+                            </div>
+                            <div>
+                                <label for="store_code" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kode Store</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="store_code" name="store_code" required>
+                            </div>
+                            <div>
+                                <label for="store_name" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Nama Store</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="store_name" name="store_name" required>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="store_address" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Alamat</label>
+                                <textarea class="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 sm:h-32" id="store_address" name="store_address" required></textarea>
+                            </div>
+                            <div>
+                                <label for="is_active" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</label>
+                                <select id="is_active" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" name="is_active">
+                                    <option value="1">Aktif</option>
+                                    <option value="0">Non Aktif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                        <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" data-modal-close>Batal</button>
+                        <button type="submit" class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div data-modal class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6" id="storeEditModal">
+            <div class="absolute inset-0 bg-slate-900/50" data-modal-close></div>
+            <div class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:p-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h2 class="text-lg font-semibold text-slate-900">Edit Store</h2>
+                    <button type="button" class="text-slate-400 transition hover:text-slate-600" data-modal-close>
+                        <i class="bx bx-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <form action="/stores/update" method="post" class="mt-6 space-y-6">
+                    <input type="hidden" name="store_id" id="edit_store_id">
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="edit_store_id_display" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Store ID</label>
+                                <input type="number" class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_store_id_display" disabled>
+                            </div>
+                            <div>
+                                <label for="edit_store_code" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kode Store</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_store_code" name="store_code" required>
+                            </div>
+                            <div>
+                                <label for="edit_store_name" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Nama Store</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_store_name" name="store_name" required>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="edit_store_address" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Alamat</label>
+                                <textarea class="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 sm:h-32" id="edit_store_address" name="store_address" required></textarea>
+                            </div>
+                            <div>
+                                <label for="edit_is_active" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</label>
+                                <select id="edit_is_active" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" name="is_active">
+                                    <option value="1">Aktif</option>
+                                    <option value="0">Non Aktif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                        <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" data-modal-close>Batal</button>
+                        <button type="submit" class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function closeSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.add('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!document.querySelector('[data-modal].flex')) {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                }
+
+                function openSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                function openModal(modalId) {
+                    var modal = document.getElementById(modalId);
+                    if (!modal) return;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                function closeModal(modal) {
+                    if (!modal) return;
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.classList.remove('overflow-hidden');
+                }
+
+                toggleButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        if (sidebar.classList.contains('-translate-x-full')) {
+                            openSidebar();
+                        } else {
+                            closeSidebar();
+                        }
+                    });
+                });
+
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
+
+                document.querySelectorAll('[data-modal-open]').forEach(function (trigger) {
+                    trigger.addEventListener('click', function () {
+                        var target = trigger.getAttribute('data-modal-open');
+                        if (target) openModal(target);
+                    });
+                });
+
+                document.querySelectorAll('[data-modal-close]').forEach(function (close) {
+                    close.addEventListener('click', function () {
+                        closeModal(close.closest('[data-modal]'));
+                    });
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Escape') return;
+                    document.querySelectorAll('[data-modal].flex').forEach(closeModal);
+                });
+
+                document.querySelectorAll('.btn-delete-store').forEach(function (btn) {
+                    btn.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        var storeName = btn.getAttribute('data-store-name') || 'store';
+                        var targetUrl = btn.getAttribute('data-url');
+
+                        Swal.fire({
+                            title: 'Hapus store ini?',
+                            text: 'Store ' + storeName + ' akan dihapus secara permanen.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Ya, hapus',
+                            cancelButtonText: 'Batal'
+                        }).then(function (result) {
+                            if (result.isConfirmed && targetUrl) {
+                                window.location.href = targetUrl;
+                            }
+                        });
+                    });
+                });
+
+                document.querySelectorAll('.btn-edit-store').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var editModalEl = document.getElementById('storeEditModal');
+                        if (!editModalEl) return;
+
+                        var storeId = btn.getAttribute('data-store-id') || '';
+                        editModalEl.querySelector('#edit_store_id').value = storeId;
+                        editModalEl.querySelector('#edit_store_id_display').value = storeId;
+                        editModalEl.querySelector('#edit_store_code').value = btn.getAttribute('data-store-code') || '';
+                        editModalEl.querySelector('#edit_store_name').value = btn.getAttribute('data-store-name') || '';
+                        editModalEl.querySelector('#edit_store_address').value = btn.getAttribute('data-store-address') || '';
+                        editModalEl.querySelector('#edit_is_active').value = btn.getAttribute('data-is-active') || '1';
+
+                        openModal('storeEditModal');
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>

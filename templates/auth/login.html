@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+            {{ if .Title }}
+                {{ .Title }}
+            {{ else }}
+                Login User
+            {{ end }}
+        </title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            :root {
+                color-scheme: light;
+                --auth-orange: #f26419;
+                --auth-orange-dark: #dc5a15;
+                --auth-surface: rgba(255, 255, 255, 0.84);
+                --auth-border: rgba(148, 163, 184, 0.22);
+                --auth-text: #1f2a37;
+                --auth-muted: #7b8794;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                min-height: 100vh;
+                margin: 0;
+                font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui;
+                color: var(--auth-text);
+                background:
+                    linear-gradient(rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.28)),
+                    linear-gradient(rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.62)),
+                    url("https://d3ciiv7axt9x6p.cloudfront.net/blog/original/65b1e041dbfd7_ori.png");
+                background-position: center;
+                background-repeat: no-repeat;
+                background-size: cover;
+                background-attachment: fixed;
+            }
+
+            .auth-page {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .auth-topbar {
+                padding: 12px 16px;
+                background: rgba(255, 255, 255, 0.78);
+                border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+                backdrop-filter: blur(10px);
+            }
+
+            .auth-topbar-inner {
+                width: min(100%, 1040px);
+                margin: 0 auto;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+            }
+
+            .auth-brand {
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+                min-width: 0;
+            }
+
+            .auth-brand-mark {
+                width: 28px;
+                height: 28px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                background: var(--auth-orange);
+                color: #fff;
+                box-shadow: 0 8px 20px -12px rgba(242, 100, 25, 0.8);
+            }
+
+            .auth-brand-text {
+                font-size: 0.96rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            .auth-help {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 36px;
+                padding: 0 14px;
+                border-radius: 999px;
+                background: rgba(242, 100, 25, 0.1);
+                color: var(--auth-orange);
+                font-size: 0.78rem;
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+            .auth-main {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem 1rem 2.5rem;
+            }
+
+            .auth-card {
+                width: min(100%, 400px);
+                border-radius: 24px;
+                padding: 22px 20px 20px;
+                background: var(--auth-surface);
+                border: 1px solid var(--auth-border);
+                box-shadow: 0 30px 70px -35px rgba(15, 23, 42, 0.36);
+                backdrop-filter: blur(14px);
+            }
+
+            .auth-badge {
+                width: 56px;
+                height: 56px;
+                margin: 0 auto 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: linear-gradient(180deg, #f3f5f8 0%, #e7edf3 100%);
+                color: var(--auth-orange);
+                font-size: 1.5rem;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            }
+
+            .auth-title {
+                margin: 0;
+                text-align: center;
+                font-size: 1.5rem;
+                font-weight: 800;
+                letter-spacing: -0.03em;
+            }
+
+            .auth-subtitle {
+                margin: 0.4rem 0 1.5rem;
+                text-align: center;
+                color: #7c8798;
+                font-size: 0.82rem;
+            }
+
+            .auth-alert {
+                margin-bottom: 1rem;
+                padding: 0.85rem 1rem;
+                border-radius: 14px;
+                border: 1px solid rgba(239, 68, 68, 0.18);
+                background: rgba(254, 242, 242, 0.92);
+                color: #b91c1c;
+                font-size: 0.9rem;
+            }
+
+            .auth-form {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .auth-field {
+                display: grid;
+                gap: 0.45rem;
+            }
+
+            .auth-label-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+            }
+
+            .auth-label {
+                font-size: 0.76rem;
+                font-weight: 700;
+                color: #445064;
+            }
+
+            .auth-link-button {
+                border: 0;
+                padding: 0;
+                background: transparent;
+                color: var(--auth-orange);
+                font-size: 0.62rem;
+                font-weight: 700;
+            }
+
+            .auth-input-wrap {
+                position: relative;
+                display: flex;
+                align-items: center;
+                min-height: 48px;
+                border-radius: 12px;
+                border: 1px solid #d8e0e8;
+                background: rgba(241, 245, 249, 0.9);
+                transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            }
+
+            .auth-input-wrap:focus-within {
+                border-color: rgba(242, 100, 25, 0.7);
+                background: rgba(255, 255, 255, 0.96);
+                box-shadow: 0 0 0 4px rgba(242, 100, 25, 0.12);
+            }
+
+            .auth-input-wrap-compact {
+                min-height: 42px;
+            }
+
+            .auth-input-wrap-compact .auth-input-icon {
+                width: 38px;
+                font-size: 0.92rem;
+            }
+
+            .auth-input-icon {
+                width: 42px;
+                text-align: center;
+                color: #98a4b3;
+                font-size: 1rem;
+                flex: 0 0 auto;
+            }
+
+            .auth-input,
+            .auth-select {
+                width: 100%;
+                border: 0;
+                outline: 0;
+                background: transparent;
+                padding: 0 14px 0 0;
+                color: #334155;
+                font-size: 0.76rem;
+                font-family: inherit;
+            }
+
+            .auth-select {
+                appearance: none;
+                cursor: pointer;
+            }
+
+            .auth-select-wrap .auth-select {
+                padding-right: 40px;
+            }
+
+            .auth-select-wrap .auth-chevron {
+                position: absolute;
+                right: 14px;
+                color: #94a3b8;
+                pointer-events: none;
+                font-size: 1.05rem;
+            }
+
+            .auth-toggle {
+                width: 42px;
+                border: 0;
+                background: transparent;
+                color: #98a4b3;
+                font-size: 1rem;
+                flex: 0 0 auto;
+            }
+
+            .auth-remember {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.55rem;
+                color: #637286;
+                font-size: 0.68rem;
+            }
+
+            .auth-remember input {
+                width: 15px;
+                height: 15px;
+                accent-color: var(--auth-orange);
+            }
+
+            .auth-submit {
+                width: 100%;
+                min-height: 50px;
+                border: 0;
+                border-radius: 12px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.55rem;
+                background: linear-gradient(180deg, #f97316 0%, var(--auth-orange) 100%);
+                color: #fff;
+                font-size: 0.90rem;
+                font-weight: 800;
+                box-shadow: 0 18px 24px -18px rgba(242, 100, 25, 0.95);
+                transition: transform 0.18s ease, box-shadow 0.18s ease;
+            }
+
+            .auth-submit:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 20px 30px -18px rgba(242, 100, 25, 0.95);
+            }
+
+            .auth-partners {
+                margin-top: 2rem;
+                padding-top: 1.8rem;
+                border-top: 1px solid rgba(148, 163, 184, 0.16);
+                text-align: center;
+            }
+
+            .auth-partners-label {
+                margin: 0;
+                font-size: 0.54rem;
+                font-weight: 800;
+                letter-spacing: 0.26em;
+                color: #a3afbf;
+            }
+
+            .auth-partners-icons {
+                margin-top: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 1rem;
+                color: #6b7280;
+                font-size: 1rem;
+            }
+
+            .auth-footer {
+                padding: 1rem;
+                text-align: center;
+                color: #a8b2c1;
+                font-size: 0.72rem;
+                font-weight: 500;
+                line-height: 1.5;
+            }
+
+            @media (max-width: 640px) {
+                body {
+                    background-attachment: scroll;
+                }
+
+                .auth-topbar {
+                    padding: 12px;
+                }
+
+                .auth-topbar-inner {
+                    width: 100%;
+                    flex-wrap: nowrap;
+                    justify-content: space-between;
+                    text-align: left;
+                }
+
+                .auth-brand-text {
+                    font-size: 0.85rem;
+                    white-space: nowrap;
+                    line-height: 1.2;
+                }
+
+                .auth-help {
+                    padding: 0 12px;
+                    font-size: 0.72rem;
+                }
+
+                .auth-main {
+                    align-items: center;
+                    padding: 1rem 0.85rem 1.25rem;
+                }
+
+                .auth-card {
+                    width: 100%;
+                    padding: 20px 15px 17px;
+                    border-radius: 20px;
+                }
+
+                .auth-title {
+                    font-size: 1.38rem;
+                }
+
+                .auth-subtitle {
+                    margin-bottom: 1.2rem;
+                    font-size: 0.78rem;
+                    line-height: 1.5;
+                }
+
+                .auth-label-row {
+                    flex-wrap: wrap;
+                    gap: 0.35rem;
+                }
+
+                .auth-input-wrap {
+                    min-height: 46px;
+                }
+
+                .auth-input-wrap-compact {
+                    min-height: 40px;
+                }
+
+                .auth-input-wrap-compact .auth-input-icon {
+                    width: 36px;
+                }
+
+                .auth-input,
+                .auth-select {
+                    font-size: 0.72rem;
+                }
+
+                .auth-submit {
+                    min-height: 48px;
+                }
+
+                .auth-partners {
+                    margin-top: 1.5rem;
+                    padding-top: 1.35rem;
+                }
+
+                .auth-partners-label {
+                    letter-spacing: 0.18em;
+                    line-height: 1.6;
+                }
+
+                .auth-footer {
+                    padding: 0.85rem 1rem 1.1rem;
+                    font-size: 0.68rem;
+                }
+            }
+
+            @media (max-width: 420px) {
+                .auth-topbar {
+                    padding: 10px;
+                }
+
+                .auth-topbar-inner {
+                    gap: 0.5rem;
+                }
+
+                .auth-brand {
+                    gap: 8px;
+                    min-width: 0;
+                }
+
+                .auth-brand-mark {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: 7px;
+                }
+
+                .auth-brand-text {
+                    font-size: 0.8rem;
+                }
+
+                .auth-help {
+                    min-height: 32px;
+                    padding: 0 10px;
+                    font-size: 0.69rem;
+                }
+
+                .auth-main {
+                    padding-top: 1rem;
+                    padding-left: 0.65rem;
+                    padding-right: 0.65rem;
+                }
+
+                .auth-card {
+                    padding: 18px 13px 16px;
+                    border-radius: 18px;
+                }
+
+                .auth-badge {
+                    width: 50px;
+                    height: 50px;
+                    margin-bottom: 12px;
+                    font-size: 1.35rem;
+                }
+
+                .auth-title {
+                    font-size: 1.24rem;
+                }
+
+                .auth-subtitle {
+                    font-size: 0.74rem;
+                }
+
+                .auth-alert {
+                    padding: 0.75rem 0.85rem;
+                    font-size: 0.82rem;
+                }
+
+                .auth-form {
+                    gap: 0.9rem;
+                }
+
+                .auth-label,
+                .auth-link-button,
+                .auth-remember {
+                    font-size: 0.62rem;
+                }
+
+                .auth-input-icon,
+                .auth-toggle {
+                    width: 38px;
+                }
+
+                .auth-input,
+                .auth-select {
+                    font-size: 0.68rem;
+                }
+
+                .auth-partners-icons {
+                    gap: 0.85rem;
+                    font-size: 0.92rem;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="auth-page">
+            <header class="auth-topbar">
+                <div class="auth-topbar-inner">
+                    <div class="auth-brand">
+                        <span class="auth-brand-mark">
+                            <i class="bx bxs-store-alt"></i>
+                        </span>
+                        <span class="auth-brand-text">Manna Kampus System</span>
+                    </div>
+
+                    <a href="mailto:support@local.internal" class="auth-help">Need Help?</a>
+                </div>
+            </header>
+
+            <main class="auth-main">
+                <section class="auth-card">
+                    <div class="auth-badge">
+                        <i class="bx bxs-store-alt"></i>
+                    </div>
+
+                    <h1 class="auth-title">Asetra <span style="color: #f26419;">Manna Kampus</span></h1>
+                    <p class="auth-subtitle">Sistem Operasional Teknis, Procurement & <br> Manajemen Aset</p>
+
+                    {{ if .Error }}
+                        <div class="auth-alert">{{ .Error }}</div>
+                    {{ end }}
+
+                    <form action="/login" method="post" class="auth-form">
+                        
+
+                        <div class="auth-field">
+                            <label class="auth-label" for="username">Username Login</label>
+                            <div class="auth-input-wrap auth-input-wrap-compact">
+                                <span class="auth-input-icon">
+                                    <i class="bx bx-user"></i>
+                                </span>
+                                <input
+                                    id="username"
+                                    name="username"
+                                    type="text"
+                                    class="auth-input"
+                                    placeholder="Masukkan username Anda"
+                                    autocomplete="username"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="auth-field">
+                            <div class="auth-label-row">
+                                <label class="auth-label" for="password">Password</label>
+                                <button type="button" class="auth-link-button">Forgot password?</button>
+                            </div>
+                            <div class="auth-input-wrap auth-input-wrap-compact">
+                                <span class="auth-input-icon">
+                                    <i class="bx bx-lock-alt"></i>
+                                </span>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    class="auth-input"
+                                    placeholder="Masukkan password"
+                                    autocomplete="current-password"
+                                    required
+                                >
+                                <button type="button" class="auth-toggle" id="togglePassword" aria-label="Show password">
+                                    <i class="bx bx-show"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label class="auth-remember" for="rememberSession">
+                            <input type="checkbox" id="rememberSession" name="remember">
+                            <span>Remember my login session</span>
+                        </label>
+
+                        <button type="submit" class="auth-submit">
+                            <span>Masuk</span>
+                            <i class="bx bx-log-in-circle"></i>
+                        </button>
+                    </form>
+
+                    <div class="auth-partners">
+                        <p class="auth-partners-label">Created by AhmadRifki 2026</p>
+                        <div class="auth-partners-icons" aria-hidden="true">
+                            <i class="bx bxs-check-shield"></i>
+                            <i class="bx bxs-shield"></i>
+                            <i class="bx bx-network-chart"></i>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <footer class="auth-footer">
+                &copy; 2024 Retail Giant Approval Systems. All rights reserved. Highly Confidential.
+            </footer>
+        </div>
+
+        <script>
+            (function () {
+                var toggle = document.getElementById('togglePassword');
+                var password = document.getElementById('password');
+
+                if (!toggle || !password) {
+                    return;
+                }
+
+                toggle.addEventListener('click', function () {
+                    var isPassword = password.getAttribute('type') === 'password';
+                    password.setAttribute('type', isPassword ? 'text' : 'password');
+                    toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                    toggle.innerHTML = isPassword
+                        ? '<i class="bx bx-hide"></i>'
+                        : '<i class="bx bx-show"></i>';
+                });
+            })();
+        </script>
+    </body>
+</html>

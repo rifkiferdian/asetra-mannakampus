@@ -1,0 +1,448 @@
+﻿<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <!-- penting untuk responsive di HP -->
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>
+            {{ if .Title }}
+                {{ .Title }}
+            {{ else }}
+                Stock Hadiah App
+            {{ end }}
+        </title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            main a {
+                color: #f26419;
+            }
+            main a:hover {
+                color: #dc5a15;
+            }
+        </style>
+
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Settings / Users</p>
+                                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Users</h1>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <h2 class="text-base font-semibold text-slate-900">Daftar User</h2>
+                                <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]" data-modal-open="userModal">
+                                    <i class="bx bx-plus text-base"></i>
+                                    New User
+                                </button>
+                            </div>
+                            <div class="p-4">
+                                {{ if .Error }}
+                                <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                                    {{ .Error }}
+                                </div>
+                                {{ end }}
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[720px] text-sm">
+                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left font-semibold">#</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Username</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Nama</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Role</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Store ID</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Status</th>
+                                                <th class="px-3 py-2 text-left font-semibold">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {{ range $i, $user := .users }}
+                                            <tr class="hover:bg-slate-50/70">
+                                                <td class="px-3 py-3 text-slate-500">{{ no $i 1 }}</td>
+                                                <td class="px-3 py-3 font-semibold text-slate-700">{{ $user.Username }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $user.Name }}</td>
+                                                <td class="px-3 py-3">
+                                                    <span class="inline-flex items-center justify-center truncate rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600" style="max-width: 9rem;" title="{{ $user.RoleDisplay }}">{{ $user.RoleDisplay }}</span>
+                                                </td>
+                                                <td class="px-3 py-3 text-slate-600">
+                                                    <span class="block whitespace-normal break-words leading-5" style="max-width: 10rem;" title="{{ $user.StoreDisplay }}">{{ $user.StoreDisplay }}</span>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    {{ if eq $user.Status "active" }}
+                                                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">{{ $user.StatusLabel }}</span>
+                                                    {{ else }}
+                                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">{{ $user.StatusLabel }}</span>
+                                                    {{ end }}
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <button type="button"
+                                                            class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 btn-edit-user"
+                                                            data-user-id="{{ $user.ID }}"
+                                                            data-nip="{{ $user.NIP }}"
+                                                            data-username="{{ $user.Username }}"
+                                                            data-name="{{ $user.Name }}"
+                                                            data-email="{{ $user.Email }}"
+                                                            data-status="{{ $user.Status }}"
+                                                            data-stores="{{ range $index, $sid := $user.StoreIDs }}{{ if $index }},{{ end }}{{ $sid }}{{ end }}"
+                                                            data-roles="{{ range $idx, $role := $user.RoleNames }}{{ if $idx }},{{ end }}{{ $role }}{{ end }}">
+                                                            <i class="bx bx-pen text-sm"></i>
+                                                            Edit
+                                                        </button>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 btn-delete-user" data-url="/users/delete/{{ $user.ID }}" data-username="{{ $user.Username }}">
+                                                            <i class="bx bx-trash text-sm"></i>
+                                                            Del
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr>
+                                                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-500">Belum ada data user</td>
+                                            </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <div data-modal class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6" id="userModal">
+            <div class="absolute inset-0 bg-slate-900/50" data-modal-close></div>
+            <div class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:p-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h2 class="text-lg font-semibold text-slate-900" id="userModalLabel">New User Form</h2>
+                    <button type="button" class="text-slate-400 transition hover:text-slate-600" data-modal-close>
+                        <i class="bx bx-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <form action="/users" method="post" class="mt-6 space-y-6">
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="name" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Name</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="name" name="name">
+                            </div>
+
+                            <div>
+                                <label for="username" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Username Login</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="username" name="username">
+                            </div>
+
+                            <div>
+                                <label for="userPassword" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Password</label>
+                                <input type="password" name="password" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="userPassword">
+                            </div>
+
+                            <div>
+                                <label for="email" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Email</label>
+                                <input type="email" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="email" name="email" required>
+                            </div>
+
+                            <div>
+                                <label for="userRoles" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Roles</label>
+                                <select name="roles" id="userRoles" class="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 sm:h-32" multiple>
+                                    {{ range .roles }}
+                                        <option value="{{ .Name }}">{{ .Name }}</option>
+                                    {{ end }}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="nip" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Nomor Identitas Pegawai</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="nip" name="nip" placeholder="Masukkan NIP/NIK Pegawai">
+                            </div>
+
+                            <div>
+                                <label for="store_id" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Outlet MK</label>
+                                <select id="store_id" class="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 sm:h-32" name="store_id" multiple required>
+                                    {{ range .stores }}
+                                        <option value="{{ .StoreID }}">{{ .StoreName }}</option>
+                                    {{ end }}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="status" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Aktif</label>
+                                <select id="status" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" name="status">
+                                    <option value="active">Aktif</option>
+                                    <option value="non_active">Non Aktif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                        <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" data-modal-close>Batal</button>
+                        <button type="submit" class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div data-modal class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6" id="userEditModal">
+            <div class="absolute inset-0 bg-slate-900/50" data-modal-close></div>
+            <div class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:p-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h2 class="text-lg font-semibold text-slate-900" id="userEditModalLabel">Edit User</h2>
+                    <button type="button" class="text-slate-400 transition hover:text-slate-600" data-modal-close>
+                        <i class="bx bx-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <form action="/users/update" method="post" class="mt-6 space-y-6">
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="edit_name" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Name</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_name" name="name">
+                            </div>
+
+                            <div>
+                                <label for="edit_username" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Username Login</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_username" name="username">
+                            </div>
+
+                            <div>
+                                <label for="edit_userPassword" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Password</label>
+                                <input type="password" name="password" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_userPassword" placeholder="Kosongkan jika tidak diubah">
+                            </div>
+
+                            <div>
+                                <label for="edit_email" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Email</label>
+                                <input type="email" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_email" name="email" required>
+                            </div>
+
+                            <div>
+                                <label for="edit_userRoles" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Roles</label>
+                                <select name="roles" id="edit_userRoles" class="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 sm:h-32" multiple>
+                                    {{ range .roles }}
+                                        <option value="{{ .Name }}">{{ .Name }}</option>
+                                    {{ end }}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="edit_nip" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Nomor Identitas Pegawai</label>
+                                <input type="text" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" id="edit_nip" name="nip" placeholder="Masukkan NIP/NIK Pegawai">
+                            </div>
+
+                            <div>
+                                <label for="edit_store_id" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Outlet MK</label>
+                                <select id="edit_store_id" class="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 sm:h-32" name="store_id" multiple required>
+                                    {{ range .stores }}
+                                        <option value="{{ .StoreID }}">{{ .StoreName }}</option>
+                                    {{ end }}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="edit_status" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Aktif</label>
+                                <select id="edit_status" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500" name="status">
+                                    <option value="active">Aktif</option>
+                                    <option value="non_active">Non Aktif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                        <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" data-modal-close>Batal</button>
+                        <button type="submit" class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- JAVASCRIPT -->
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+
+        <!-- Sweet Alerts js -->
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function closeSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.add('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!document.querySelector('[data-modal].flex')) {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                }
+
+                function openSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                toggleButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        if (sidebar.classList.contains('-translate-x-full')) {
+                            openSidebar();
+                        } else {
+                            closeSidebar();
+                        }
+                    });
+                });
+
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
+
+                var modalTriggers = document.querySelectorAll('[data-modal-open]');
+                var modalCloses = document.querySelectorAll('[data-modal-close]');
+
+                function openModal(modalId) {
+                    var modal = document.getElementById(modalId);
+                    if (!modal) return;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                function closeModal(modal) {
+                    if (!modal) return;
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.classList.remove('overflow-hidden');
+                }
+
+                modalTriggers.forEach(function (trigger) {
+                    trigger.addEventListener('click', function () {
+                        var target = trigger.getAttribute('data-modal-open');
+                        if (target) openModal(target);
+                    });
+                });
+
+                modalCloses.forEach(function (close) {
+                    close.addEventListener('click', function () {
+                        var modal = close.closest('[data-modal]');
+                        closeModal(modal);
+                    });
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Escape') return;
+                    var openModals = document.querySelectorAll('[data-modal].flex');
+                    openModals.forEach(function (modal) {
+                        closeModal(modal);
+                    });
+                });
+
+                var deleteButtons = document.querySelectorAll('.btn-delete-user');
+                deleteButtons.forEach(function (btn) {
+                    btn.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        var username = btn.getAttribute('data-username') || 'user';
+                        var targetUrl = btn.getAttribute('data-url');
+
+                        Swal.fire({
+                            title: 'Hapus user ini?',
+                            text: 'User ' + username + ' akan dihapus secara permanen.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Ya, hapus',
+                            cancelButtonText: 'Batal'
+                        }).then(function (result) {
+                            if (result.isConfirmed && targetUrl) {
+                                window.location.href = targetUrl;
+                            }
+                        });
+                    });
+                });
+
+                var editButtons = document.querySelectorAll('.btn-edit-user');
+
+                function parseListAttr(val) {
+                    if (!val) return [];
+                    return val.split(',').map(function (item) {
+                        return item.trim();
+                    }).filter(Boolean);
+                }
+
+                function setMultiSelect(selectEl, values) {
+                    if (!selectEl) return;
+                    var lookup = new Set(values);
+                    Array.from(selectEl.options).forEach(function (opt) {
+                        opt.selected = lookup.has(opt.value);
+                    });
+                }
+
+                editButtons.forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var editModalEl = document.getElementById('userEditModal');
+                        if (!editModalEl) return;
+
+                        var idInput = editModalEl.querySelector('#edit_user_id');
+                        var nameInput = editModalEl.querySelector('#edit_name');
+                        var usernameInput = editModalEl.querySelector('#edit_username');
+                        var passwordInput = editModalEl.querySelector('#edit_userPassword');
+                        var emailInput = editModalEl.querySelector('#edit_email');
+                        var nipInput = editModalEl.querySelector('#edit_nip');
+                        var statusSelect = editModalEl.querySelector('#edit_status');
+                        var roleSelect = editModalEl.querySelector('#edit_userRoles');
+                        var storeSelect = editModalEl.querySelector('#edit_store_id');
+
+                        if (idInput) idInput.value = btn.getAttribute('data-user-id') || '';
+                        if (nameInput) nameInput.value = btn.getAttribute('data-name') || '';
+                        if (usernameInput) usernameInput.value = btn.getAttribute('data-username') || '';
+                        if (passwordInput) passwordInput.value = '';
+                        if (emailInput) emailInput.value = btn.getAttribute('data-email') || '';
+                        if (nipInput) nipInput.value = btn.getAttribute('data-nip') || '';
+                        if (statusSelect) statusSelect.value = btn.getAttribute('data-status') || 'active';
+
+                        setMultiSelect(roleSelect, parseListAttr(btn.getAttribute('data-roles')));
+                        setMultiSelect(storeSelect, parseListAttr(btn.getAttribute('data-stores')));
+
+                        openModal('userEditModal');
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
+
+
+

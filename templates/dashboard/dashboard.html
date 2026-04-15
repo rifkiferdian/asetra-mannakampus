@@ -1,0 +1,247 @@
+﻿<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <!-- penting untuk responsive di HP -->
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>
+            {{ if .Title }}
+                {{ .Title }}
+            {{ else }}
+                Stock Hadiah App
+            {{ end }}
+        </title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            .dash-surface {
+                background: radial-gradient(120% 120% at 10% 0%, #fff7ed 0%, #ffedd5 38%, #f8fafc 100%);
+            }
+            main a {
+                color: #f26419;
+            }
+            main a:hover {
+                color: #dc5a15;
+            }
+        </style>
+
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl">
+                        <div class="dash-surface rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-card sm:p-7 lg:p-8">
+                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Admin / Dashboard</p>
+                                    <h2 class="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">System Overview</h2>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-brand-300 hover:text-[#f26419]">Download Report</button>
+                                    <button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]">New Submission</button>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-[#f26419]">
+                                            <i class="bx bx-file text-lg"></i>
+                                        </div>
+                                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">+12%</span>
+                                    </div>
+                                    <p class="mt-4 text-sm text-slate-500">Total Submissions</p>
+                                    <p class="mt-1 text-2xl font-semibold text-slate-900">1,284</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
+                                            <i class="bx bx-folder-open text-lg"></i>
+                                        </div>
+                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Active</span>
+                                    </div>
+                                    <p class="mt-4 text-sm text-slate-500">Pending Approval</p>
+                                    <p class="mt-1 text-2xl font-semibold text-slate-900">45</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500">
+                                            <i class="bx bx-check-circle text-lg"></i>
+                                        </div>
+                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">This Month</span>
+                                    </div>
+                                    <p class="mt-4 text-sm text-slate-500">Approved</p>
+                                    <p class="mt-1 text-2xl font-semibold text-slate-900">1,120</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+                                            <i class="bx bx-x-circle text-lg"></i>
+                                        </div>
+                                        <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-500">-3%</span>
+                                    </div>
+                                    <p class="mt-4 text-sm text-slate-500">Rejected</p>
+                                    <p class="mt-1 text-2xl font-semibold text-slate-900">119</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <h3 class="text-base font-semibold text-slate-900">Recent Activity</h3>
+                                    <a href="#" class="text-sm font-semibold text-[#f26419] hover:text-[#dc5a15]">View All</a>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[720px] text-sm">
+                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left font-semibold">Document ID</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Document Type</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Submitted By</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Current Step</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Status</th>
+                                                <th class="px-4 py-3 text-right font-semibold">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            <tr class="hover:bg-slate-50/60">
+                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-001</td>
+                                                <td class="px-4 py-3 text-slate-600">Surat Tugas</td>
+                                                <td class="px-4 py-3 text-slate-600">
+                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">JD</span>
+                                                    John Doe
+                                                </td>
+                                                <td class="px-4 py-3 text-slate-600">Finance Verification</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600">Pending</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                </td>
+                                            </tr>
+                                            <tr class="hover:bg-slate-50/60">
+                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-002</td>
+                                                <td class="px-4 py-3 text-slate-600">Leave Request</td>
+                                                <td class="px-4 py-3 text-slate-600">
+                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">AS</span>
+                                                    Alice Smith
+                                                </td>
+                                                <td class="px-4 py-3 text-slate-600">Completed</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">Approved</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                </td>
+                                            </tr>
+                                            <tr class="hover:bg-slate-50/60">
+                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-003</td>
+                                                <td class="px-4 py-3 text-slate-600">Surat Tugas</td>
+                                                <td class="px-4 py-3 text-slate-600">
+                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">MB</span>
+                                                    Michael Brown
+                                                </td>
+                                                <td class="px-4 py-3 text-slate-600">Unit Head Approval</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600">Rejected</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                </td>
+                                            </tr>
+                                            <tr class="hover:bg-slate-50/60">
+                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-004</td>
+                                                <td class="px-4 py-3 text-slate-600">Procurement</td>
+                                                <td class="px-4 py-3 text-slate-600">
+                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">SW</span>
+                                                    Sarah White
+                                                </td>
+                                                <td class="px-4 py-3 text-slate-600">Final Signature</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600">Pending</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>Showing 4 of 1,284 entries</div>
+                                    <div class="flex items-center gap-2">
+                                        <button class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-brand-300 hover:text-[#dc5a15]">
+                                            <i class="bx bx-chevron-left text-base"></i>
+                                        </button>
+                                        <button class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-brand-300 hover:text-[#dc5a15]">
+                                            <i class="bx bx-chevron-right text-base"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <!-- Sweet Alerts js -->
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function closeSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.add('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!document.querySelector('[data-modal].flex')) {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                }
+
+                function openSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                toggleButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        if (sidebar.classList.contains('-translate-x-full')) {
+                            openSidebar();
+                        } else {
+                            closeSidebar();
+                        }
+                    });
+                });
+
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
+            });
+        </script>
+    </body>
+</html>
+
+

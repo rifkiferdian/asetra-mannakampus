@@ -1,0 +1,26 @@
+{
+  "name": "mail-approval",
+  "version": "1.0.0",
+  "description": "Aplikasi web sederhana untuk manajemen stok hadiah dengan autentikasi user berbasis session menggunakan Gin (Golang).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./tailwind.input.css -o ./assets/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./tailwind.input.css -o ./assets/css/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rifkiferdian/gobase-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rifkiferdian/gobase-app/issues"
+  },
+  "homepage": "https://github.com/rifkiferdian/gobase-app#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

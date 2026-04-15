@@ -1,0 +1,108 @@
+{{ define "header" }}
+<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <div class="relative flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-8">
+        <div class="flex min-w-0 items-center gap-3">
+            <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 lg:hidden" data-sidebar-toggle aria-label="Open sidebar">
+                <i class="bx bx-menu text-xl"></i>
+            </button>
+
+            <div class="flex min-w-0 flex-col leading-tight sm:hidden">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.35em] text-slate-400">Asetra</span>
+                <span class="truncate text-sm font-semibold text-slate-800">
+                    {{ if eq .Page "dashboard" }}
+                        Dashboard
+                    {{ else if eq .Page "user" }}
+                        Users
+                    {{ else if eq .Page "role" }}
+                        Roles
+                    {{ else if eq .Page "roleForm" }}
+                        New Role
+                    {{ else if eq .Page "roleEdit" }}
+                        Edit Role
+                    {{ else if .Title }}
+                        {{ .Title }}
+                    {{ else }}
+                        Asetra
+                    {{ end }}
+                </span>
+            </div>
+
+            <form class="hidden w-full max-w-md lg:block">
+                <div class="relative">
+                    <input type="text" class="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-600 outline-none transition focus:border-brand-500 focus:bg-white" placeholder="Search documents, IDs...">
+                    <span class="bx bx-search-alt pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></span>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-4 lg:mr-10">
+            <details class="lg:hidden">
+                <summary class="list-none">
+                    <div class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50">
+                        <i class="bx bx-search text-xl"></i>
+                    </div>
+                </summary>
+                <div class="absolute left-4 right-4 top-full mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg">
+                    <input type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 outline-none focus:border-brand-500 focus:bg-white" placeholder="Search ...">
+                </div>
+            </details>
+
+            <details class="relative">
+                <summary class="list-none cursor-pointer">
+                    <div class="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100">
+                        <i class="bx bx-bell text-xl"></i>
+                        <span class="absolute right-1 top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold leading-4 text-white ring-2 ring-white">3</span>
+                    </div>
+                </summary>
+                <div class="absolute right-0 mt-3 w-[min(92vw,18rem)] rounded-2xl border border-slate-200 bg-white p-3 text-sm shadow-lg">
+                    <div class="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Notifications</div>
+                    <a class="flex items-start gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-50" href="#">
+                        <span class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                            <i class="bx bx-file text-lg"></i>
+                        </span>
+                        <span class="text-slate-700">Pengajuan dokumen baru dari Dimas.</span>
+                    </a>
+                    <a class="flex items-start gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-50" href="#">
+                        <span class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                            <i class="bx bx-check-shield text-lg"></i>
+                        </span>
+                        <span class="text-slate-700">Approval kontrak menunggu verifikasi.</span>
+                    </a>
+                    <a class="flex items-start gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-50" href="#">
+                        <span class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                            <i class="bx bx-cloud-upload text-lg"></i>
+                        </span>
+                        <span class="text-slate-700">Laporan mingguan berhasil diunggah.</span>
+                    </a>
+                </div>
+            </details>
+
+            <span class="hidden h-8 w-px bg-slate-200 sm:inline-flex"></span>
+
+            <details class="relative">
+                <summary class="list-none cursor-pointer">
+                    <div class="inline-flex items-center gap-2 sm:gap-3 text-slate-600">
+                        <div class="hidden text-right sm:block sm:text-left">
+                            <div class="text-[13px] font-semibold text-slate-800" key="t-henry">{{ if .User }}{{ index .User "name" }}{{ end }}</div>
+                            <div class="text-[11px] text-slate-400">Super Admin</div>
+                        </div>
+                        <div class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-auth-500 text-sm font-semibold text-white sm:h-10 sm:w-10" style="background-color: #f97316;">
+                            {{ if .Initials }}{{ .Initials }}{{ end }}
+                        </div>
+                    </div>
+                </summary>
+                <div class="absolute right-0 mt-3 w-[min(92vw,12rem)] rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-lg">
+                    <a class="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 transition hover:bg-slate-50" href="/profile">
+                        <i class="bx bx-user text-base"></i>
+                        <span key="t-profile">Profile</span>
+                    </a>
+                    <a class="flex items-center gap-2 rounded-xl px-3 py-2 text-rose-600 transition hover:bg-rose-50" href="/logout">
+                        <i class="bx bx-power-off text-base"></i>
+                        <span key="t-logout">Logout</span>
+                    </a>
+                </div>
+            </details>
+        </div>
+    </div>
+</header>
+{{ end }}
