@@ -10,6 +10,8 @@ import (
 	"gobase-app/config"
 	"gobase-app/models"
 	"gobase-app/routes"
+	"gobase-app/repositories"
+	"gobase-app/services"
 	"strings"
 
 	"github.com/gin-contrib/sessions"
@@ -26,6 +28,12 @@ func main() {
 
 	// Initialize database / config
 	config.Connect()
+
+	permissionRepo := &repositories.PermissionRepository{DB: config.DB}
+	permissionService := &services.PermissionService{Repo: permissionRepo}
+	if err := permissionService.EnsureSystemPermissions(); err != nil {
+		log.Fatalf("failed to ensure system permissions: %v", err)
+	}
 
 	// Initialize Gin engine // menampilkan logger di terminal
 	// r := gin.Default()

@@ -14,3 +14,9 @@ type PermissionGroup struct {
 	Label       string
 	Permissions []Permission
 }
+
+type PermissionDefinition struct {
+	Name      string
+	Group     string
+	GuardName string
+}

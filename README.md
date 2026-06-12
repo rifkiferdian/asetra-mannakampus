@@ -1,101 +1,200 @@
-# Stok Hadiah
+# Asetra
 
-Aplikasi web sederhana untuk manajemen stok hadiah dengan autentikasi user berbasis session menggunakan Gin (Golang).
+Asetra adalah aplikasi web internal untuk proses pembelian perusahaan dan pengelolaan asset dengan alur utama:
 
-## Tech stack
+`PR -> Approval -> PO -> GR -> Invoice -> Payment -> Asset`
 
-- Go (Gin Web Framework)
-- MySQL (atau database SQL lain yang kompatibel dengan driver `go-sql-driver/mysql`)
-- HTML template (`templates/`) dan asset statis (`assets/`)
+Fokus aplikasi ini:
 
-## Fitur
+- kontrol approval yang jelas dan bertahap
+- budget control per store/divisi/GL account
+- audit trail untuk setiap aksi penting
+- attachment dokumen pada setiap proses pembelian
+- pencatatan asset untuk item CAPEX yang sudah diterima
 
-- Login dan logout user dengan password yang di-hash (bcrypt)
-- Registrasi user baru
-- Proteksi halaman menggunakan session (middleware auth)
-- Halaman dashboard dasar setelah login
+## Cakupan Modul
+
+Modul bisnis yang menjadi target aplikasi:
+
+- Purchase Request (`purchase_requests`, `purchase_request_items`)
+- Approval engine (`approval_rules`, `approval_rule_steps`, `approvals`, `approval_tasks`)
+- Purchase Order (`purchase_orders`, `purchase_order_items`)
+- Goods Receipt (`goods_receipts`, `goods_receipt_items`)
+- Invoice dan 3-way matching (`invoices`, `invoice_items`)
+- Payment (`payments`, `payment_status_histories`)
+- Budget (`budgets`, `budget_usages`)
+- Asset (`assets`, `asset_movements`, `asset_documents`)
+- Attachment dan audit (`attachments`, `audit_logs`)
+
+## Status Implementasi Saat Ini
+
+Codebase Go yang aktif saat ini baru mencakup fondasi aplikasi dan beberapa modul admin:
+
+- autentikasi login/logout berbasis session cookie
+- dashboard
+- manajemen user
+- manajemen role dan permission
+- manajemen store
+- template layout dan asset frontend
+
+Skema database contoh untuk domain PO dan asset sudah tersedia di [gobase_app.sql](gobase_app.sql:1), tetapi tidak semua modul bisnis tersebut sudah terhubung ke route, controller, service, dan repository.
+
+## Tech Stack
+
+- Go
+- Gin Web Framework
+- MySQL
+- HTML template server-side
+- Tailwind CSS
+- Session cookie authentication
 
 ## Struktur Proyek
 
-- [`main.go`](main.go:1) – entry point aplikasi, inisialisasi Gin, session, template, statis, dan start server
-- [`routes/web.go`](routes/web.go:1) – definisi route utama (auth, dashboard)
-- `controllers/` – handler HTTP (login, register, dashboard, render template)
-- `middleware/` – middleware autentikasi dan user session
-- `templates/` – file HTML template (login, layout, dashboard, dll.)
-- `assets/` – file CSS, JS, dan aset frontend lainnya
-- [`go.mod`](go.mod:1) – dependensi Go module
+- [main.go](main.go:1) entry point aplikasi
+- [routes/web.go](routes/web.go:1) route HTTP utama
+- [config/db.go](config/db.go:1) inisialisasi koneksi database
+- [controllers](controllers) handler request
+- [services](services) business logic per modul
+- [repositories](repositories) akses database
+- [models](models) model dan DTO
+- [middleware](middleware) auth dan permission middleware
+- [templates](templates) HTML template
+- [assets](assets) CSS, JS, font, dan static assets
+- [gobase_app.sql](gobase_app.sql:1) skema dan seed database awal
 
 ## Persyaratan
 
-- Go 1.21+ terinstall
-- MySQL server berjalan
+- Go 1.21 atau lebih baru
+- MySQL server aktif
+- Node.js dan npm untuk build asset CSS
 
 ## Konfigurasi Environment
 
-Aplikasi menggunakan package [`github.com/joho/godotenv`](go.mod:23) untuk membaca konfigurasi dari file `.env` (jika ada) dan variabel environment OS.
+Aplikasi membaca konfigurasi dari file `.env` menggunakan `godotenv`.
 
-Buat file `.env` di root proyek dengan isi kira‑kira seperti di bawah ini (sesuaikan dengan environment Anda):
+Contoh konfigurasi:
 
 ```env
-APP_PORT=8080
+APP_NAME=Asetra
+APP_PORT=8083
+# BASE_URL=http://localhost:8083
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=root
-DB_PASS=password_anda
-DB_NAME=stok_hadiah
+DB_PASS=
+DB_NAME=asetra_manna_kampus
 ```
 
-Nilai di atas contoh saja; cek implementasi di package `config` untuk memastikan nama variabel yang digunakan.
+Variabel database yang dipakai aplikasi saat ini didefinisikan di [config/db.go](config/db.go:1):
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASS`
+- `DB_NAME`
+
+## Setup Database
+
+1. Buat database MySQL, misalnya `asetra_manna_kampus`.
+2. Import file [gobase_app.sql](gobase_app.sql:1).
+3. Sesuaikan `.env` agar mengarah ke database tersebut.
+
+Contoh:
+
+```sql
+CREATE DATABASE asetra_manna_kampus;
+```
+
+Lalu import:
+
+```bash
+mysql -u root -p asetra_manna_kampus < gobase_app.sql
+```
 
 ## Menjalankan Aplikasi
 
-1. Clone repository ini
-2. Masuk ke folder proyek:
+1. Install dependency Go:
 
-   ```bash
-   cd gobase-app
-   ```
+```bash
+go mod tidy
+```
 
-3. Download dependensi:
+2. Install dependency frontend:
 
-   ```bash
-   go mod tidy
-   ```
+```bash
+npm install
+```
+
+3. Build CSS:
+
+```bash
+npm run build:css
+```
 
 4. Jalankan aplikasi:
 
-   ```bash
-   go run main.go
-   ```
+```bash
+go run main.go
+```
 
-5. Buka browser dan akses:
+5. Buka browser ke:
 
-   ```text
-   http://localhost:8080
-   ```
+```text
+http://localhost:8083
+```
 
-Atau sesuaikan dengan nilai `APP_PORT` yang Anda gunakan.
+Sesuaikan port jika `APP_PORT` berbeda.
 
-## Endpoint Utama
+## Script Frontend
 
-- `GET /` atau `GET /login` – halaman login
-- `POST /login` – proses login
-- `POST /register` – registrasi user baru
-- `GET /logout` – logout user
-- `GET /dashboard` – halaman dashboard (butuh login, dilindungi middleware)
+Script yang tersedia di [package.json](package.json:1):
 
-Definisi route dapat dilihat di [`routes/web.go`](routes/web.go:10).
+- `npm run build:css` untuk build Tailwind CSS sekali jalan
+- `npm run watch:css` untuk mode watch selama development
 
-## Session & Autentikasi
+## Endpoint Dasar
 
-Aplikasi menggunakan session berbasis cookie dari package [`github.com/gin-contrib/sessions`](go.mod:11) dengan store cookie default:
+Endpoint yang sudah aktif saat ini:
 
-- Session name: `mysession`
-- Key utama (secret): diset langsung di [`main.go`](main.go:31) – sebaiknya diubah dan disimpan di environment untuk production.
+- `GET /` atau `GET /login`
+- `POST /login`
+- `POST /register`
+- `GET /logout`
+- `GET /dashboard`
+- `GET /stores`
+- `GET /users`
+- `GET /role`
 
-Middleware autentikasi dan pengambilan informasi user didefinisikan di package `middleware` dan digunakan di [`routes/web.go`](routes/web.go:19).
+Route lengkap dapat dilihat di [routes/web.go](routes/web.go:1).
 
-## Lisensi
+## Session dan Security
 
-Proyek ini digunakan untuk kebutuhan internal / pembelajaran. Silakan modifikasi sesuai kebutuhan Anda.
+Aplikasi menggunakan session cookie melalui package `github.com/gin-contrib/sessions`.
+
+Catatan penting:
+
+- nama session: `mysession`
+- cookie `HttpOnly` aktif
+- `Secure` cookie mengikuti `APP_SECURE_COOKIE=true`
+- secret session masih hard-coded di [main.go](main.go:1) dan sebaiknya dipindahkan ke environment untuk production
+
+Untuk modul approval, invoice, payment, dan audit trail, aturan bisnis targetnya mengacu ke dokumen [AGENTS.md](AGENTS.md:1).
+
+## Roadmap Implementasi yang Disarankan
+
+Urutan pengembangan yang paling aman:
+
+1. master data: vendor, GL account, division, store approver
+2. approval rule dan approval task engine
+3. purchase request
+4. purchase order
+5. goods receipt
+6. invoice dan 3-way matching
+7. payment
+8. asset CAPEX
+9. reporting dan dashboard real-time
+
+## Catatan
+
+Beberapa metadata project masih memakai nama lama di file lain, misalnya [package.json](package.json:1). README ini sudah disesuaikan untuk domain aplikasi yang sekarang.

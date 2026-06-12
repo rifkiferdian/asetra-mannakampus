@@ -35,6 +35,42 @@
                     <span>Store</span>
                 </a>
             </li>
+            {{ $settingsActive := or (eq .Page "vendor") (eq .Page "gl_account") (eq .Page "store_approver") }}
+            <li class="space-y-1">
+                <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-[14px] font-semibold transition sm:px-4 sm:py-4 sm:text-[15px] {{ if $settingsActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="settings-submenu" aria-expanded="{{ if $settingsActive }}true{{ else }}false{{ end }}" aria-controls="settings-submenu" {{ if $settingsActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <span class="flex items-center gap-3 sm:gap-4">
+                        <i class="bx bx-bar-chart-square text-xl"></i>
+                        <span>Settings</span>
+                    </span>
+                    <i class="bx {{ if $settingsActive }}bx-chevron-up text-white/80{{ else }}bx-chevron-down text-slate-400{{ end }} text-xl" data-submenu-icon></i>
+                </button>
+                <ul id="settings-submenu" class="mt-1 {{ if not $settingsActive }}hidden {{ end }}space-y-1 border-l border-slate-200 pl-4" style="margin-left: 1rem;">
+                    {{ if index .Permissions "vendor_management_access" }}
+                    <li>
+                        <a href="{{ baseURL "/vendors" }}" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium {{ if eq .Page "vendor" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>Vendor Management</span>
+                        </a>
+                    </li>
+                    {{ end }}
+                    {{ if index .Permissions "gl_account_management_access" }}
+                    <li>
+                        <a href="{{ baseURL "/gl-accounts" }}" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium {{ if eq .Page "gl_account" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>GL Accounts</span>
+                        </a>
+                    </li>
+                    {{ end }}
+                    {{ if index .Permissions "store_approver_management_access" }}
+                    <li>
+                        <a href="{{ baseURL "/store-approvers" }}" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium {{ if eq .Page "store_approver" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>Store Approvers</span>
+                        </a>
+                    </li>
+                    {{ end }}
+                </ul>
+            </li>
             <li>
                 <a href="#" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-[#f26419] sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px]">
                     <i class="bx bx-file text-xl"></i>
