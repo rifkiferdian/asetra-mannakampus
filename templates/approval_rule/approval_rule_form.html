@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Asetra{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Settings / Approval Rules</p>
+                            <h1 class="mt-2 text-2xl font-semibold text-slate-900">Form Approval Rule</h1>
+                        </div>
+
+                        <form method="post" action="/approval-rules" class="space-y-6" id="approval-rule-form">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                {{ if .Error }}
+                                <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ .Error }}</div>
+                                {{ end }}
+
+                                <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Rule Name</label>
+                                        <input type="text" name="name" value="{{ .Rule.Name }}" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Min Amount</label>
+                                        <input type="number" step="0.01" min="0" name="min_amount" value="{{ printf "%.2f" .Rule.MinAmount }}" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Max Amount</label>
+                                        <input type="number" step="0.01" min="0" name="max_amount" value="{{ .SelectedMaxAmount }}" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Kosongkan jika tanpa batas">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</label>
+                                        <select name="is_active" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            <option value="1" {{ if .Rule.IsActive }}selected{{ end }}>Aktif</option>
+                                            <option value="0" {{ if not .Rule.IsActive }}selected{{ end }}>Non Aktif</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Location Scope</label>
+                                        <p class="mt-1 text-xs leading-5 text-slate-400">Menentukan rule ini berlaku untuk dokumen dari store, HO, atau semua lokasi.</p>
+                                        <select name="location_scope" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            <option value="ANY" {{ if or (eq .Rule.LocationScope "") (eq .Rule.LocationScope "ANY") }}selected{{ end }}>ANY</option>
+                                            <option value="STORE" {{ if eq .Rule.LocationScope "STORE" }}selected{{ end }}>STORE</option>
+                                            <option value="HO" {{ if eq .Rule.LocationScope "HO" }}selected{{ end }}>HO</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Spend Type</label>
+                                        <select name="spend_type" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            <option value="ANY" {{ if or (eq .Rule.SpendType "") (eq .Rule.SpendType "ANY") }}selected{{ end }}>ANY</option>
+                                            <option value="OPEX" {{ if eq .Rule.SpendType "OPEX" }}selected{{ end }}>OPEX</option>
+                                            <option value="CAPEX" {{ if eq .Rule.SpendType "CAPEX" }}selected{{ end }}>CAPEX</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Urgent Level</label>
+                                        <select name="urgent_level" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            <option value="ANY" {{ if or (eq .Rule.UrgentLevel "") (eq .Rule.UrgentLevel "ANY") }}selected{{ end }}>ANY</option>
+                                            <option value="NORMAL" {{ if eq .Rule.UrgentLevel "NORMAL" }}selected{{ end }}>NORMAL</option>
+                                            <option value="URGENT" {{ if eq .Rule.UrgentLevel "URGENT" }}selected{{ end }}>URGENT</option>
+                                            <option value="EMERGENCY" {{ if eq .Rule.UrgentLevel "EMERGENCY" }}selected{{ end }}>EMERGENCY</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                                    <div>
+                                        <h2 class="text-base font-semibold text-slate-900">Approval Steps</h2>
+                                        <p class="mt-1 text-sm text-slate-500">Tentukan urutan approver berdasarkan role dan scope.</p>
+                                        <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                                            <p><span class="font-semibold">Scope STORE</span>: approver dicari dari mapping store yang mengajukan dokumen, misalnya manager store MK4.</p>
+                                            <p class="mt-1"><span class="font-semibold">Scope HO</span>: approver dicari dari level pusat / head office, misalnya finance manager atau GM pusat.</p>
+                                            <p class="mt-1"><span class="font-semibold">Parallel = Yes</span>: beberapa approver pada step order yang sama bisa jalan bersamaan.</p>
+                                            <p class="mt-1"><span class="font-semibold">Required = Yes</span>: approver ini wajib approve agar proses bisa lanjut.</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="add-step-button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition" style="background-color: #16a34a;" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'">
+                                        <i class="bx bx-plus text-base"></i>
+                                        Add Step
+                                    </button>
+                                </div>
+
+                                <div class="mt-4 overflow-x-auto">
+                                    <table class="w-full min-w-[900px] text-sm">
+                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left">Step Order</th>
+                                                <th class="px-3 py-2 text-left">Role Approver</th>
+                                                <th class="px-3 py-2 text-left">Scope</th>
+                                                <th class="px-3 py-2 text-left">Parallel</th>
+                                                <th class="px-3 py-2 text-left">Required</th>
+                                                <th class="px-3 py-2 text-left">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="step-rows" class="divide-y divide-slate-100">
+                                            {{ range .Rule.Steps }}
+                                            <tr class="step-row">
+                                                <td class="px-3 py-3"><input type="number" min="1" name="step_order[]" value="{{ .StepOrder }}" class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" required></td>
+                                                <td class="px-3 py-3">
+                                                    <select name="role_id[]" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" required>
+                                                        <option value="">Pilih role</option>
+                                                        {{ $selectedRoleID := .RoleID }}
+                                                        {{ range $.Roles }}
+                                                        <option value="{{ .ID }}" {{ if eq $selectedRoleID .ID }}selected{{ end }}>{{ .Name }}</option>
+                                                        {{ end }}
+                                                    </select>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <select name="scope[]" class="w-36 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                                        <option value="STORE" {{ if or (eq .Scope "") (eq .Scope "STORE") }}selected{{ end }}>STORE</option>
+                                                        <option value="HO" {{ if eq .Scope "HO" }}selected{{ end }}>HO</option>
+                                                    </select>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <select name="is_parallel[]" class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                                        <option value="0" {{ if not .IsParallel }}selected{{ end }}>No</option>
+                                                        <option value="1" {{ if .IsParallel }}selected{{ end }}>Yes</option>
+                                                    </select>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <p class="mb-2 text-[11px] leading-4 text-slate-400">Yes = wajib approve, No = bisa di-skip jika policy mengizinkan</p>
+                                                    <select name="is_required[]" class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                                        <option value="1" {{ if .IsRequired }}selected{{ end }}>Yes</option>
+                                                        <option value="0" {{ if not .IsRequired }}selected{{ end }}>No</option>
+                                                    </select>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 remove-step-button">
+                                                        <i class="bx bx-trash text-sm"></i>Del
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                                <a href="/approval-rules" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancel</a>
+                                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">
+                                    <i class="bx bx-save text-base"></i>
+                                    Save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script id="role-options-template" type="application/json">{{ range $index, $role := .Roles }}{{ if $index }},{{ end }}{"id":{{ $role.ID }},"name":"{{ $role.Name }}"}{{ end }}</script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+                var stepRows = document.getElementById('step-rows');
+                var addStepButton = document.getElementById('add-step-button');
+                var roleOptions = JSON.parse('[' + document.getElementById('role-options-template').textContent + ']');
+
+                function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); }
+                function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
+                toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
+                if (overlay) overlay.addEventListener('click', closeSidebar);
+
+                function buildRoleOptions(selectedValue) {
+                    var options = '<option value="">Pilih role</option>';
+                    roleOptions.forEach(function (role) {
+                        var selected = String(selectedValue || '') === String(role.id) ? ' selected' : '';
+                        options += '<option value="' + role.id + '"' + selected + '>' + role.name + '</option>';
+                    });
+                    return options;
+                }
+
+                function bindRemoveButtons() {
+                    stepRows.querySelectorAll('.remove-step-button').forEach(function (button) {
+                        button.onclick = function () {
+                            if (stepRows.querySelectorAll('.step-row').length <= 1) return;
+                            button.closest('.step-row').remove();
+                        };
+                    });
+                }
+
+                addStepButton.addEventListener('click', function () {
+                    var row = document.createElement('tr');
+                    row.className = 'step-row';
+                    row.innerHTML = '' +
+                        '<td class="px-3 py-3"><input type="number" min="1" name="step_order[]" class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" required></td>' +
+                        '<td class="px-3 py-3"><select name="role_id[]" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" required>' + buildRoleOptions('') + '</select></td>' +
+                        '<td class="px-3 py-3"><select name="scope[]" class="w-36 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="STORE" selected>STORE</option><option value="HO">HO</option></select></td>' +
+                        '<td class="px-3 py-3"><select name="is_parallel[]" class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="0" selected>No</option><option value="1">Yes</option></select></td>' +
+                        '<td class="px-3 py-3"><select name="is_required[]" class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="1" selected>Yes</option><option value="0">No</option></select></td>' +
+                        '<td class="px-3 py-3"><button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 remove-step-button"><i class="bx bx-trash text-sm"></i>Del</button></td>';
+                    stepRows.appendChild(row);
+                    bindRemoveButtons();
+                });
+
+                bindRemoveButtons();
+            });
+        </script>
+    </body>
+</html>

@@ -35,7 +35,7 @@
                     <span>Store</span>
                 </a>
             </li>
-            {{ $settingsActive := or (eq .Page "vendor") (eq .Page "gl_account") (eq .Page "store_approver") }}
+            {{ $settingsActive := or (eq .Page "vendor") (eq .Page "gl_account") (eq .Page "store_approver") (eq .Page "approval_rule") (eq .Page "approvalRuleForm") (eq .Page "approvalRuleEdit") }}
             <li class="space-y-1">
                 <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-[14px] font-semibold transition sm:px-4 sm:py-4 sm:text-[15px] {{ if $settingsActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="settings-submenu" aria-expanded="{{ if $settingsActive }}true{{ else }}false{{ end }}" aria-controls="settings-submenu" {{ if $settingsActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
                     <span class="flex items-center gap-3 sm:gap-4">
@@ -66,6 +66,14 @@
                         <a href="{{ baseURL "/store-approvers" }}" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium {{ if eq .Page "store_approver" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}">
                             <i class="bx bxs-circle text-[10px]"></i>
                             <span>Store Approvers</span>
+                        </a>
+                    </li>
+                    {{ end }}
+                    {{ if index .Permissions "approval_rule_management_access" }}
+                    <li>
+                        <a href="{{ baseURL "/approval-rules" }}" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium {{ if or (eq .Page "approval_rule") (eq .Page "approvalRuleForm") (eq .Page "approvalRuleEdit") }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}">
+                            <i class="bx bxs-circle text-[10px]"></i>
+                            <span>Approval Rules</span>
                         </a>
                     </li>
                     {{ end }}

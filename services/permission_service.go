@@ -30,6 +30,11 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "store_approver_create", Group: "store_approver", GuardName: "web"},
 		{Name: "store_approver_edit", Group: "store_approver", GuardName: "web"},
 		{Name: "store_approver_delete", Group: "store_approver", GuardName: "web"},
+		{Name: "approval_rule_management_access", Group: "approval_rule", GuardName: "web"},
+		{Name: "approval_rule_view", Group: "approval_rule", GuardName: "web"},
+		{Name: "approval_rule_create", Group: "approval_rule", GuardName: "web"},
+		{Name: "approval_rule_edit", Group: "approval_rule", GuardName: "web"},
+		{Name: "approval_rule_delete", Group: "approval_rule", GuardName: "web"},
 	}
 
 	if err := s.Repo.EnsurePermissions(defs); err != nil {
