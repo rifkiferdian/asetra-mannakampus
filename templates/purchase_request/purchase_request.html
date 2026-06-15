@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Asetra{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Procurement / Purchase Request</p>
+                                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Purchase Requests</h1>
+                            </div>
+                            {{ if index .Permissions "purchase_request_create" }}
+                            <a href="/purchase-requests/form" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">
+                                <i class="bx bx-plus text-base"></i>
+                                New PR
+                            </a>
+                            {{ end }}
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="overflow-x-auto p-4">
+                                <table class="w-full min-w-[1100px] text-sm">
+                                    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left font-semibold">No</th>
+                                            <th class="px-3 py-2 text-left font-semibold">PR Number</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Requester</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Store</th>
+                                            <th class="px-3 py-2 text-left font-semibold">GL Account</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Spend Type</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Urgency</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Needed Date</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Total</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Status</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Created At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        {{ range $i, $pr := .PurchaseRequests }}
+                                        <tr class="hover:bg-slate-50/70">
+                                            <td class="px-3 py-3 text-slate-500">{{ no $i 1 }}</td>
+                                            <td class="px-3 py-3 font-semibold text-slate-700">{{ $pr.PRNumber }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.RequesterName }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.StoreCode }} - {{ $pr.StoreName }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.GLAccountName }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.SpendType }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.UrgentLevel }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ if $pr.NeededDate }}{{ $pr.NeededDate }}{{ else }}-{{ end }}</td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.TotalAmountDisplay }}</td>
+                                            <td class="px-3 py-3">
+                                                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ if eq $pr.Status "DRAFT" }}bg-slate-100 text-slate-600{{ else if eq $pr.Status "IN_APPROVAL" }}bg-amber-50 text-amber-700{{ else }}bg-emerald-50 text-emerald-700{{ end }}">{{ $pr.StatusLabel }}</span>
+                                            </td>
+                                            <td class="px-3 py-3 text-slate-600">{{ $pr.CreatedAtDisplay }}</td>
+                                        </tr>
+                                        {{ else }}
+                                        <tr>
+                                            <td colspan="11" class="px-3 py-6 text-center text-sm text-slate-500">Belum ada purchase request</td>
+                                        </tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+                function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); }
+                function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
+                toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
+                if (overlay) overlay.addEventListener('click', closeSidebar);
+            });
+        </script>
+    </body>
+</html>

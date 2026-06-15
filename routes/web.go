@@ -20,6 +20,9 @@ func RegisterWebRoutes(r *gin.Engine) {
 	auth.Use(middleware.AuthRequired(), middleware.PermissionContext())
 	{
 		auth.GET("/dashboard", controllers.DashboardIndex)
+		auth.GET("/purchase-requests", middleware.RequirePermission("purchase_request_management_access"), controllers.PurchaseRequestIndex)
+		auth.GET("/purchase-requests/form", middleware.RequirePermission("purchase_request_create"), controllers.PurchaseRequestFormIndex)
+		auth.POST("/purchase-requests", middleware.RequirePermission("purchase_request_create"), controllers.PurchaseRequestStore)
 
 		auth.GET("/stores", controllers.StoreIndex)
 		auth.POST("/stores", controllers.StoreStore)

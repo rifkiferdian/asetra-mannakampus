@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Asetra{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .pr-headline {
+                font-size: 1.5rem;
+            }
+            .pr-top-grid {
+                display: grid;
+                gap: 1.25rem;
+            }
+            .pr-panel {
+                border: 1px solid #e2e8f0;
+                border-radius: 1rem;
+                background: #fff;
+                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            }
+            .pr-field-span-2 {
+                grid-column: auto;
+            }
+            .pr-subtitle {
+                color: #64748b;
+                font-size: 0.82rem;
+            }
+            .pr-label {
+                display: block;
+                margin-bottom: 0.4rem;
+                font-size: 0.72rem;
+                font-weight: 600;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                color: #64748b;
+            }
+            .pr-control,
+            .pr-textarea,
+            .pr-file {
+                width: 100%;
+                border: 1px solid #e2e8f0;
+                border-radius: 0.75rem;
+                background: #f8fafc;
+                color: #0f172a;
+                transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            }
+            .pr-control,
+            .pr-file {
+                min-height: 2.45rem;
+                padding: 0.55rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            .pr-textarea {
+                min-height: 5.25rem;
+                padding: 0.65rem 0.75rem;
+                font-size: 0.875rem;
+                resize: vertical;
+            }
+            .pr-control:focus,
+            .pr-textarea:focus,
+            .pr-file:focus {
+                outline: none;
+                background: #fff;
+                border-color: #0f3b8f;
+                box-shadow: 0 0 0 4px rgba(15, 59, 143, 0.12);
+            }
+            .pr-section-title {
+                font-size: 1rem;
+                font-weight: 700;
+                color: #0f172a;
+            }
+            .pr-section-note {
+                margin-top: 0.2rem;
+                font-size: 0.84rem;
+                color: #64748b;
+            }
+            .pr-spend-button {
+                display: flex;
+                min-height: 2.15rem;
+                align-items: center;
+                justify-content: center;
+                border: 0;
+                border-radius: 0.45rem;
+                color: #0f172a;
+                font-size: 0.78rem;
+                font-weight: 700;
+            }
+            .pr-spend-button.is-active {
+                background: #0f3b8f;
+                color: #fff;
+                box-shadow: 0 2px 6px rgba(15, 59, 143, 0.22);
+            }
+            .pr-spend-label {
+                display: block;
+                margin-bottom: 0.7rem;
+                font-size: 0.95rem;
+                font-weight: 500;
+                color: #0f172a;
+            }
+            .pr-spend-toggle {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.35rem;
+                border-radius: 0.75rem;
+                background: #f1f5f9;
+                padding: 0.3rem;
+            }
+            .pr-side {
+                border-top: 1px solid #e2e8f0;
+                padding-top: 1rem;
+            }
+            .urgency-option.is-active {
+                border-color: #0f3b8f;
+                background: #eff6ff;
+                box-shadow: inset 0 0 0 1px rgba(15, 59, 143, 0.08);
+            }
+            .urgency-option input {
+                accent-color: #0f3b8f;
+                height: 1rem;
+                width: 1rem;
+            }
+            .pr-table {
+                width: 100%;
+                min-width: 920px;
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+            .pr-table thead th {
+                border-bottom: 1px solid #cbd5e1;
+                background: #f8fafc;
+                color: #64748b;
+                font-size: 0.72rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+            }
+            .pr-table tbody tr:nth-child(even) {
+                background: #f8f9fd;
+            }
+            .pr-table tbody tr:nth-child(odd) {
+                background: #fff;
+            }
+            .pr-table td,
+            .pr-table th {
+                padding: 0.9rem 1.25rem;
+                text-align: left;
+            }
+            .pr-table td {
+                vertical-align: middle;
+            }
+            .pr-items-panel {
+                overflow: hidden;
+                border: 1px solid #cbd5e1;
+                border-radius: 0.85rem;
+                background: #fff;
+                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            }
+            .pr-items-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 1px solid #cbd5e1;
+                padding: 1.3rem 1.25rem;
+                color: #0f3b8f;
+            }
+            .pr-item-add {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.55rem;
+                color: #0f3b8f;
+                font-size: 0.95rem;
+                font-weight: 500;
+            }
+            .pr-item-add i {
+                font-size: 1.35rem;
+            }
+            .pr-cell-input {
+                width: 100%;
+                border: 0;
+                border-radius: 0.55rem;
+                background: rgba(241, 245, 249, 0.8);
+                padding: 0.42rem 0.55rem;
+                font-size: 0.92rem;
+                color: #0f172a;
+            }
+            .pr-cell-input:focus {
+                outline: none;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(15, 59, 143, 0.1);
+            }
+            .pr-cell-readonly {
+                font-weight: 700;
+                text-align: right;
+            }
+            .pr-item-name {
+                min-width: 14rem;
+            }
+            .pr-item-qty {
+                width: 4.5rem;
+            }
+            .pr-item-uom {
+                width: 6.5rem;
+            }
+            .pr-uom-select {
+                cursor: pointer;
+                appearance: auto;
+            }
+            .pr-price-wrap {
+                display: flex;
+                align-items: center;
+                gap: 0.35rem;
+                border-radius: 0.55rem;
+                background: rgba(241, 245, 249, 0.8);
+                padding: 0 0.45rem 0 0.55rem;
+                white-space: nowrap;
+            }
+            .pr-price-wrap .pr-cell-input {
+                background: transparent;
+                padding-left: 0.25rem;
+            }
+            .pr-price-prefix {
+                color: #64748b;
+                font-size: 0.92rem;
+            }
+            .pr-total-text {
+                white-space: nowrap;
+                font-weight: 700;
+                color: #020617;
+                text-align: right;
+            }
+            .pr-total-box {
+                width: 100%;
+                border: 0;
+                background: transparent;
+                padding: 0;
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: #fff;
+                text-align: center;
+            }
+            .pr-grand-row td {
+                background: #0f3b8f;
+                color: #fff;
+                font-weight: 700;
+            }
+            .pr-grand-label {
+                text-align: right;
+                white-space: nowrap;
+            }
+            .pr-delete-button {
+                color: #b8bfd3;
+                transition: color 0.15s ease;
+            }
+            .pr-delete-button:hover {
+                color: #dc2626;
+            }
+            .pr-submit-button {
+                background: #0f3b8f;
+            }
+            .pr-support-grid {
+                display: grid;
+                gap: 1.25rem;
+            }
+            .pr-attachment-drop {
+                display: flex;
+                min-height: 14.8rem;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border: 2px dashed #cbd5e1;
+                border-radius: 0.85rem;
+                background: #fbfdff;
+                padding: 1.25rem;
+                text-align: center;
+            }
+            .pr-attachment-icon {
+                color: #7c8190;
+                font-size: 2.7rem;
+                line-height: 1;
+            }
+            .pr-file-button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #cbd5e1;
+                border-radius: 0.55rem;
+                background: #f8fafc;
+                padding: 0.65rem 1.5rem;
+                color: #0f3b8f;
+                font-weight: 500;
+                cursor: pointer;
+            }
+            .pr-file-input {
+                height: 1px;
+                width: 1px;
+                opacity: 0;
+                overflow: hidden;
+                position: absolute;
+            }
+            .pr-budget-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                color: #64748b;
+                font-size: 0.9rem;
+            }
+            .pr-budget-value {
+                color: #020617;
+                font-weight: 700;
+            }
+            .pr-budget-progress {
+                height: 0.45rem;
+                overflow: hidden;
+                border-radius: 999px;
+                background: #dbe7fb;
+            }
+            .pr-budget-progress span {
+                display: block;
+                height: 100%;
+                width: 55%;
+                border-radius: inherit;
+                background: #08765a;
+            }
+            .pr-budget-divider {
+                border-top: 1px solid #cbd5e1;
+            }
+            .pr-budget-ok {
+                display: flex;
+                gap: 0.9rem;
+                border-radius: 0.55rem;
+                background: #e6f3ee;
+                padding: 1rem;
+                color: #007d5c;
+            }
+            .pr-budget-ok i {
+                font-size: 1.35rem;
+                line-height: 1;
+            }
+            @media (min-width: 1024px) {
+                .pr-support-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+            @media (min-width: 1280px) {
+                .pr-top-grid {
+                    grid-template-columns: minmax(0, 1fr) 260px;
+                }
+                .pr-side {
+                    border-left: 1px solid #e2e8f0;
+                    border-top: 0;
+                    padding-left: 1.25rem;
+                    padding-top: 0;
+                }
+            }
+            @media (min-width: 768px) {
+                .pr-field-span-2 {
+                    grid-column: span 2 / span 2;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <form method="post" action="/purchase-requests" enctype="multipart/form-data" class="space-y-6" id="purchase-request-form">
+                            <input type="hidden" name="action" id="pr-action" value="draft">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Procurement / Purchase Request</p>
+                                    <h1 class="pr-headline mt-2 font-semibold text-slate-900">Create New Purchase Request</h1>
+                                    <p class="pr-subtitle mt-1">Draft PR No: <span class="font-semibold text-slate-800">PR-TEMP</span></p>
+                                </div>
+                                <div class="flex flex-col gap-3 sm:flex-row">
+                                    <button type="submit" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" id="save-draft-button">Save Draft</button>
+                                    <button type="submit" class="pr-submit-button rounded-xl px-4 py-2 text-sm font-semibold text-white transition" id="submit-pr-button">Submit PR</button>
+                                </div>
+                            </div>
+
+                            {{ if .Error }}
+                            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ .Error }}</div>
+                            {{ end }}
+
+                            <div class="pr-panel p-4">
+                                <div class="pr-top-grid">
+                                    <div>
+                                        <div class="grid gap-4 md:grid-cols-2">
+                                            <div>
+                                                <label class="pr-label">Store Location</label>
+                                                <select name="store_id" class="pr-control" required>
+                                                    <option value="">Pilih store</option>
+                                                    {{ range .Stores }}
+                                                    <option value="{{ .StoreID }}">{{ .StoreCode }} - {{ .StoreName }}</option>
+                                                    {{ end }}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="pr-label">Division</label>
+                                                <select name="division_id" class="pr-control">
+                                                    <option value="">Pilih division</option>
+                                                    {{ range .Divisions }}
+                                                    <option value="{{ .ID }}">{{ .DivisionName }}</option>
+                                                    {{ end }}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="pr-label">GL Account</label>
+                                                <select name="gl_account_id" id="gl-account-select" class="pr-control" required>
+                                                    <option value="">e.g. 52100 - Office Supplies</option>
+                                                    {{ range .GLAccounts }}
+                                                    <option value="{{ .ID }}" data-spend-type="{{ .SpendType }}">{{ .GLCode }} - {{ .GLName }}</option>
+                                                    {{ end }}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="pr-label">Needed Date</label>
+                                                <input type="date" name="needed_date" class="pr-control">
+                                            </div>
+                                            <div class="pr-field-span-2">
+                                                <label class="pr-label">Justification / Remarks</label>
+                                                <textarea name="justification" class="pr-textarea" placeholder="Provide a brief explanation for this purchase request..."></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pr-side">
+                                        <div>
+                                            <label class="pr-spend-label">Spend Type</label>
+                                            <input type="hidden" name="spend_type" id="spend-type-select" value="OPEX">
+                                            <div class="pr-spend-toggle">
+                                                <button type="button" class="pr-spend-button spend-type-button transition" data-value="OPEX">OPEX</button>
+                                                <button type="button" class="pr-spend-button spend-type-button transition" data-value="CAPEX">CAPEX</button>
+                                            </div>
+                                        </div>
+
+                                        <div style="margin-top: 2.25rem;">
+                                            <label class="pr-label">Urgency Level</label>
+                                            <div class="space-y-2">
+                                                <label class="urgency-option flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 transition hover:border-slate-300" data-value="NORMAL">
+                                                    <span class="flex items-center gap-2">
+                                                        <input type="radio" name="urgent_level" value="NORMAL" checked>
+                                                        <span class="text-sm text-slate-900">Normal</span>
+                                                    </span>
+                                                    <span class="h-3 w-3 rounded-full bg-slate-300"></span>
+                                                </label>
+                                                <label class="urgency-option flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 transition hover:border-slate-300" data-value="URGENT">
+                                                    <span class="flex items-center gap-2">
+                                                        <input type="radio" name="urgent_level" value="URGENT">
+                                                        <span class="text-sm text-slate-900">Urgent</span>
+                                                    </span>
+                                                    <span class="h-3 w-3 rounded-full bg-emerald-600"></span>
+                                                </label>
+                                                <label class="urgency-option flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 transition hover:border-slate-300" data-value="EMERGENCY">
+                                                    <span class="flex items-center gap-2">
+                                                        <input type="radio" name="urgent_level" value="EMERGENCY">
+                                                        <span class="text-sm text-slate-900">Emergency</span>
+                                                    </span>
+                                                    <span class="h-3 w-3 rounded-full bg-red-600"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pr-items-panel">
+                                <div class="pr-items-header">
+                                    <h2 class="text-base font-medium">Item List</h2>
+                                    <button type="button" id="add-item-button" class="pr-item-add">
+                                        <i class="bx bx-plus"></i>
+                                        <span>Add Row</span>
+                                    </button>
+                                </div>
+
+                                <div class="overflow-x-auto">
+                                    <table class="pr-table text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name / Description</th>
+                                                <th>Qty</th>
+                                                <th>UOM</th>
+                                                <th>Est. Unit Price</th>
+                                                <th>Est. Total</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pr-item-rows">
+                                            <tr class="pr-item-row">
+                                                <td><input type="text" name="item_name[]" class="pr-cell-input pr-item-name" placeholder="Item name / description" required><input type="hidden" name="notes[]" value=""></td>
+                                                <td><input type="number" step="0.01" min="0.01" name="qty[]" class="pr-cell-input pr-item-qty item-qty" required></td>
+                                                <td>
+                                                    <select name="uom[]" class="pr-cell-input pr-item-uom pr-uom-select" required>
+                                                        <option value="Unit">Unit</option>
+                                                        <option value="pcs">pcs</option>
+                                                        <option value="box">box</option>
+                                                        <option value="pack">pack</option>
+                                                        <option value="meter">meter</option>
+                                                        <option value="kg">kg</option>
+                                                        <option value="liter">liter</option>
+                                                    </select>
+                                                </td>
+                                                <td><div class="pr-price-wrap"><span class="pr-price-prefix">Rp</span><input type="number" step="0.01" min="0" name="est_unit_price[]" class="pr-cell-input item-price" required></div></td>
+                                                <td><input type="text" class="pr-cell-input pr-cell-readonly item-total" readonly></td>
+                                                <td class="text-right"><button type="button" class="pr-delete-button remove-item-button" aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="pr-grand-row">
+                                                <td colspan="4" class="pr-grand-label">GRAND TOTAL (ESTIMATED)</td>
+                                                <td><input type="text" id="grand-total-display" class="pr-total-box" readonly></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="pr-support-grid">
+                                <div class="pr-panel p-6">
+                                    <h2 class="text-base font-medium text-[#0f3b8f]">Attachments</h2>
+                                    <div class="pr-attachment-drop mt-4">
+                                        <i class="bx bx-cloud-upload pr-attachment-icon"></i>
+                                        <p class="mt-5 text-base font-medium text-[#0f3b8f]">Drag and drop files here</p>
+                                        <p class="mt-1 text-xs text-slate-500">Support PDF, PNG, JPG (Max 5MB per file)</p>
+                                        <label class="pr-file-button mt-4">
+                                            Browse Files
+                                            <input type="file" name="attachments" multiple class="pr-file-input">
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="pr-panel p-6">
+                                    <h2 class="text-base font-medium text-[#0f3b8f]">Real-time Budget Check</h2>
+                                    <div class="mt-5 space-y-4">
+                                        <div class="pr-budget-row">
+                                            <span>Monthly Budget Amount</span>
+                                            <span class="pr-budget-value">Rp 150.000.000</span>
+                                        </div>
+                                        <div class="pr-budget-row">
+                                            <span>Currently Used/Committed</span>
+                                            <span class="pr-budget-value">Rp 82.300.000</span>
+                                        </div>
+                                        <div class="pr-budget-progress"><span></span></div>
+                                        <div class="pr-budget-divider"></div>
+                                        <div class="pr-budget-row">
+                                            <span>Remaining Available</span>
+                                            <span class="font-semibold text-emerald-700">Rp 67.700.000</span>
+                                        </div>
+                                        <div class="pr-budget-row">
+                                            <span>Estimated PR Amount</span>
+                                            <span class="font-semibold text-[#0f3b8f]" id="budget-pr-amount-display">Rp 0</span>
+                                        </div>
+                                        <div class="pr-budget-ok">
+                                            <i class="bx bx-check-circle"></i>
+                                            <div>
+                                                <p class="font-medium">Status: Budget OK</p>
+                                                <p class="text-xs text-slate-700">This request is within the allocated budget threshold.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                                <a href="/purchase-requests" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+                var itemRows = document.getElementById('pr-item-rows');
+                var addItemButton = document.getElementById('add-item-button');
+                var grandTotalDisplay = document.getElementById('grand-total-display');
+                var budgetPrAmountDisplay = document.getElementById('budget-pr-amount-display');
+                var prActionInput = document.getElementById('pr-action');
+                var saveDraftButton = document.getElementById('save-draft-button');
+                var submitPrButton = document.getElementById('submit-pr-button');
+                var glAccountSelect = document.getElementById('gl-account-select');
+                var spendTypeSelect = document.getElementById('spend-type-select');
+                var spendTypeButtons = document.querySelectorAll('.spend-type-button');
+                var urgencyOptions = document.querySelectorAll('.urgency-option');
+                var rupiahFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+
+                function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); }
+                function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
+                toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
+                if (overlay) overlay.addEventListener('click', closeSidebar);
+
+                function updateRowTotal(row) {
+                    var qtyInput = row.querySelector('.item-qty');
+                    var priceInput = row.querySelector('.item-price');
+                    var totalInput = row.querySelector('.item-total');
+                    var qty = parseFloat(qtyInput.value || '0');
+                    var price = parseFloat(priceInput.value || '0');
+                    var total = qty * price;
+                    totalInput.value = total > 0 ? 'Rp ' + rupiahFormatter.format(total) : '';
+                    return total;
+                }
+
+                function updateGrandTotal() {
+                    var grandTotal = 0;
+                    itemRows.querySelectorAll('.pr-item-row').forEach(function (row) {
+                        grandTotal += updateRowTotal(row);
+                    });
+                    var formattedTotal = 'Rp ' + rupiahFormatter.format(grandTotal);
+                    grandTotalDisplay.value = formattedTotal;
+                    if (budgetPrAmountDisplay) {
+                        budgetPrAmountDisplay.textContent = formattedTotal;
+                    }
+                }
+
+                function bindRowEvents() {
+                    itemRows.querySelectorAll('.pr-item-row').forEach(function (row) {
+                        var qtyInput = row.querySelector('.item-qty');
+                        var priceInput = row.querySelector('.item-price');
+                        var removeButton = row.querySelector('.remove-item-button');
+                        qtyInput.oninput = updateGrandTotal;
+                        priceInput.oninput = updateGrandTotal;
+                        removeButton.onclick = function () {
+                            if (itemRows.querySelectorAll('.pr-item-row').length <= 1) return;
+                            row.remove();
+                            updateGrandTotal();
+                        };
+                    });
+                }
+
+                function updateSpendTypeButtons(value) {
+                    spendTypeButtons.forEach(function (button) {
+                        var isActive = button.getAttribute('data-value') === value;
+                        button.classList.toggle('is-active', isActive);
+                    });
+                }
+
+                function updateUrgencyOptions() {
+                    urgencyOptions.forEach(function (option) {
+                        var input = option.querySelector('input[type="radio"]');
+                        var indicator = option.querySelector('.urgency-indicator');
+                        option.classList.toggle('is-active', !!(input && input.checked));
+                        if (indicator) {
+                            indicator.classList.toggle('hidden', !input.checked);
+                        }
+                    });
+                }
+
+                addItemButton.addEventListener('click', function () {
+                    var row = document.createElement('tr');
+                    row.className = 'pr-item-row';
+                    row.innerHTML = '' +
+                        '<td><input type="text" name="item_name[]" class="pr-cell-input pr-item-name" placeholder="Item name / description" required><input type="hidden" name="notes[]" value=""></td>' +
+                        '<td><input type="number" step="0.01" min="0.01" name="qty[]" class="pr-cell-input pr-item-qty item-qty" required></td>' +
+                        '<td><select name="uom[]" class="pr-cell-input pr-item-uom pr-uom-select" required><option value="Unit">Unit</option><option value="pcs">pcs</option><option value="box">box</option><option value="pack">pack</option><option value="meter">meter</option><option value="kg">kg</option><option value="liter">liter</option></select></td>' +
+                        '<td><div class="pr-price-wrap"><span class="pr-price-prefix">Rp</span><input type="number" step="0.01" min="0" name="est_unit_price[]" class="pr-cell-input item-price" required></div></td>' +
+                        '<td><input type="text" class="pr-cell-input pr-cell-readonly item-total" readonly></td>' +
+                        '<td class="text-right"><button type="button" class="pr-delete-button remove-item-button" aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>';
+                    itemRows.appendChild(row);
+                    bindRowEvents();
+                });
+
+                if (glAccountSelect && spendTypeSelect) {
+                    glAccountSelect.addEventListener('change', function () {
+                        var selected = glAccountSelect.options[glAccountSelect.selectedIndex];
+                        if (!selected) return;
+                        var spendType = selected.getAttribute('data-spend-type') || '';
+                        if (spendType) {
+                            spendTypeSelect.value = spendType;
+                            updateSpendTypeButtons(spendType);
+                        }
+                    });
+                }
+
+                spendTypeButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var value = button.getAttribute('data-value') || '';
+                        spendTypeSelect.value = value;
+                        updateSpendTypeButtons(value);
+                    });
+                });
+
+                urgencyOptions.forEach(function (option) {
+                    option.addEventListener('click', function () {
+                        var input = option.querySelector('input[type="radio"]');
+                        if (!input) return;
+                        input.checked = true;
+                        updateUrgencyOptions();
+                    });
+                });
+
+                saveDraftButton.addEventListener('click', function () { prActionInput.value = 'draft'; });
+                submitPrButton.addEventListener('click', function () { prActionInput.value = 'submit'; });
+
+                bindRowEvents();
+                updateGrandTotal();
+                updateSpendTypeButtons(spendTypeSelect.value || 'OPEX');
+                updateUrgencyOptions();
+            });
+        </script>
+    </body>
+</html>

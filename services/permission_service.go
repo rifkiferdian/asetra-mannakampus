@@ -35,6 +35,9 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "approval_rule_create", Group: "approval_rule", GuardName: "web"},
 		{Name: "approval_rule_edit", Group: "approval_rule", GuardName: "web"},
 		{Name: "approval_rule_delete", Group: "approval_rule", GuardName: "web"},
+		{Name: "purchase_request_management_access", Group: "purchase_request", GuardName: "web"},
+		{Name: "purchase_request_view", Group: "purchase_request", GuardName: "web"},
+		{Name: "purchase_request_create", Group: "purchase_request", GuardName: "web"},
 	}
 
 	if err := s.Repo.EnsurePermissions(defs); err != nil {
