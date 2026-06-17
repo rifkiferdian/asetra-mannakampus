@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Asetra{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Settings / Budgets</p>
+                            <h1 class="mt-2 text-2xl font-semibold text-slate-900">Budget Management</h1>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <h2 class="text-base font-semibold text-slate-900">Daftar Budget</h2>
+                                {{ if index .Permissions "budget_create" }}
+                                <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]" data-modal-open="budgetModal">
+                                    <i class="bx bx-plus text-base"></i>
+                                    New Budget
+                                </button>
+                                {{ end }}
+                            </div>
+                            <div class="p-4">
+                                {{ if .Error }}
+                                <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ .Error }}</div>
+                                {{ end }}
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[1180px] text-sm">
+                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left">No</th>
+                                                <th class="px-3 py-2 text-left">Period</th>
+                                                <th class="px-3 py-2 text-left">Store</th>
+                                                <th class="px-3 py-2 text-left">Division</th>
+                                                <th class="px-3 py-2 text-left">GL Account</th>
+                                                <th class="px-3 py-2 text-right">Budget</th>
+                                                <th class="px-3 py-2 text-right">Used</th>
+                                                <th class="px-3 py-2 text-right">Remaining</th>
+                                                <th class="px-3 py-2 text-left">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            {{ range $i, $budget := .Budgets }}
+                                            <tr class="hover:bg-slate-50/70">
+                                                <td class="px-3 py-3">{{ no $i 1 }}</td>
+                                                <td class="px-3 py-3">
+                                                    <div class="font-semibold text-slate-700">{{ $budget.PeriodKey }}</div>
+                                                    <div class="text-xs text-slate-400">{{ $budget.PeriodType }} / {{ $budget.FiscalYear }}</div>
+                                                </td>
+                                                <td class="px-3 py-3 text-slate-600">{{ if $budget.StoreName }}{{ $budget.StoreName }}{{ else }}All Stores{{ end }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ if $budget.DivisionName }}{{ $budget.DivisionName }}{{ else }}All Divisions{{ end }}</td>
+                                                <td class="px-3 py-3 text-slate-600">{{ $budget.GLAccountName }}</td>
+                                                <td class="px-3 py-3 text-right font-semibold text-slate-700">{{ $budget.AmountDisplay }}</td>
+                                                <td class="px-3 py-3 text-right text-slate-600">{{ $budget.UsedAmountDisplay }}</td>
+                                                <td class="px-3 py-3 text-right font-semibold {{ if lt $budget.RemainingAmount 0.0 }}text-rose-600{{ else }}text-emerald-600{{ end }}">{{ $budget.RemainingDisplay }}</td>
+                                                <td class="px-3 py-3">
+                                                    <div class="flex flex-wrap gap-2">
+                                                        {{ if index $.Permissions "budget_edit" }}
+                                                        <button type="button" class="btn-edit-budget inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700"
+                                                            data-id="{{ $budget.ID }}"
+                                                            data-fiscal-year="{{ $budget.FiscalYear }}"
+                                                            data-period-type="{{ $budget.PeriodType }}"
+                                                            data-period-key="{{ $budget.PeriodKey }}"
+                                                            data-store-id="{{ $budget.StoreID }}"
+                                                            data-division-id="{{ $budget.DivisionID }}"
+                                                            data-gl-account-id="{{ $budget.GLAccountID }}"
+                                                            data-amount="{{ printf "%.2f" $budget.Amount }}">
+                                                            <i class="bx bx-pen text-sm"></i>Edit
+                                                        </button>
+                                                        {{ end }}
+                                                        {{ if index $.Permissions "budget_delete" }}
+                                                        <button type="button" class="btn-delete-budget inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700" data-url="/budgets/delete/{{ $budget.ID }}" data-name="{{ $budget.PeriodKey }}">
+                                                            <i class="bx bx-trash text-sm"></i>Del
+                                                        </button>
+                                                        {{ end }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr><td colspan="9" class="px-3 py-6 text-center text-sm text-slate-500">Belum ada data budget</td></tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <div data-modal class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6" id="budgetModal">
+            <div class="absolute inset-0 bg-slate-900/50" data-modal-close></div>
+            <div class="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-xl sm:p-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4"><h2 class="text-lg font-semibold text-slate-900">New Budget</h2><button type="button" class="text-slate-400 hover:text-slate-600" data-modal-close><i class="bx bx-x text-2xl"></i></button></div>
+                <form action="/budgets" method="post" class="mt-6 space-y-6">
+                    {{ template "budget_form_fields" . }}
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4"><button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600" data-modal-close>Batal</button><button type="submit" class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Simpan</button></div>
+                </form>
+            </div>
+        </div>
+
+        <div data-modal class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6" id="budgetEditModal">
+            <div class="absolute inset-0 bg-slate-900/50" data-modal-close></div>
+            <div class="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-xl sm:p-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4"><h2 class="text-lg font-semibold text-slate-900">Edit Budget</h2><button type="button" class="text-slate-400 hover:text-slate-600" data-modal-close><i class="bx bx-x text-2xl"></i></button></div>
+                <form action="/budgets/update" method="post" class="mt-6 space-y-6">
+                    <input type="hidden" name="id" id="edit_budget_id">
+                    {{ template "budget_form_fields" . }}
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4"><button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600" data-modal-close>Batal</button><button type="submit" class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Update</button></div>
+                </form>
+            </div>
+        </div>
+
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+                function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); if (!document.querySelector('[data-modal].flex')) document.body.classList.remove('overflow-hidden'); }
+                function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+                function openModal(id) { var modal = document.getElementById(id); if (!modal) return; modal.classList.remove('hidden'); modal.classList.add('flex'); document.body.classList.add('overflow-hidden'); }
+                function closeModal(modal) { if (!modal) return; modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
+                toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
+                if (overlay) overlay.addEventListener('click', closeSidebar);
+                document.querySelectorAll('[data-modal-open]').forEach(function (trigger) { trigger.addEventListener('click', function () { openModal(trigger.getAttribute('data-modal-open')); }); });
+                document.querySelectorAll('[data-modal-close]').forEach(function (trigger) { trigger.addEventListener('click', function () { closeModal(trigger.closest('[data-modal]')); }); });
+                document.querySelectorAll('.btn-edit-budget').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var modal = document.getElementById('budgetEditModal');
+                        modal.querySelector('#edit_budget_id').value = btn.getAttribute('data-id') || '';
+                        modal.querySelector('[name="fiscal_year"]').value = btn.getAttribute('data-fiscal-year') || '';
+                        modal.querySelector('[name="period_type"]').value = btn.getAttribute('data-period-type') || 'MONTHLY';
+                        modal.querySelector('[name="period_key"]').value = btn.getAttribute('data-period-key') || '';
+                        modal.querySelector('[name="store_id"]').value = btn.getAttribute('data-store-id') || '';
+                        modal.querySelector('[name="division_id"]').value = btn.getAttribute('data-division-id') || '';
+                        modal.querySelector('[name="gl_account_id"]').value = btn.getAttribute('data-gl-account-id') || '';
+                        modal.querySelector('[name="amount"]').value = btn.getAttribute('data-amount') || '0';
+                        openModal('budgetEditModal');
+                    });
+                });
+                document.querySelectorAll('.btn-delete-budget').forEach(function (btn) {
+                    btn.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        Swal.fire({ title: 'Hapus budget ini?', text: 'Budget ' + (btn.getAttribute('data-name') || 'ini') + ' akan dihapus.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal' }).then(function (result) {
+                            if (result.isConfirmed) window.location.href = btn.getAttribute('data-url');
+                        });
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
+
+{{ define "budget_form_fields" }}
+<div class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Fiscal Year</label><input type="number" name="fiscal_year" value="2026" min="2000" max="2100" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" required></div>
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Period Type</label><select name="period_type" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="MONTHLY">MONTHLY</option><option value="QUARTERLY">QUARTERLY</option><option value="YEARLY">YEARLY</option></select></div>
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Period Key</label><input type="text" name="period_key" placeholder="2026-03 / 2026-Q1 / 2026" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" required></div>
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Amount</label><input type="number" name="amount" step="0.01" min="0" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" required></div>
+    </div>
+    <div class="space-y-4">
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Store</label><select name="store_id" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">All Stores</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreCode }} - {{ .StoreName }}</option>{{ end }}</select></div>
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Division</label><select name="division_id" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">All Divisions</option>{{ range .Divisions }}<option value="{{ .ID }}">{{ .DivisionCode }} - {{ .DivisionName }}</option>{{ end }}</select></div>
+        <div><label class="text-xs font-semibold uppercase tracking-wider text-slate-500">GL Account</label><select name="gl_account_id" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" required><option value="">Pilih GL account</option>{{ range .GLAccounts }}<option value="{{ .ID }}">{{ .GLCode }} - {{ .GLName }} ({{ .SpendType }})</option>{{ end }}</select></div>
+    </div>
+</div>
+{{ end }}

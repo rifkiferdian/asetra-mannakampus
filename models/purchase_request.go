@@ -64,14 +64,14 @@ type PurchaseRequestItemInput struct {
 }
 
 type Attachment struct {
-	ID              int64
-	RefType         string
-	RefID           int64
-	FilePath        string
-	FileName        string
-	MimeType        string
-	FileSize        int64
-	UploadedBy      int
+	ID               int64
+	RefType          string
+	RefID            int64
+	FilePath         string
+	FileName         string
+	MimeType         string
+	FileSize         int64
+	UploadedBy       int
 	CreatedAtDisplay string
 }
 
@@ -89,6 +89,17 @@ type AuditContext struct {
 }
 
 type Division struct {
+	ID           int
+	DivisionCode string
+	DivisionName string
+}
+
+type DivisionCreateInput struct {
+	DivisionCode string
+	DivisionName string
+}
+
+type DivisionUpdateInput struct {
 	ID           int
 	DivisionCode string
 	DivisionName string

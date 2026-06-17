@@ -25,6 +25,16 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "gl_account_create", Group: "gl_account", GuardName: "web"},
 		{Name: "gl_account_edit", Group: "gl_account", GuardName: "web"},
 		{Name: "gl_account_delete", Group: "gl_account", GuardName: "web"},
+		{Name: "division_management_access", Group: "division", GuardName: "web"},
+		{Name: "division_view", Group: "division", GuardName: "web"},
+		{Name: "division_create", Group: "division", GuardName: "web"},
+		{Name: "division_edit", Group: "division", GuardName: "web"},
+		{Name: "division_delete", Group: "division", GuardName: "web"},
+		{Name: "budget_management_access", Group: "budget", GuardName: "web"},
+		{Name: "budget_view", Group: "budget", GuardName: "web"},
+		{Name: "budget_create", Group: "budget", GuardName: "web"},
+		{Name: "budget_edit", Group: "budget", GuardName: "web"},
+		{Name: "budget_delete", Group: "budget", GuardName: "web"},
 		{Name: "store_approver_management_access", Group: "store_approver", GuardName: "web"},
 		{Name: "store_approver_view", Group: "store_approver", GuardName: "web"},
 		{Name: "store_approver_create", Group: "store_approver", GuardName: "web"},
@@ -51,4 +61,3 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 
 	return s.Repo.GrantPermissionsToRoles(permNames, []string{"super-admin", "admin"}, "web")
 }
-
