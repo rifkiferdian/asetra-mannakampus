@@ -26,10 +26,26 @@ func PurchaseRequestIndex(c *gin.Context) {
 		return
 	}
 
+	storeRepo := &repositories.StoreRepository{DB: config.DB}
+	stores, err := storeRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	divRepo := &repositories.DivisionRepository{DB: config.DB}
+	divisions, err := divRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	Render(c, "purchase_request.html", gin.H{
 		"Title":            "Purchase Requests",
 		"Page":             "purchase_request",
 		"PurchaseRequests": items,
+		"Stores":           stores,
+		"Divisions":        divisions,
 	})
 }
 

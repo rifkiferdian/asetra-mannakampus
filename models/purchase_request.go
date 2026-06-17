@@ -20,6 +20,9 @@ type PurchaseRequest struct {
 	TotalAmountDisplay string
 	Status             string
 	StatusLabel        string
+	CurrentStep        string
+	SLALabel           string
+	SLAState           string
 	CreatedAtDisplay   string
 }
 

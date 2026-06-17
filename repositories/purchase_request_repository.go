@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"gobase-app/models"
+	"math"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -45,12 +48,29 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 			COALESCE(pr.justification, ''),
 			pr.total_amount,
 			pr.status,
-			pr.created_at
+			pr.created_at,
+			COALESCE(cur_step.current_step, '')
 		FROM purchase_requests pr
 		LEFT JOIN users u ON u.id = pr.requester_user_id
 		LEFT JOIN stores s ON s.store_id = pr.store_id
 		LEFT JOIN divisions d ON d.id = pr.division_id
 		LEFT JOIN gl_accounts ga ON ga.id = pr.gl_account_id
+		LEFT JOIN (
+			SELECT
+				a.ref_id,
+				COALESCE(r.name, '') AS current_step
+			FROM approvals a
+			JOIN approval_tasks at ON at.approval_id = a.id AND at.status = 'WAITING'
+			LEFT JOIN roles r ON r.id = at.role_id
+			WHERE a.ref_type = 'PR' AND a.status = 'PENDING'
+			AND at.id = (
+				SELECT at2.id
+				FROM approval_tasks at2
+				WHERE at2.approval_id = a.id AND at2.status = 'WAITING'
+				ORDER BY at2.step_order ASC, at2.id ASC
+				LIMIT 1
+			)
+		) cur_step ON cur_step.ref_id = pr.id
 		ORDER BY pr.id DESC
 	`)
 	if err != nil {
@@ -85,6 +105,7 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 			&item.TotalAmount,
 			&item.Status,
 			&createdAt,
+			&item.CurrentStep,
 		); err != nil {
 			return nil, err
 		}
@@ -98,7 +119,11 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 			item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04:05")
 		}
 		item.TotalAmountDisplay = formatAmountID(item.TotalAmount)
-		item.StatusLabel = item.Status
+		item.StatusLabel = formatStatusLabel(item.Status)
+		if item.CurrentStep == "" {
+			item.CurrentStep = defaultCurrentStep(item.Status)
+		}
+		item.SLALabel, item.SLAState = formatSLALabel(item.Status, item.NeededDate)
 		items = append(items, item)
 	}
 
@@ -444,5 +469,95 @@ func nullableDate(value string) interface{} {
 }
 
 func formatAmountID(value float64) string {
-	return fmt.Sprintf("%.0f", value)
+	rounded := int64(math.Round(value))
+	raw := strconv.FormatInt(rounded, 10)
+	var parts []string
+	for len(raw) > 3 {
+		parts = append([]string{raw[len(raw)-3:]}, parts...)
+		raw = raw[:len(raw)-3]
+	}
+	if raw != "" {
+		parts = append([]string{raw}, parts...)
+	}
+	return "IDR " + strings.Join(parts, ",")
+}
+
+func formatStatusLabel(status string) string {
+	switch status {
+	case "DRAFT":
+		return "Draft"
+	case "SUBMITTED":
+		return "Submitted"
+	case "IN_APPROVAL":
+		return "In Approval"
+	case "REJECTED":
+		return "Rejected"
+	case "APPROVED":
+		return "Approved"
+	case "CONVERTED_TO_PO":
+		return "Converted"
+	case "CLOSED":
+		return "Closed"
+	default:
+		return status
+	}
+}
+
+func defaultCurrentStep(status string) string {
+	switch status {
+	case "DRAFT":
+		return "Drafting"
+	case "SUBMITTED":
+		return "Internal Check"
+	case "IN_APPROVAL":
+		return "Manager Approval"
+	case "APPROVED":
+		return "PO Creation"
+	case "CONVERTED_TO_PO":
+		return "PO Created"
+	case "REJECTED":
+		return "Manager Approval"
+	case "CLOSED":
+		return "Closed"
+	default:
+		return "-"
+	}
+}
+
+func formatSLALabel(status, neededDate string) (string, string) {
+	if status == "APPROVED" || status == "CONVERTED_TO_PO" || status == "CLOSED" {
+		return "Completed", "completed"
+	}
+	if status == "REJECTED" {
+		return "Overdue", "overdue"
+	}
+	if neededDate == "" {
+		return "-", "neutral"
+	}
+
+	deadline, err := time.ParseInLocation("2006-01-02", neededDate, time.Local)
+	if err != nil {
+		return "-", "neutral"
+	}
+
+	now := time.Now()
+	diff := deadline.Sub(now)
+	if diff < 0 {
+		return "Overdue", "overdue"
+	}
+
+	hours := int(math.Ceil(diff.Hours()))
+	if hours <= 24 {
+		if hours <= 0 {
+			return "Overdue", "overdue"
+		}
+		return fmt.Sprintf("%dh left", hours), "warning"
+	}
+
+	days := hours / 24
+	remainingHours := hours % 24
+	if remainingHours == 0 {
+		return fmt.Sprintf("%dd left", days), "normal"
+	}
+	return fmt.Sprintf("%dd %dh left", days, remainingHours), "normal"
 }

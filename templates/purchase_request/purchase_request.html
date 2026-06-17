@@ -8,6 +8,70 @@
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .pr-list-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .pr-topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 16px; }
+            .pr-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; line-height: 1; }
+            .pr-blue { color: #003b88; }
+            .pr-page-title { margin-top: 18px; font-size: 13px; line-height: 18px; font-weight: 700; color: #003b88; }
+            .pr-page-subtitle { margin-top: 3px; font-size: 12px; line-height: 18px; color: #475569; }
+            .pr-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; margin-top: 24px; }
+            .pr-btn { display: inline-flex; height: 28px; align-items: center; justify-content: center; gap: 7px; border-radius: 5px; padding: 0 13px; font-size: 11px; line-height: 1; font-weight: 700; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease; }
+            .pr-btn i { font-size: 15px; line-height: 1; }
+            .pr-btn-secondary { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; }
+            .pr-btn-secondary:hover { background: #f8fafc; }
+            .pr-btn-primary { border: 1px solid #003b88; background: #003b88; color: #fff; }
+            .pr-btn-primary:hover { background: #002f6d; }
+            .pr-filter-card { border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .pr-filter-grid { display: grid; grid-template-columns: minmax(380px, 1.45fr) minmax(118px, .38fr) minmax(118px, .38fr) 104px 104px 34px; gap: 8px; align-items: center; }
+            .pr-filter-field { position: relative; min-width: 0; }
+            .pr-control { box-sizing: border-box; display: block; height: 32px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #fff; padding: 0 30px 0 10px; font-size: 11px; line-height: 30px; color: #334155; outline: none; transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
+            .pr-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); background-color: #fff; }
+            .pr-control:hover { border-color: #94a3b8; }
+            select.pr-control { appearance: none; background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%); background-position: calc(100% - 14px) 13px, calc(100% - 9px) 13px; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+            .pr-search { -webkit-appearance: none; appearance: none; height: 32px; padding-left: 32px; padding-right: 12px; background-color: #f8fafc; line-height: 30px; }
+            .pr-search::-webkit-search-decoration,
+            .pr-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+            .pr-search-icon { position: absolute; left: 11px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; font-size: 13px; line-height: 13px; color: #64748b; pointer-events: none; }
+            .pr-filter-button { display: inline-flex; align-items: center; justify-content: center; height: 32px; width: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #003b88; padding: 0; transition: border-color .15s ease, background-color .15s ease; }
+            .pr-filter-button:hover { border-color: #94a3b8; background: #f8fafc; }
+            .pr-filter-button i { font-size: 16px; line-height: 1; }
+            .pr-table-card { overflow: hidden; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .pr-table-wrap { overflow-x: auto; }
+            .pr-table { width: 100%; min-width: 980px; border-collapse: collapse; table-layout: auto; font-size: 12px; }
+            .pr-table thead { background: #eef3ff; color: #0f172a; }
+            .pr-table th { padding: 12px 14px; text-align: left; font-size: 11px; line-height: 14px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
+            .pr-table td { padding: 12px 14px; border-top: 1px solid #e2e8f0; color: #334155; line-height: 18px; white-space: nowrap; }
+            .pr-table tbody tr:hover { background: #f8fafc; }
+            .pr-link { color: #003b88; font-weight: 800; }
+            .pr-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 9px; font-size: 10px; line-height: 14px; font-weight: 800; }
+            .pr-chip { display: inline-flex; align-items: center; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 12px; font-weight: 800; text-transform: uppercase; background: #dbeafe; color: #1d4ed8; }
+            .pr-status-green { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
+            .pr-status-blue { border: 1px solid #bfdbfe; background: #dbeafe; color: #003b88; }
+            .pr-status-red { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; }
+            .pr-status-gray { border: 1px solid #e2e8f0; background: #f1f5f9; color: #334155; }
+            .pr-urgency { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 8px; font-size: 11px; line-height: 14px; font-weight: 700; }
+            .pr-urgency i { font-size: 12px; line-height: 1; }
+            .pr-urgency-normal { border: 1px solid #e2e8f0; background: #f1f5f9; color: #475569; }
+            .pr-urgency-urgent { border: 1px solid #fed7aa; background: #fff7ed; color: #ea580c; }
+            .pr-urgency-emergency { border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; }
+            .pr-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e2e8f0; padding: 12px 14px; font-size: 12px; color: #475569; }
+            .pr-page-btn { height: 32px; min-width: 32px; border-radius: 6px; padding: 0 10px; border: 1px solid transparent; font-size: 12px; font-weight: 600; color: #334155; }
+            .pr-page-btn:hover { background: #f8fafc; }
+            .pr-page-btn-active { background: #003b88; color: #fff; }
+            .pr-page-btn-bordered { border-color: #cbd5e1; background: #fff; }
+            .pr-page-btn:disabled { border-color: #e2e8f0; color: #94a3b8; cursor: default; }
+            @media (max-width: 1023px) {
+                .pr-topbar { grid-template-columns: 1fr; }
+                .pr-actions { justify-content: flex-start; margin-top: 0; }
+                .pr-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .pr-filter-grid { grid-template-columns: 1fr; }
+                .pr-actions, .pr-footer { align-items: stretch; flex-direction: column; }
+                .pr-btn { justify-content: center; width: 100%; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-display text-slate-900">
         <div class="flex min-h-screen">
@@ -15,64 +79,171 @@
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
                 {{ template "header" . }}
                 <main class="flex-1 px-4 py-6 lg:px-8">
-                    <div class="mx-auto w-full max-w-7xl space-y-6">
-                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div class="pr-list-shell space-y-5">
+                        <div class="pr-topbar">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Procurement / Purchase Request</p>
-                                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Purchase Requests</h1>
+                                <nav class="pr-breadcrumb" aria-label="Breadcrumb">
+                                    <span>Procurement</span>
+                                    <i class="bx bx-chevron-right text-base text-slate-400"></i>
+                                    <span>Purchase Request</span>
+                                    <i class="bx bx-chevron-right text-base text-slate-400"></i>
+                                    <span class="font-bold pr-blue">PR List</span>
+                                </nav>
+                                <h1 class="pr-page-title">Purchase Request List</h1>
+                                <p class="pr-page-subtitle">Manage and track all purchase requests across departments.</p>
                             </div>
-                            {{ if index .Permissions "purchase_request_create" }}
-                            <a href="/purchase-requests/form" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc5a15]">
-                                <i class="bx bx-plus text-base"></i>
-                                New PR
-                            </a>
-                            {{ end }}
+                            <div class="pr-actions">
+                                <button type="button" id="export-pr-csv" class="pr-btn pr-btn-secondary">
+                                    <i class="bx bx-export pr-blue"></i>
+                                    Export CSV
+                                </button>
+                                {{ if index .Permissions "purchase_request_create" }}
+                                <a href="/purchase-requests/form" class="pr-btn pr-btn-primary">
+                                    <i class="bx bx-plus"></i>
+                                    Create New PR
+                                </a>
+                                {{ end }}
+                            </div>
                         </div>
 
-                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div class="overflow-x-auto p-4">
-                                <table class="w-full min-w-[1100px] text-sm">
-                                    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                        <section class="pr-filter-card">
+                            <div class="pr-filter-grid">
+                                <label class="pr-filter-field">
+                                    <i class="bx bx-search pr-search-icon"></i>
+                                    <input id="pr-search" type="search" placeholder="Search PR number or requester..." class="pr-control pr-search">
+                                </label>
+                                <div class="pr-filter-field">
+                                    <select id="store-filter" class="pr-control">
+                                        <option value="">All Stores</option>
+                                        {{ range .Stores }}
+                                        <option value="{{ .StoreName }}">{{ .StoreName }}</option>
+                                        {{ end }}
+                                    </select>
+                                </div>
+                                <div class="pr-filter-field">
+                                    <select id="division-filter" class="pr-control">
+                                        <option value="">All Divisions</option>
+                                        {{ range .Divisions }}
+                                        <option value="{{ .DivisionName }}">{{ .DivisionName }}</option>
+                                        {{ end }}
+                                    </select>
+                                </div>
+                                <div class="pr-filter-field">
+                                    <select id="urgency-filter" class="pr-control">
+                                        <option value="">Urgency</option>
+                                        <option value="NORMAL">Normal</option>
+                                        <option value="URGENT">Urgent</option>
+                                        <option value="EMERGENCY">Emergency</option>
+                                    </select>
+                                </div>
+                                <div class="pr-filter-field">
+                                    <select id="status-filter" class="pr-control">
+                                        <option value="">Status</option>
+                                        <option value="DRAFT">Draft</option>
+                                        <option value="SUBMITTED">Submitted</option>
+                                        <option value="IN_APPROVAL">In Approval</option>
+                                        <option value="APPROVED">Approved</option>
+                                        <option value="REJECTED">Rejected</option>
+                                        <option value="CONVERTED_TO_PO">Converted</option>
+                                        <option value="CLOSED">Closed</option>
+                                    </select>
+                                </div>
+                                <button type="button" id="reset-pr-filter" class="pr-filter-button" aria-label="Reset filters" title="Reset filters">
+                                    <i class="bx bx-filter-alt"></i>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="pr-table-card">
+                            <div class="pr-table-wrap">
+                                <table class="pr-table" id="pr-table">
+                                    <thead>
                                         <tr>
-                                            <th class="px-3 py-2 text-left font-semibold">No</th>
-                                            <th class="px-3 py-2 text-left font-semibold">PR Number</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Requester</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Store</th>
-                                            <th class="px-3 py-2 text-left font-semibold">GL Account</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Spend Type</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Urgency</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Needed Date</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Total</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Status</th>
-                                            <th class="px-3 py-2 text-left font-semibold">Created At</th>
+                                            <th class="px-5 py-4">No</th>
+                                            <th class="px-5 py-4">PR #</th>
+                                            <th class="px-5 py-4">Store</th>
+                                            <th class="px-5 py-4">Requester</th>
+                                            <th class="px-5 py-4">Amount</th>
+                                            <th class="px-5 py-4">Type</th>
+                                            <th class="px-5 py-4">Urgency</th>
+                                            <th class="px-5 py-4">Status</th>
+                                            <th class="px-5 py-4">Current Step</th>
+                                            <th class="px-5 py-4">SLA</th>
+                                            <th class="px-5 py-4 text-center">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-slate-100">
+                                    <tbody class="divide-y divide-slate-200">
                                         {{ range $i, $pr := .PurchaseRequests }}
-                                        <tr class="hover:bg-slate-50/70">
-                                            <td class="px-3 py-3 text-slate-500">{{ no $i 1 }}</td>
-                                            <td class="px-3 py-3 font-semibold text-slate-700">{{ $pr.PRNumber }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.RequesterName }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.StoreCode }} - {{ $pr.StoreName }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.GLAccountName }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.SpendType }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.UrgentLevel }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ if $pr.NeededDate }}{{ $pr.NeededDate }}{{ else }}-{{ end }}</td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.TotalAmountDisplay }}</td>
-                                            <td class="px-3 py-3">
-                                                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ if eq $pr.Status "DRAFT" }}bg-slate-100 text-slate-600{{ else if eq $pr.Status "IN_APPROVAL" }}bg-amber-50 text-amber-700{{ else }}bg-emerald-50 text-emerald-700{{ end }}">{{ $pr.StatusLabel }}</span>
+                                        <tr class="pr-row" data-search="{{ $pr.PRNumber }} {{ $pr.RequesterName }}" data-store="{{ $pr.StoreName }}" data-division="{{ $pr.DivisionName }}" data-urgency="{{ $pr.UrgentLevel }}" data-status="{{ $pr.Status }}">
+                                            <td class="font-semibold text-slate-500">{{ no $i 1 }}</td>
+                                            <td><span class="pr-link">{{ $pr.PRNumber }}</span></td>
+                                            <td>{{ $pr.StoreName }}</td>
+                                            <td>{{ $pr.RequesterName }}</td>
+                                            <td class="font-semibold text-slate-800">{{ $pr.TotalAmountDisplay }}</td>
+                                            <td>
+                                                <span class="pr-chip">{{ $pr.SpendType }}</span>
                                             </td>
-                                            <td class="px-3 py-3 text-slate-600">{{ $pr.CreatedAtDisplay }}</td>
+                                            <td>
+                                                {{ if eq $pr.UrgentLevel "URGENT" }}
+                                                <span class="pr-urgency pr-urgency-urgent"><i class="bx bxs-error-alt"></i>Urgent</span>
+                                                {{ else if eq $pr.UrgentLevel "EMERGENCY" }}
+                                                <span class="pr-urgency pr-urgency-emergency"><i class="bx bxs-zap"></i>Emergency</span>
+                                                {{ else }}
+                                                <span class="pr-urgency pr-urgency-normal"><i class="bx bx-time-five"></i>Normal</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                {{ if eq $pr.Status "IN_APPROVAL" }}
+                                                <span class="pr-pill pr-status-green">{{ $pr.StatusLabel }}</span>
+                                                {{ else if eq $pr.Status "APPROVED" }}
+                                                <span class="pr-pill pr-status-green">{{ $pr.StatusLabel }}</span>
+                                                {{ else if eq $pr.Status "REJECTED" }}
+                                                <span class="pr-pill pr-status-red">{{ $pr.StatusLabel }}</span>
+                                                {{ else if eq $pr.Status "SUBMITTED" }}
+                                                <span class="pr-pill pr-status-blue">{{ $pr.StatusLabel }}</span>
+                                                {{ else }}
+                                                <span class="pr-pill pr-status-gray">{{ $pr.StatusLabel }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>{{ $pr.CurrentStep }}</td>
+                                            <td>
+                                                {{ if eq $pr.SLAState "overdue" }}
+                                                <span class="font-medium text-red-600">{{ $pr.SLALabel }}</span>
+                                                {{ else if eq $pr.SLAState "warning" }}
+                                                <span class="inline-flex items-center gap-1 font-medium text-red-600"><i class="bx bx-time-five text-sm"></i>{{ $pr.SLALabel }}</span>
+                                                {{ else if eq $pr.SLAState "completed" }}
+                                                <span class="font-medium text-emerald-700">{{ $pr.SLALabel }}</span>
+                                                {{ else }}
+                                                <span class="text-slate-700">{{ $pr.SLALabel }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="#" class="inline-flex h-8 w-8 items-center justify-center rounded-md pr-blue transition hover:bg-blue-50" aria-label="View PR" title="View PR">
+                                                    <i class="bx bx-show text-xl"></i>
+                                                </a>
+                                            </td>
                                         </tr>
                                         {{ else }}
                                         <tr>
-                                            <td colspan="11" class="px-3 py-6 text-center text-sm text-slate-500">Belum ada purchase request</td>
+                                            <td colspan="11" class="px-5 py-10 text-center text-sm text-slate-500">Belum ada purchase request</td>
                                         </tr>
                                         {{ end }}
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                            <div class="pr-footer">
+                                <p id="pr-result-count">Showing 1 to {{ len .PurchaseRequests }} of {{ len .PurchaseRequests }} results</p>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="pr-page-btn" disabled>Previous</button>
+                                    <button type="button" class="pr-page-btn pr-page-btn-active">1</button>
+                                    <button type="button" class="pr-page-btn">2</button>
+                                    <button type="button" class="pr-page-btn">3</button>
+                                    <span class="px-1 text-slate-500">...</span>
+                                    <button type="button" class="pr-page-btn">26</button>
+                                    <button type="button" class="pr-page-btn pr-page-btn-bordered">Next</button>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </main>
                 {{ template "footer" . }}
@@ -88,6 +259,83 @@
                 function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
                 toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
                 if (overlay) overlay.addEventListener('click', closeSidebar);
+
+                var searchInput = document.getElementById('pr-search');
+                var storeFilter = document.getElementById('store-filter');
+                var divisionFilter = document.getElementById('division-filter');
+                var urgencyFilter = document.getElementById('urgency-filter');
+                var statusFilter = document.getElementById('status-filter');
+                var resetButton = document.getElementById('reset-pr-filter');
+                var resultCount = document.getElementById('pr-result-count');
+                var rows = Array.prototype.slice.call(document.querySelectorAll('.pr-row'));
+
+                function normalize(value) {
+                    return (value || '').toString().toLowerCase();
+                }
+
+                function filterRows() {
+                    var query = normalize(searchInput && searchInput.value);
+                    var store = storeFilter ? storeFilter.value : '';
+                    var division = divisionFilter ? divisionFilter.value : '';
+                    var urgency = urgencyFilter ? urgencyFilter.value : '';
+                    var status = statusFilter ? statusFilter.value : '';
+                    var visible = 0;
+
+                    rows.forEach(function (row) {
+                        var matches = true;
+                        if (query && normalize(row.dataset.search).indexOf(query) === -1) matches = false;
+                        if (store && row.dataset.store !== store) matches = false;
+                        if (division && row.dataset.division !== division) matches = false;
+                        if (urgency && row.dataset.urgency !== urgency) matches = false;
+                        if (status && row.dataset.status !== status) matches = false;
+
+                        row.classList.toggle('hidden', !matches);
+                        if (matches) visible += 1;
+                    });
+
+                    if (resultCount) {
+                        resultCount.textContent = visible === 0 ? 'Showing 0 results' : 'Showing 1 to ' + visible + ' of ' + rows.length + ' results';
+                    }
+                }
+
+                [searchInput, storeFilter, divisionFilter, urgencyFilter, statusFilter].forEach(function (input) {
+                    if (!input) return;
+                    input.addEventListener('input', filterRows);
+                    input.addEventListener('change', filterRows);
+                });
+
+                if (resetButton) {
+                    resetButton.addEventListener('click', function () {
+                        if (searchInput) searchInput.value = '';
+                        if (storeFilter) storeFilter.value = '';
+                        if (divisionFilter) divisionFilter.value = '';
+                        if (urgencyFilter) urgencyFilter.value = '';
+                        if (statusFilter) statusFilter.value = '';
+                        filterRows();
+                    });
+                }
+
+                var exportButton = document.getElementById('export-pr-csv');
+                if (exportButton) {
+                    exportButton.addEventListener('click', function () {
+                        var lines = [['No', 'PR Number', 'Store', 'Requester', 'Amount', 'Type', 'Urgency', 'Status', 'Current Step', 'SLA']];
+                        rows.forEach(function (row) {
+                            if (row.classList.contains('hidden')) return;
+                            var cells = row.querySelectorAll('td');
+                            lines.push(Array.prototype.slice.call(cells, 0, 10).map(function (cell) {
+                                return '"' + cell.textContent.trim().replace(/"/g, '""') + '"';
+                            }));
+                        });
+                        var csv = lines.map(function (line) { return line.join(','); }).join('\n');
+                        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        var url = URL.createObjectURL(blob);
+                        var link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'purchase-requests.csv';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                    });
+                }
             });
         </script>
     </body>
