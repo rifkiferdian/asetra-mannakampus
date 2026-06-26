@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Asetra{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .detail-shell { max-width: 1120px; margin: 0 auto; }
+            .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+            .detail-stack { display: flex; flex-direction: column; gap: 18px; }
+            .detail-card { border: 1px solid #cfd6e4; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.035); overflow: hidden; }
+            .detail-card-pad { padding: 22px 24px; }
+            .detail-blue { color: #003b88; }
+            .detail-muted { color: #64748b; }
+            .detail-title { font-size: 20px; line-height: 24px; font-weight: 800; color: #003b88; }
+            .detail-subtitle { margin-top: 5px; max-width: 520px; font-size: 12px; line-height: 18px; color: #475569; }
+            .detail-amount-label { font-size: 10px; line-height: 12px; font-weight: 700; color: #475569; }
+            .detail-amount { color: #003b88; font-size: 18px; line-height: 22px; font-weight: 800; white-space: nowrap; }
+            .detail-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; border-top: 1px solid #d7deea; padding-top: 20px; margin-top: 22px; }
+            .detail-label { font-size: 9px; line-height: 13px; color: #334155; font-weight: 700; }
+            .detail-value { margin-top: 4px; font-size: 11px; line-height: 16px; color: #020617; }
+            .detail-side-card { display: flex; min-height: 74px; align-items: center; gap: 13px; padding: 16px; }
+            .detail-icon { display: inline-flex; width: 34px; height: 34px; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 7px; background: #eaf1ff; color: #003b88; font-size: 18px; }
+            .detail-icon-red { background: #fee2e2; color: #dc2626; }
+            .detail-icon-orange { background: #ffedd5; color: #ea580c; }
+            .detail-icon-gray { background: #f1f5f9; color: #475569; }
+            .detail-section-head { border-bottom: 1px solid #d7deea; background: #eef3ff; padding: 13px 22px; }
+            .detail-section-title { font-size: 14px; line-height: 18px; font-weight: 800; color: #020617; }
+            .detail-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .detail-table th { padding: 12px 22px; text-align: left; background: #f8fafc; font-size: 10px; line-height: 14px; color: #334155; font-weight: 800; }
+            .detail-table td { padding: 14px 22px; border-top: 1px solid #d7deea; color: #020617; vertical-align: middle; }
+            .detail-table .num { text-align: right; font-weight: 700; }
+            .detail-total { background: #eef3ff; }
+            .detail-progress { height: 9px; border-radius: 999px; background: #dbeafe; overflow: hidden; }
+            .detail-progress > span { display: block; height: 100%; width: var(--pct); background: #34d399; }
+            .budget-note { margin-top: 14px; border-left: 4px solid #003b88; border-radius: 7px; background: #eef3ff; padding: 10px 13px; font-size: 11px; line-height: 16px; color: #334155; }
+            .workflow { padding: 18px 20px; }
+            .workflow-item { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 11px; position: relative; }
+            .workflow-item + .workflow-item { margin-top: 20px; }
+            .workflow-item:not(:last-child)::before { content: ""; position: absolute; left: 11px; top: 24px; bottom: -20px; width: 1px; background: #cbd5e1; }
+            .workflow-dot { position: relative; z-index: 1; width: 24px; height: 24px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+            .workflow-done { background: #047857; color: #fff; }
+            .workflow-pending { border: 2px solid #003b88; background: #fff; color: #003b88; }
+            .workflow-rejected { background: #dc2626; color: #fff; }
+            .action-btn { display: inline-flex; width: 100%; height: 38px; align-items: center; justify-content: center; gap: 8px; border-radius: 6px; font-size: 12px; line-height: 1; font-weight: 800; }
+            .revision-btn { border: 1px solid #cfd6e4; background: #fff; color: #0f172a; }
+            .revision-btn:disabled { color: #334155; background: #f8fafc; cursor: not-allowed; }
+            .reject-hidden { display: none; margin-top: 10px; }
+            .reject-hidden.is-open { display: block; }
+            .detail-textarea { width: 100%; min-height: 66px; border: 1px solid #cfd6e4; border-radius: 7px; padding: 9px 10px; font-size: 12px; line-height: 17px; outline: none; resize: vertical; }
+            .detail-textarea:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.09); }
+            @media (max-width: 1024px) {
+                .detail-grid { grid-template-columns: 1fr; }
+                .detail-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .detail-card-pad { padding: 18px; }
+                .detail-meta { grid-template-columns: 1fr; }
+                .detail-table { min-width: 760px; }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-5 lg:px-7">
+                    {{ $pr := .PR }}
+                    <div class="detail-shell space-y-6">
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <a href="/purchase-requests" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[#003b88]">
+                                <i class="bx bx-arrow-back text-lg"></i>
+                                Back to PR List
+                            </a>
+                        </div>
+
+                        <div class="detail-grid">
+                            <div class="detail-stack">
+                                <section class="detail-card detail-card-pad">
+                                    <div class="flex items-start justify-between gap-6">
+                                        <div>
+                                            <h1 class="detail-title">{{ $pr.PRNumber }}</h1>
+                                            <p class="detail-subtitle">{{ if $pr.Justification }}{{ $pr.Justification }}{{ else }}Purchase request detail{{ end }}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="detail-amount-label">Total Amount</div>
+                                            <div class="detail-amount">{{ $pr.TotalAmountDisplay }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="detail-meta">
+                                        <div>
+                                            <div class="detail-label">Requester</div>
+                                            <div class="detail-value inline-flex items-center gap-2"><i class="bx bxs-user-circle text-lg"></i>{{ $pr.RequesterName }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="detail-label">Request Date</div>
+                                            <div class="detail-value">{{ $pr.CreatedAtDisplay }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="detail-label">Store / Branch</div>
+                                            <div class="detail-value">{{ $pr.StoreName }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="detail-label">Expected Delivery</div>
+                                            <div class="detail-value">{{ if $pr.NeededDate }}{{ $pr.NeededDate }}{{ else }}-{{ end }}</div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="detail-card">
+                                    <div class="detail-section-head">
+                                        <h2 class="detail-section-title">Line Items</h2>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="detail-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Item Name</th>
+                                                    <th>Quantity</th>
+                                                    <th class="text-right">Unit Price</th>
+                                                    <th class="text-right">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {{ range $pr.Items }}
+                                                <tr>
+                                                    <td>
+                                                        <div class="font-extrabold text-slate-950">{{ .ItemName }}</div>
+                                                        {{ if .Notes }}<div class="mt-1 text-[10px] leading-4 text-slate-500">{{ .Notes }}</div>{{ end }}
+                                                    </td>
+                                                    <td>{{ .QtyDisplay }} {{ .UOM }}</td>
+                                                    <td class="num">{{ .EstUnitPriceDisplay }}</td>
+                                                    <td class="num">{{ .EstTotalDisplay }}</td>
+                                                </tr>
+                                                {{ else }}
+                                                <tr><td colspan="4" class="text-center text-slate-500">Tidak ada item PR</td></tr>
+                                                {{ end }}
+                                                <tr class="detail-total">
+                                                    <td colspan="3" class="text-right text-base font-extrabold">Grand Total</td>
+                                                    <td class="num text-base detail-blue">{{ $pr.TotalAmountDisplay }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+
+                                <section class="detail-card detail-card-pad">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <h2 class="detail-section-title">Budget Impact</h2>
+                                        <span class="text-xs font-semibold text-slate-700">{{ $pr.BudgetImpactLabel }}</span>
+                                    </div>
+                                    <div class="mt-4 flex items-center justify-between text-[11px] font-semibold">
+                                        <span>Budget Utilized</span>
+                                        <span>{{ $pr.BudgetUtilizedPct }}%</span>
+                                    </div>
+                                    <div class="detail-progress mt-2" style="--pct: {{ $pr.BudgetUtilizedPct }}%;">
+                                        <span></span>
+                                    </div>
+                                    <div class="budget-note">
+                                        <i class="bx bx-info-circle mr-2 text-[#003b88]"></i>{{ $pr.BudgetMessage }}
+                                    </div>
+                                </section>
+                            </div>
+
+                            <aside class="detail-stack">
+                                <section class="detail-card detail-side-card">
+                                    <span class="detail-icon"><i class="bx bx-category"></i></span>
+                                    <div>
+                                        <div class="text-[10px] font-semibold text-slate-500">Budget Category</div>
+                                        <div class="mt-1 text-base font-extrabold text-slate-900">{{ $pr.SpendType }}</div>
+                                    </div>
+                                </section>
+
+                                <section class="detail-card detail-side-card {{ if eq $pr.UrgentLevel "NORMAL" }}bg-white{{ else if eq $pr.UrgentLevel "URGENT" }}border-orange-200 bg-orange-50{{ else }}border-red-200 bg-red-50{{ end }}">
+                                    <span class="detail-icon {{ if eq $pr.UrgentLevel "NORMAL" }}detail-icon-gray{{ else if eq $pr.UrgentLevel "URGENT" }}detail-icon-orange{{ else }}detail-icon-red{{ end }}"><i class="bx bxs-error-alt"></i></span>
+                                    <div>
+                                        <div class="text-[10px] font-semibold {{ if eq $pr.UrgentLevel "NORMAL" }}text-slate-500{{ else if eq $pr.UrgentLevel "URGENT" }}text-orange-700{{ else }}text-red-700{{ end }}">Urgency</div>
+                                        <div class="mt-1 text-base font-extrabold {{ if eq $pr.UrgentLevel "NORMAL" }}text-slate-700{{ else if eq $pr.UrgentLevel "URGENT" }}text-orange-700{{ else }}text-red-700{{ end }}">{{ if eq $pr.UrgentLevel "EMERGENCY" }}Emergency{{ else if eq $pr.UrgentLevel "URGENT" }}Urgent{{ else }}Normal{{ end }}</div>
+                                    </div>
+                                </section>
+
+                                <section class="detail-card detail-side-card">
+                                    <span class="detail-icon"><i class="bx bx-time-five"></i></span>
+                                    <div>
+                                        <div class="text-[10px] font-semibold text-slate-500">SLA Status</div>
+                                        <div class="mt-1 text-base font-extrabold {{ if eq $pr.SLAState "overdue" }}text-red-600{{ else }}text-emerald-700{{ end }}">{{ $pr.SLALabel }}</div>
+                                    </div>
+                                </section>
+
+                                <section class="detail-card workflow">
+                                    <h2 class="mb-5 detail-section-title">Approval Workflow</h2>
+                                    {{ range $pr.ApprovalSteps }}
+                                    <div class="workflow-item">
+                                        {{ if eq .Status "APPROVED" }}
+                                        <span class="workflow-dot workflow-done"><i class="bx bx-check"></i></span>
+                                        {{ else if eq .Status "REJECTED" }}
+                                        <span class="workflow-dot workflow-rejected"><i class="bx bx-x"></i></span>
+                                        {{ else }}
+                                        <span class="workflow-dot workflow-pending"><i class="bx bx-circle"></i></span>
+                                        {{ end }}
+                                        <div>
+                                            <div class="text-xs font-extrabold {{ if eq .Status "WAITING" }}detail-blue{{ else }}text-slate-900{{ end }}">{{ .StatusLabel }}</div>
+                                            <div class="text-xs font-bold text-slate-800">{{ .RoleName }}</div>
+                                            <div class="text-[10px] leading-4 text-slate-500">{{ if eq .Status "WAITING" }}Assigned to: {{ .AssignedUserName }}{{ else }}{{ .AssignedUserName }}{{ if .ActedAtDisplay }} - {{ .ActedAtDisplay }}{{ end }}{{ end }}</div>
+                                        </div>
+                                    </div>
+                                    {{ else }}
+                                    <p class="text-sm text-slate-500">Approval workflow belum dibuat.</p>
+                                    {{ end }}
+                                </section>
+
+                                <section class="detail-card detail-card-pad">
+                                    <h2 class="mb-4 text-xs font-extrabold text-slate-900">Management Actions</h2>
+                                    {{ if gt $pr.CurrentUserTaskID 0 }}
+                                    {{ if index .Permissions "approval_task_approve" }}
+                                    <form method="post" action="/approval-tasks/{{ $pr.CurrentUserTaskID }}/approve" class="space-y-2">
+                                        <button type="submit" class="action-btn bg-[#003b88] text-white hover:bg-[#002f6d]"><i class="bx bx-check-circle"></i>Approve Request</button>
+                                    </form>
+                                    {{ end }}
+                                    <button type="button" class="action-btn revision-btn mt-2" disabled><i class="bx bx-message-square-edit"></i>Request Revision</button>
+                                    {{ if index .Permissions "approval_task_reject" }}
+                                    <button type="button" class="action-btn mt-2 border border-red-500 bg-white text-red-600 hover:bg-red-50" data-reject-toggle><i class="bx bx-x-circle"></i>Reject PR</button>
+                                    <form method="post" action="/approval-tasks/{{ $pr.CurrentUserTaskID }}/reject" class="reject-hidden" data-reject-form>
+                                        <textarea name="comment" rows="2" class="detail-textarea" placeholder="Reject reason" required></textarea>
+                                        <button type="submit" class="action-btn border border-red-500 bg-white text-red-600 hover:bg-red-50"><i class="bx bx-x-circle"></i>Reject PR</button>
+                                    </form>
+                                    {{ end }}
+                                    {{ else }}
+                                    <button type="button" class="action-btn bg-slate-100 text-slate-500" disabled><i class="bx bx-lock-alt"></i>No pending action</button>
+                                    <p class="mt-3 text-xs leading-5 text-slate-500">Action hanya tersedia untuk approver yang sedang assigned pada step aktif.</p>
+                                    {{ end }}
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+                function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); }
+                function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
+                toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
+                if (overlay) overlay.addEventListener('click', closeSidebar);
+
+                document.querySelectorAll('[data-reject-toggle]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var form = document.querySelector('[data-reject-form]');
+                        if (!form) return;
+                        form.classList.toggle('is-open');
+                        var textarea = form.querySelector('textarea');
+                        if (form.classList.contains('is-open') && textarea) textarea.focus();
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>

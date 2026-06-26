@@ -17,17 +17,27 @@
 
     <nav class="flex-1 overflow-y-auto pr-1">
         <ul class="mt-2 space-y-1">
+            {{ if index .Permissions "dashboard_access" }}
             <li>
                 <a href="{{ baseURL "/dashboard" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if eq .Page "dashboard" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "dashboard" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
                     <i class="bx bx-grid-alt text-xl"></i>
                     <span key="t-dashboards">Dashboard</span>
                 </a>
             </li>
+            {{ end }}
             {{ if index .Permissions "purchase_request_management_access" }}
             <li>
                 <a href="{{ baseURL "/purchase-requests" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if or (eq .Page "purchase_request") (eq .Page "purchase_request_form") }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if or (eq .Page "purchase_request") (eq .Page "purchase_request_form") }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
                     <i class="bx bx-receipt text-xl"></i>
                     <span>Purchase Request</span>
+                </a>
+            </li>
+            {{ end }}
+            {{ if index .Permissions "approval_task_management_access" }}
+            <li>
+                <a href="{{ baseURL "/approval-tasks" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if eq .Page "approval_task_inbox" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "approval_task_inbox" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <i class="bx bx-task text-xl"></i>
+                    <span>Approval Inbox</span>
                 </a>
             </li>
             {{ end }}
@@ -37,13 +47,17 @@
                     <span>Workflow Admin</span>
                 </a>
             </li> -->
+            {{ if index .Permissions "store_management_access" }}
             <li>
                 <a href="{{ baseURL "/stores" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if eq .Page "store" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "store" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
                     <i class="bx bxs-store text-xl"></i>
                     <span>Store</span>
                 </a>
             </li>
+            {{ end }}
             {{ $settingsActive := or (eq .Page "vendor") (eq .Page "gl_account") (eq .Page "division") (eq .Page "budget") (eq .Page "store_approver") (eq .Page "approval_rule") (eq .Page "approvalRuleForm") (eq .Page "approvalRuleEdit") }}
+            {{ $hasSettingsAccess := or (index .Permissions "vendor_management_access") (index .Permissions "gl_account_management_access") (index .Permissions "division_management_access") (index .Permissions "budget_management_access") (index .Permissions "store_approver_management_access") (index .Permissions "approval_rule_management_access") }}
+            {{ if $hasSettingsAccess }}
             <li class="space-y-1">
                 <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-[14px] font-semibold transition sm:px-4 sm:py-4 sm:text-[15px] {{ if $settingsActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="settings-submenu" aria-expanded="{{ if $settingsActive }}true{{ else }}false{{ end }}" aria-controls="settings-submenu" {{ if $settingsActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
                     <span class="flex items-center gap-3 sm:gap-4">
@@ -103,12 +117,15 @@
                     {{ end }}
                 </ul>
             </li>
+            {{ end }}
+            {{ if index .Permissions "document_type_management_access" }}
             <li>
                 <a href="#" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-[#f26419] sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px]">
                     <i class="bx bx-file text-xl"></i>
                     <span>Document Types</span>
                 </a>
             </li>
+            {{ end }}
             {{ if index .Permissions "role_management_access" }}
             <li>
                 <a href="{{ baseURL "/role" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if or (eq .Page "role") (eq .Page "roleForm") (eq .Page "roleEdit") }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if or (eq .Page "role") (eq .Page "roleForm") (eq .Page "roleEdit") }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
@@ -125,6 +142,7 @@
                 </a>
             </li>
             {{ end }}
+            {{ if index .Permissions "report_management_access" }}
             <li class="space-y-1">
                 <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-[14px] font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-[#f26419] sm:px-4 sm:py-4 sm:text-[15px]" data-submenu-toggle="reports-submenu" aria-expanded="false" aria-controls="reports-submenu">
                     <span class="flex items-center gap-3 sm:gap-4">
@@ -154,6 +172,7 @@
                     </li>
                 </ul>
             </li>
+            {{ end }}
         </ul>
     </nav>
 </aside>

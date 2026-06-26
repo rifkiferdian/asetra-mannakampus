@@ -53,6 +53,30 @@ func PurchaseRequestFormIndex(c *gin.Context) {
 	renderPurchaseRequestForm(c, "", nil)
 }
 
+func PurchaseRequestDetailIndex(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.String(http.StatusBadRequest, "purchase request tidak valid")
+		return
+	}
+
+	session := sessions.Default(c)
+	userID := sessionUserID(session)
+
+	service := buildPurchaseRequestService()
+	detail, err := service.GetPurchaseRequestDetail(id, userID)
+	if err != nil {
+		c.String(http.StatusNotFound, err.Error())
+		return
+	}
+
+	Render(c, "purchase_request_detail.html", gin.H{
+		"Title": "PR Detail",
+		"Page":  "purchase_request",
+		"PR":    detail,
+	})
+}
+
 func PurchaseRequestStore(c *gin.Context) {
 	input, cleanupPaths, errMessage := bindPurchaseRequestInput(c)
 	if errMessage != "" {

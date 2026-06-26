@@ -28,19 +28,38 @@ type PurchaseRequest struct {
 
 type PurchaseRequestDetail struct {
 	PurchaseRequest
-	Items       []PurchaseRequestItem
-	Attachments []Attachment
+	Items             []PurchaseRequestItem
+	Attachments       []Attachment
+	ApprovalSteps     []PurchaseRequestApprovalStep
+	CurrentUserTaskID int64
+	BudgetImpactLabel string
+	BudgetUtilizedPct int
+	BudgetMessage     string
 }
 
 type PurchaseRequestItem struct {
-	ID           int64
-	PRID         int64
-	ItemName     string
-	Qty          float64
-	UOM          string
-	EstUnitPrice float64
-	EstTotal     float64
-	Notes        string
+	ID                  int64
+	PRID                int64
+	ItemName            string
+	Qty                 float64
+	QtyDisplay          string
+	UOM                 string
+	EstUnitPrice        float64
+	EstUnitPriceDisplay string
+	EstTotal            float64
+	EstTotalDisplay     string
+	Notes               string
+}
+
+type PurchaseRequestApprovalStep struct {
+	TaskID           int64
+	StepOrder        int
+	RoleName         string
+	AssignedUserName string
+	Status           string
+	StatusLabel      string
+	ActedAtDisplay   string
+	CreatedAtDisplay string
 }
 
 type PurchaseRequestCreateInput struct {

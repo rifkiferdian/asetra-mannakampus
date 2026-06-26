@@ -36,7 +36,7 @@
             .pr-filter-button { display: inline-flex; align-items: center; justify-content: center; height: 32px; width: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #003b88; padding: 0; transition: border-color .15s ease, background-color .15s ease; }
             .pr-filter-button:hover { border-color: #94a3b8; background: #f8fafc; }
             .pr-filter-button i { font-size: 16px; line-height: 1; }
-            .pr-table-card { overflow: hidden; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .pr-table-card { margin-top: 8px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
             .pr-table-wrap { overflow-x: auto; }
             .pr-table { width: 100%; min-width: 980px; border-collapse: collapse; table-layout: auto; font-size: 12px; }
             .pr-table thead { background: #eef3ff; color: #0f172a; }
@@ -218,9 +218,11 @@
                                                 {{ end }}
                                             </td>
                                             <td class="text-center">
-                                                <a href="#" class="inline-flex h-8 w-8 items-center justify-center rounded-md pr-blue transition hover:bg-blue-50" aria-label="View PR" title="View PR">
+                                                {{ if index $.Permissions "purchase_request_view" }}
+                                                <a href="/purchase-requests/{{ $pr.ID }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md pr-blue transition hover:bg-blue-50" aria-label="View PR" title="View PR">
                                                     <i class="bx bx-show text-xl"></i>
                                                 </a>
+                                                {{ end }}
                                             </td>
                                         </tr>
                                         {{ else }}

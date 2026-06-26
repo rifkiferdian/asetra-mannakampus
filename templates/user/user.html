@@ -49,10 +49,12 @@
                         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <h2 class="text-base font-semibold text-slate-900">Daftar User</h2>
+                                {{ if index .Permissions "user_create" }}
                                 <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]" data-modal-open="userModal">
                                     <i class="bx bx-plus text-base"></i>
                                     New User
                                 </button>
+                                {{ end }}
                             </div>
                             <div class="p-4">
                                 {{ if .Error }}
@@ -94,6 +96,7 @@
                                                 </td>
                                                 <td class="px-3 py-3">
                                                     <div class="flex flex-wrap items-center gap-2">
+                                                        {{ if index $.Permissions "user_edit" }}
                                                         <button type="button"
                                                             class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 btn-edit-user"
                                                             data-user-id="{{ $user.ID }}"
@@ -107,10 +110,13 @@
                                                             <i class="bx bx-pen text-sm"></i>
                                                             Edit
                                                         </button>
+                                                        {{ end }}
+                                                        {{ if index $.Permissions "user_delete" }}
                                                         <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 btn-delete-user" data-url="/users/delete/{{ $user.ID }}" data-username="{{ $user.Username }}">
                                                             <i class="bx bx-trash text-sm"></i>
                                                             Del
                                                         </button>
+                                                        {{ end }}
                                                     </div>
                                                 </td>
                                             </tr>

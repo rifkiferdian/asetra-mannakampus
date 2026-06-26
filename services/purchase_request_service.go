@@ -20,6 +20,13 @@ func (s *PurchaseRequestService) GetPurchaseRequests() ([]models.PurchaseRequest
 	return s.Repo.GetAll()
 }
 
+func (s *PurchaseRequestService) GetPurchaseRequestDetail(id int64, userID int) (*models.PurchaseRequestDetail, error) {
+	if id <= 0 {
+		return nil, errors.New("purchase request tidak valid")
+	}
+	return s.Repo.GetDetailByID(id, userID)
+}
+
 func (s *PurchaseRequestService) CreatePurchaseRequest(input models.PurchaseRequestCreateInput) error {
 	if err := s.validateInput(input); err != nil {
 		return err

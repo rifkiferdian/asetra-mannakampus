@@ -130,6 +130,256 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 	return items, rows.Err()
 }
 
+func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models.PurchaseRequestDetail, error) {
+	var (
+		item       models.PurchaseRequestDetail
+		divisionID sql.NullInt64
+		neededDate sql.NullTime
+		createdAt  sql.NullTime
+	)
+	err := r.DB.QueryRow(`
+		SELECT
+			pr.id,
+			pr.pr_number,
+			pr.requester_user_id,
+			COALESCE(u.name, ''),
+			pr.store_id,
+			COALESCE(s.store_code, ''),
+			COALESCE(s.store_name, ''),
+			COALESCE(pr.division_id, 0),
+			COALESCE(d.division_name, ''),
+			pr.gl_account_id,
+			COALESCE(ga.gl_name, ''),
+			pr.spend_type,
+			pr.urgent_level,
+			pr.needed_date,
+			COALESCE(pr.justification, ''),
+			pr.total_amount,
+			pr.status,
+			pr.created_at,
+			COALESCE(cur_step.current_step, '')
+		FROM purchase_requests pr
+		LEFT JOIN users u ON u.id = pr.requester_user_id
+		LEFT JOIN stores s ON s.store_id = pr.store_id
+		LEFT JOIN divisions d ON d.id = pr.division_id
+		LEFT JOIN gl_accounts ga ON ga.id = pr.gl_account_id
+		LEFT JOIN (
+			SELECT
+				a.ref_id,
+				COALESCE(r.name, '') AS current_step
+			FROM approvals a
+			JOIN approval_tasks at ON at.approval_id = a.id AND at.status = 'WAITING'
+			LEFT JOIN roles r ON r.id = at.role_id
+			WHERE a.ref_type = 'PR' AND a.status = 'PENDING'
+			AND at.id = (
+				SELECT at2.id
+				FROM approval_tasks at2
+				WHERE at2.approval_id = a.id AND at2.status = 'WAITING'
+				ORDER BY at2.step_order ASC, at2.id ASC
+				LIMIT 1
+			)
+		) cur_step ON cur_step.ref_id = pr.id
+		WHERE pr.id = ?
+	`, id).Scan(
+		&item.ID,
+		&item.PRNumber,
+		&item.RequesterUserID,
+		&item.RequesterName,
+		&item.StoreID,
+		&item.StoreCode,
+		&item.StoreName,
+		&divisionID,
+		&item.DivisionName,
+		&item.GLAccountID,
+		&item.GLAccountName,
+		&item.SpendType,
+		&item.UrgentLevel,
+		&neededDate,
+		&item.Justification,
+		&item.TotalAmount,
+		&item.Status,
+		&createdAt,
+		&item.CurrentStep,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if divisionID.Valid {
+		item.DivisionID = int(divisionID.Int64)
+	}
+	if neededDate.Valid {
+		item.NeededDate = neededDate.Time.Format("2006-01-02")
+	}
+	if createdAt.Valid {
+		item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006")
+	}
+	item.TotalAmountDisplay = formatAmountID(item.TotalAmount)
+	item.StatusLabel = formatStatusLabel(item.Status)
+	if item.CurrentStep == "" {
+		item.CurrentStep = defaultCurrentStep(item.Status)
+	}
+	item.SLALabel, item.SLAState = formatSLALabel(item.Status, item.NeededDate)
+	item.BudgetImpactLabel = buildBudgetImpactLabel(item.DivisionName, item.GLAccountName)
+	item.BudgetUtilizedPct = 75
+	item.BudgetMessage = "This request will consume 10% of the remaining budget. Post-approval, the total utilization will reach 75%."
+
+	items, err := r.getItemsByPRID(id)
+	if err != nil {
+		return nil, err
+	}
+	item.Items = items
+
+	steps, err := r.getApprovalStepsByPRID(id)
+	if err != nil {
+		return nil, err
+	}
+	item.ApprovalSteps = steps
+
+	taskID, err := r.getCurrentUserTaskID(id, userID)
+	if err != nil {
+		return nil, err
+	}
+	item.CurrentUserTaskID = taskID
+
+	attachments, err := r.getAttachmentsByRef("PR", id)
+	if err != nil {
+		return nil, err
+	}
+	item.Attachments = attachments
+
+	return &item, nil
+}
+
+func (r *PurchaseRequestRepository) getItemsByPRID(prID int64) ([]models.PurchaseRequestItem, error) {
+	rows, err := r.DB.Query(`
+		SELECT id, pr_id, item_name, qty, uom, est_unit_price, est_total, COALESCE(notes, '')
+		FROM purchase_request_items
+		WHERE pr_id = ?
+		ORDER BY id ASC
+	`, prID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.PurchaseRequestItem
+	for rows.Next() {
+		var item models.PurchaseRequestItem
+		if err := rows.Scan(&item.ID, &item.PRID, &item.ItemName, &item.Qty, &item.UOM, &item.EstUnitPrice, &item.EstTotal, &item.Notes); err != nil {
+			return nil, err
+		}
+		item.QtyDisplay = formatQty(item.Qty)
+		item.EstUnitPriceDisplay = formatAmountID(item.EstUnitPrice)
+		item.EstTotalDisplay = formatAmountID(item.EstTotal)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *PurchaseRequestRepository) getApprovalStepsByPRID(prID int64) ([]models.PurchaseRequestApprovalStep, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			at.id,
+			at.step_order,
+			COALESCE(role.name, ''),
+			COALESCE(assigned.name, ''),
+			at.status,
+			at.acted_at,
+			at.created_at
+		FROM approvals a
+		JOIN approval_tasks at ON at.approval_id = a.id
+		LEFT JOIN roles role ON role.id = at.role_id
+		LEFT JOIN users assigned ON assigned.id = at.assigned_user_id
+		WHERE a.ref_type = 'PR' AND a.ref_id = ?
+		ORDER BY at.step_order ASC, at.id ASC
+	`, prID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var steps []models.PurchaseRequestApprovalStep
+	for rows.Next() {
+		var (
+			step      models.PurchaseRequestApprovalStep
+			actedAt   sql.NullTime
+			createdAt sql.NullTime
+		)
+		if err := rows.Scan(&step.TaskID, &step.StepOrder, &step.RoleName, &step.AssignedUserName, &step.Status, &actedAt, &createdAt); err != nil {
+			return nil, err
+		}
+		step.StatusLabel = formatApprovalTaskStatusLabel(step.Status)
+		if actedAt.Valid {
+			step.ActedAtDisplay = actedAt.Time.Format("02 Jan, 03:04 PM")
+		}
+		if createdAt.Valid {
+			step.CreatedAtDisplay = createdAt.Time.Format("02 Jan, 03:04 PM")
+		}
+		steps = append(steps, step)
+	}
+	return steps, rows.Err()
+}
+
+func (r *PurchaseRequestRepository) getCurrentUserTaskID(prID int64, userID int) (int64, error) {
+	if userID <= 0 {
+		return 0, nil
+	}
+	var taskID int64
+	err := r.DB.QueryRow(`
+		SELECT at.id
+		FROM approvals a
+		JOIN approval_tasks at ON at.approval_id = a.id
+		WHERE a.ref_type = 'PR'
+		AND a.ref_id = ?
+		AND a.status = 'PENDING'
+		AND at.assigned_user_id = ?
+		AND at.status = 'WAITING'
+		AND NOT EXISTS (
+			SELECT 1
+			FROM approval_tasks prev
+			WHERE prev.approval_id = at.approval_id
+			AND prev.step_order < at.step_order
+			AND prev.status NOT IN ('APPROVED', 'SKIPPED')
+		)
+		ORDER BY at.step_order ASC, at.id ASC
+		LIMIT 1
+	`, prID, userID).Scan(&taskID)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	return taskID, err
+}
+
+func (r *PurchaseRequestRepository) getAttachmentsByRef(refType string, refID int64) ([]models.Attachment, error) {
+	rows, err := r.DB.Query(`
+		SELECT id, ref_type, ref_id, file_path, file_name, COALESCE(mime_type, ''), COALESCE(file_size, 0), uploaded_by, created_at
+		FROM attachments
+		WHERE ref_type = ? AND ref_id = ?
+		ORDER BY id ASC
+	`, refType, refID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var attachments []models.Attachment
+	for rows.Next() {
+		var (
+			item      models.Attachment
+			createdAt sql.NullTime
+		)
+		if err := rows.Scan(&item.ID, &item.RefType, &item.RefID, &item.FilePath, &item.FileName, &item.MimeType, &item.FileSize, &item.UploadedBy, &createdAt); err != nil {
+			return nil, err
+		}
+		if createdAt.Valid {
+			item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04")
+		}
+		attachments = append(attachments, item)
+	}
+	return attachments, rows.Err()
+}
+
 func (r *PurchaseRequestRepository) Create(input models.PurchaseRequestCreateInput, totalAmount float64) (int64, error) {
 	tx, err := r.DB.Begin()
 	if err != nil {
@@ -560,4 +810,39 @@ func formatSLALabel(status, neededDate string) (string, string) {
 		return fmt.Sprintf("%dd left", days), "normal"
 	}
 	return fmt.Sprintf("%dd %dh left", days, remainingHours), "normal"
+}
+
+func formatQty(value float64) string {
+	if math.Mod(value, 1) == 0 {
+		return fmt.Sprintf("%.0f", value)
+	}
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", value), "0"), ".")
+}
+
+func formatApprovalTaskStatusLabel(status string) string {
+	switch status {
+	case "WAITING":
+		return "Pending Approval"
+	case "APPROVED":
+		return "Verified"
+	case "REJECTED":
+		return "Rejected"
+	case "SKIPPED":
+		return "Skipped"
+	default:
+		return status
+	}
+}
+
+func buildBudgetImpactLabel(divisionName, glName string) string {
+	if strings.TrimSpace(divisionName) != "" && strings.TrimSpace(glName) != "" {
+		return divisionName + " " + glName + " Budget"
+	}
+	if strings.TrimSpace(glName) != "" {
+		return glName + " Budget"
+	}
+	if strings.TrimSpace(divisionName) != "" {
+		return divisionName + " Budget"
+	}
+	return "Purchase Request Budget"
 }

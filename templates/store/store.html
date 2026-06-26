@@ -45,10 +45,12 @@
                         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <h2 class="text-base font-semibold text-slate-900">Daftar Store</h2>
+                                {{ if index .Permissions "store_create" }}
                                 <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]" data-modal-open="storeModal">
                                     <i class="bx bx-plus text-base"></i>
                                     New Store
                                 </button>
+                                {{ end }}
                             </div>
                             <div class="p-4">
                                 {{ if .Error }}
@@ -90,6 +92,7 @@
                                                 <td class="px-3 py-3 text-slate-600">{{ $store.UpdatedAtDisplay }}</td>
                                                 <td class="px-3 py-3">
                                                     <div class="flex flex-wrap items-center gap-2">
+                                                        {{ if index $.Permissions "store_edit" }}
                                                         <button type="button"
                                                             class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 btn-edit-store"
                                                             data-store-id="{{ $store.StoreID }}"
@@ -100,10 +103,13 @@
                                                             <i class="bx bx-pen text-sm"></i>
                                                             Edit
                                                         </button>
+                                                        {{ end }}
+                                                        {{ if index $.Permissions "store_delete" }}
                                                         <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 btn-delete-store" data-url="/stores/delete/{{ $store.StoreID }}" data-store-name="{{ $store.StoreName }}">
                                                             <i class="bx bx-trash text-sm"></i>
                                                             Del
                                                         </button>
+                                                        {{ end }}
                                                     </div>
                                                 </td>
                                             </tr>
