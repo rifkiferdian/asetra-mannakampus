@@ -24,8 +24,167 @@ type lockedApprovalTask struct {
 	ApprovalStatus string
 }
 
-func (r *ApprovalTaskRepository) GetInboxByUser(userID int) ([]models.ApprovalTaskInboxItem, error) {
+func (r *ApprovalTaskRepository) GetInboxByUser(filter models.ApprovalTaskInboxFilter) (*models.ApprovalTaskInboxResult, error) {
+	whereSQL, args := approvalTaskInboxWhere(filter)
+
+	var totalRows int
+	countArgs := append([]interface{}{}, args...)
+	if err := r.DB.QueryRow(`
+		SELECT COUNT(1)
+		FROM approval_tasks at
+		JOIN approvals a ON a.id = at.approval_id
+		LEFT JOIN purchase_requests pr ON a.ref_type = 'PR' AND pr.id = a.ref_id
+		LEFT JOIN users u ON u.id = pr.requester_user_id
+		LEFT JOIN stores s ON s.store_id = pr.store_id
+		LEFT JOIN roles r ON r.id = at.role_id
+	`+whereSQL, countArgs...).Scan(&totalRows); err != nil {
+		return nil, err
+	}
+
+	var queueValue float64
+	sumArgs := append([]interface{}{}, args...)
+	if err := r.DB.QueryRow(`
+		SELECT COALESCE(SUM(pr.total_amount), 0)
+		FROM approval_tasks at
+		JOIN approvals a ON a.id = at.approval_id
+		LEFT JOIN purchase_requests pr ON a.ref_type = 'PR' AND pr.id = a.ref_id
+		LEFT JOIN users u ON u.id = pr.requester_user_id
+		LEFT JOIN stores s ON s.store_id = pr.store_id
+		LEFT JOIN roles r ON r.id = at.role_id
+	`+whereSQL, sumArgs...).Scan(&queueValue); err != nil {
+		return nil, err
+	}
+
+	orderSQL := " ORDER BY at.created_at ASC, at.id ASC"
+	if filter.NeededDateSort == "asc" {
+		orderSQL = " ORDER BY pr.needed_date IS NULL ASC, pr.needed_date ASC, at.created_at ASC, at.id ASC"
+	} else if filter.NeededDateSort == "desc" {
+		orderSQL = " ORDER BY pr.needed_date IS NULL ASC, pr.needed_date DESC, at.created_at ASC, at.id ASC"
+	}
+
+	offset := (filter.Page - 1) * filter.PerPage
+	queryArgs := append([]interface{}{}, args...)
+	queryArgs = append(queryArgs, filter.PerPage, offset)
+
 	rows, err := r.DB.Query(`
+		SELECT
+			at.id,
+			at.approval_id,
+			a.ref_type,
+			a.ref_id,
+			CASE
+				WHEN a.ref_type = 'PR' THEN COALESCE(pr.pr_number, '')
+				ELSE CONCAT(a.ref_type, '-', a.ref_id)
+			END AS document_number,
+			COALESCE(u.name, '') AS requester_name,
+			COALESCE(s.store_name, '') AS store_name,
+			COALESCE(r.name, '') AS role_name,
+			at.step_order,
+			at.scope,
+			COALESCE(pr.total_amount, 0) AS total_amount,
+			COALESCE(pr.spend_type, '') AS spend_type,
+			COALESCE(pr.urgent_level, '') AS urgent_level,
+			pr.needed_date,
+			at.status,
+			at.created_at
+		FROM approval_tasks at
+		JOIN approvals a ON a.id = at.approval_id
+		LEFT JOIN purchase_requests pr ON a.ref_type = 'PR' AND pr.id = a.ref_id
+		LEFT JOIN users u ON u.id = pr.requester_user_id
+		LEFT JOIN stores s ON s.store_id = pr.store_id
+		LEFT JOIN roles r ON r.id = at.role_id
+	`+whereSQL+orderSQL+`
+		LIMIT ? OFFSET ?
+	`, queryArgs...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.ApprovalTaskInboxItem
+	for rows.Next() {
+		var (
+			item        models.ApprovalTaskInboxItem
+			totalAmount float64
+			createdAt   sql.NullTime
+			neededDate  sql.NullTime
+		)
+		if err := rows.Scan(
+			&item.ID,
+			&item.ApprovalID,
+			&item.RefType,
+			&item.RefID,
+			&item.DocumentNumber,
+			&item.RequesterName,
+			&item.StoreName,
+			&item.RoleName,
+			&item.StepOrder,
+			&item.Scope,
+			&totalAmount,
+			&item.SpendType,
+			&item.UrgentLevel,
+			&neededDate,
+			&item.Status,
+			&createdAt,
+		); err != nil {
+			return nil, err
+		}
+		item.Amount = totalAmount
+		item.AmountDisplay = formatAmountID(totalAmount)
+		if createdAt.Valid {
+			item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04")
+		}
+		if neededDate.Valid {
+			item.NeededDate = neededDate.Time.Format("02 Jan 2006")
+		}
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &models.ApprovalTaskInboxResult{
+		Items:      items,
+		TotalRows:  totalRows,
+		QueueValue: queueValue,
+	}, nil
+}
+
+func approvalTaskInboxWhere(filter models.ApprovalTaskInboxFilter) (string, []interface{}) {
+	args := []interface{}{filter.UserID}
+	conditions := []string{
+		"at.assigned_user_id = ?",
+		"at.status = 'WAITING'",
+		"a.status = 'PENDING'",
+		`NOT EXISTS (
+			SELECT 1
+			FROM approval_tasks prev
+			WHERE prev.approval_id = at.approval_id
+			AND prev.step_order < at.step_order
+			AND prev.status NOT IN ('APPROVED', 'SKIPPED')
+		)`,
+	}
+	if filter.Urgency != "" {
+		conditions = append(conditions, "pr.urgent_level = ?")
+		args = append(args, filter.Urgency)
+	}
+	if filter.SpendType != "" {
+		conditions = append(conditions, "pr.spend_type = ?")
+		args = append(args, filter.SpendType)
+	}
+	return " WHERE " + strings.Join(conditions, "\n\t\tAND "), args
+}
+
+func (r *ApprovalTaskRepository) GetDetailByID(taskID int64, userID int) (*models.ApprovalTaskDetail, error) {
+	var (
+		item        models.ApprovalTaskDetail
+		totalAmount float64
+		createdAt   sql.NullTime
+		neededDate  sql.NullTime
+	)
+
+	err := r.DB.QueryRow(`
 		SELECT
 			at.id,
 			at.approval_id,
@@ -43,14 +202,20 @@ func (r *ApprovalTaskRepository) GetInboxByUser(userID int) ([]models.ApprovalTa
 			COALESCE(pr.total_amount, 0) AS total_amount,
 			COALESCE(pr.urgent_level, '') AS urgent_level,
 			at.status,
-			at.created_at
+			at.created_at,
+			COALESCE(pr.spend_type, '') AS spend_type,
+			pr.needed_date,
+			COALESCE(pr.justification, '') AS justification,
+			a.status AS approval_status,
+			COALESCE(pr.status, '') AS document_status
 		FROM approval_tasks at
 		JOIN approvals a ON a.id = at.approval_id
 		LEFT JOIN purchase_requests pr ON a.ref_type = 'PR' AND pr.id = a.ref_id
 		LEFT JOIN users u ON u.id = pr.requester_user_id
 		LEFT JOIN stores s ON s.store_id = pr.store_id
 		LEFT JOIN roles r ON r.id = at.role_id
-		WHERE at.assigned_user_id = ?
+		WHERE at.id = ?
+		AND at.assigned_user_id = ?
 		AND at.status = 'WAITING'
 		AND a.status = 'PENDING'
 		AND NOT EXISTS (
@@ -60,46 +225,43 @@ func (r *ApprovalTaskRepository) GetInboxByUser(userID int) ([]models.ApprovalTa
 			AND prev.step_order < at.step_order
 			AND prev.status NOT IN ('APPROVED', 'SKIPPED')
 		)
-		ORDER BY at.created_at ASC, at.id ASC
-	`, userID)
+	`, taskID, userID).Scan(
+		&item.ID,
+		&item.ApprovalID,
+		&item.RefType,
+		&item.RefID,
+		&item.DocumentNumber,
+		&item.RequesterName,
+		&item.StoreName,
+		&item.RoleName,
+		&item.StepOrder,
+		&item.Scope,
+		&totalAmount,
+		&item.UrgentLevel,
+		&item.Status,
+		&createdAt,
+		&item.SpendType,
+		&neededDate,
+		&item.Justification,
+		&item.ApprovalStatus,
+		&item.DocumentStatus,
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var items []models.ApprovalTaskInboxItem
-	for rows.Next() {
-		var (
-			item        models.ApprovalTaskInboxItem
-			totalAmount float64
-			createdAt   sql.NullTime
-		)
-		if err := rows.Scan(
-			&item.ID,
-			&item.ApprovalID,
-			&item.RefType,
-			&item.RefID,
-			&item.DocumentNumber,
-			&item.RequesterName,
-			&item.StoreName,
-			&item.RoleName,
-			&item.StepOrder,
-			&item.Scope,
-			&totalAmount,
-			&item.UrgentLevel,
-			&item.Status,
-			&createdAt,
-		); err != nil {
-			return nil, err
-		}
-		item.AmountDisplay = formatAmountID(totalAmount)
-		if createdAt.Valid {
-			item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04")
-		}
-		items = append(items, item)
+	item.AmountDisplay = formatAmountID(totalAmount)
+	item.Amount = totalAmount
+	if createdAt.Valid {
+		item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04")
 	}
+	if neededDate.Valid {
+		item.NeededDate = neededDate.Time.Format("2006-01-02")
+	}
+	item.CurrentApprovalStep = fmt.Sprintf("Step %d", item.StepOrder)
+	item.CurrentApprovalStatus = "Waiting for your approval"
 
-	return items, rows.Err()
+	return &item, nil
 }
 
 func (r *ApprovalTaskRepository) Approve(input models.ApprovalActionInput) error {

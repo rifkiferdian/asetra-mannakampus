@@ -7,6 +7,204 @@
         <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .inbox-kpi-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 22px;
+            }
+            .inbox-kpi-card {
+                position: relative;
+                overflow: hidden;
+                min-height: 124px;
+                border: 1px solid #cfd6e4;
+                border-radius: 12px;
+                background: #fff;
+                padding: 24px 26px;
+                box-shadow: 0 10px 24px -22px rgba(15, 23, 42, .55);
+                display: flex;
+                justify-content: space-between;
+                gap: 18px;
+            }
+            .inbox-kpi-card::before {
+                content: "";
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 5px;
+                background: var(--kpi-accent);
+            }
+            .inbox-kpi-card::after {
+                content: "";
+                position: absolute;
+                right: -34px;
+                top: -42px;
+                width: 118px;
+                height: 118px;
+                border-radius: 999px;
+                background: var(--kpi-soft);
+            }
+            .inbox-kpi-card > * {
+                position: relative;
+                z-index: 1;
+            }
+            .inbox-kpi-blue {
+                --kpi-accent: #123d91;
+                --kpi-soft: rgba(18, 61, 145, .10);
+                --kpi-icon-bg: #eaf1ff;
+                --kpi-icon-color: #123d91;
+                --kpi-note-color: #007b5f;
+            }
+            .inbox-kpi-green {
+                --kpi-accent: #16c784;
+                --kpi-soft: rgba(22, 199, 132, .13);
+                --kpi-icon-bg: #dcfff1;
+                --kpi-icon-color: #00856b;
+                --kpi-note-color: #334155;
+            }
+            .inbox-kpi-emerald {
+                --kpi-accent: #00856b;
+                --kpi-soft: rgba(0, 133, 107, .13);
+                --kpi-icon-bg: #e5fff6;
+                --kpi-icon-color: #00856b;
+                --kpi-note-color: #334155;
+            }
+            .inbox-kpi-label {
+                color: #1e293b;
+                font-size: 13px;
+                font-weight: 800;
+                letter-spacing: .01em;
+            }
+            .inbox-kpi-value {
+                margin-top: 10px;
+                color: #020617;
+                font-size: 31px;
+                line-height: 1;
+                font-weight: 900;
+                letter-spacing: -.02em;
+            }
+            .inbox-kpi-note {
+                margin-top: 9px;
+                color: var(--kpi-note-color);
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .inbox-kpi-icon {
+                width: 34px;
+                height: 34px;
+                flex: 0 0 34px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                background: var(--kpi-icon-bg);
+                color: var(--kpi-icon-color);
+                font-size: 22px;
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .45);
+            }
+            .inbox-kpi-status {
+                color: #00856b;
+            }
+            .inbox-filter-card {
+                border: 1px solid #cbd5e1;
+                border-radius: 12px;
+                background: #fff;
+                padding: 14px;
+                box-shadow: 0 8px 20px -22px rgba(15, 23, 42, .5);
+            }
+            .inbox-filter-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(150px, 1fr)) auto auto;
+                gap: 10px;
+                align-items: end;
+            }
+            .inbox-filter-label {
+                display: block;
+                margin-bottom: 6px;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: .04em;
+                text-transform: uppercase;
+                color: #64748b;
+            }
+            .inbox-control {
+                height: 38px;
+                width: 100%;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                background-color: #fff;
+                padding: 0 34px 0 12px;
+                font-size: 12px;
+                font-weight: 700;
+                color: #334155;
+                outline: none;
+            }
+            .inbox-control:focus {
+                border-color: #003b88;
+                box-shadow: 0 0 0 3px rgba(0, 59, 136, .08);
+            }
+            select.inbox-control {
+                appearance: none;
+                background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
+                background-position: calc(100% - 16px) 16px, calc(100% - 11px) 16px;
+                background-size: 5px 5px, 5px 5px;
+                background-repeat: no-repeat;
+            }
+            .inbox-filter-btn {
+                display: inline-flex;
+                height: 38px;
+                align-items: center;
+                justify-content: center;
+                gap: 7px;
+                border-radius: 8px;
+                padding: 0 14px;
+                font-size: 12px;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+            .inbox-pagination {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                border-top: 1px solid #e2e8f0;
+                padding: 14px 16px;
+                font-size: 12px;
+                color: #475569;
+            }
+            .inbox-page-link {
+                display: inline-flex;
+                height: 32px;
+                min-width: 32px;
+                align-items: center;
+                justify-content: center;
+                border-radius: 7px;
+                border: 1px solid #cbd5e1;
+                background: #fff;
+                padding: 0 10px;
+                font-size: 12px;
+                font-weight: 800;
+                color: #334155;
+            }
+            .inbox-page-link:hover {
+                background: #f8fafc;
+            }
+            .inbox-page-link-active {
+                border-color: #003b88;
+                background: #003b88;
+                color: #fff;
+            }
+            .inbox-page-link-disabled {
+                border-color: #e2e8f0;
+                color: #94a3b8;
+                pointer-events: none;
+            }
+            @media (max-width: 1024px) {
+                .inbox-kpi-grid { grid-template-columns: 1fr; gap: 14px; }
+                .inbox-filter-grid { grid-template-columns: 1fr; }
+                .inbox-filter-btn { width: 100%; }
+                .inbox-pagination { align-items: stretch; flex-direction: column; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-display text-slate-900">
         <div class="flex min-h-screen">
@@ -23,7 +221,7 @@
                             </div>
                             <div class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">
                                 <i class="bx bx-task text-lg text-[#f26419]"></i>
-                                {{ len .Tasks }} pending task
+                                {{ .PendingCount }} pending task
                             </div>
                         </div>
 
@@ -34,9 +232,81 @@
                         <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ .Error }}</div>
                         {{ end }}
 
+                        <section class="inbox-kpi-grid">
+                            <article class="inbox-kpi-card inbox-kpi-blue">
+                                <div>
+                                    <p class="inbox-kpi-label">Total Pending</p>
+                                    <p class="inbox-kpi-value">{{ .PendingCount }}</p>
+                                    <p class="inbox-kpi-note"><i class="bx bx-trending-down align-middle"></i> 4% from last week</p>
+                                </div>
+                                <span class="inbox-kpi-icon">
+                                    <i class="bx bx-calendar-check"></i>
+                                </span>
+                            </article>
+
+                            <article class="inbox-kpi-card inbox-kpi-green">
+                                <div>
+                                    <p class="inbox-kpi-label">Queue Value</p>
+                                    <p class="inbox-kpi-value">{{ .QueueValueDisplay }}</p>
+                                    <p class="inbox-kpi-note">Pending PR allocation</p>
+                                </div>
+                                <span class="inbox-kpi-icon">
+                                    <i class="bx bx-money"></i>
+                                </span>
+                            </article>
+
+                            <article class="inbox-kpi-card inbox-kpi-emerald">
+                                <div>
+                                    <p class="inbox-kpi-label">Average SLA Status</p>
+                                    <p class="inbox-kpi-value inbox-kpi-status">{{ .SLAStatusLabel }}</p>
+                                    <p class="inbox-kpi-note">Well within SLA targets</p>
+                                </div>
+                                <span class="inbox-kpi-icon">
+                                    <i class="bx bx-badge-check"></i>
+                                </span>
+                            </article>
+                        </section>
+
+                        <section class="inbox-filter-card">
+                            <form method="get" action="/approval-tasks" class="inbox-filter-grid">
+                                <label>
+                                    <span class="inbox-filter-label">Urgency</span>
+                                    <select name="urgency" class="inbox-control">
+                                        <option value="">All Urgency</option>
+                                        <option value="NORMAL" {{ if eq .Filters.Urgency "NORMAL" }}selected{{ end }}>Normal</option>
+                                        <option value="URGENT" {{ if eq .Filters.Urgency "URGENT" }}selected{{ end }}>Urgent</option>
+                                        <option value="EMERGENCY" {{ if eq .Filters.Urgency "EMERGENCY" }}selected{{ end }}>Emergency</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span class="inbox-filter-label">Needed Date</span>
+                                    <select name="needed_date_sort" class="inbox-control">
+                                        <option value="">Default Order</option>
+                                        <option value="asc" {{ if eq .Filters.NeededDateSort "asc" }}selected{{ end }}>Needed Date ASC</option>
+                                        <option value="desc" {{ if eq .Filters.NeededDateSort "desc" }}selected{{ end }}>Needed Date DESC</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span class="inbox-filter-label">Spend Type</span>
+                                    <select name="spend_type" class="inbox-control">
+                                        <option value="">All Type</option>
+                                        <option value="OPEX" {{ if eq .Filters.SpendType "OPEX" }}selected{{ end }}>OPEX</option>
+                                        <option value="CAPEX" {{ if eq .Filters.SpendType "CAPEX" }}selected{{ end }}>CAPEX</option>
+                                    </select>
+                                </label>
+                                <button type="submit" class="inbox-filter-btn bg-[#003b88] text-white hover:bg-[#002f6d]">
+                                    <i class="bx bx-filter-alt text-base"></i>
+                                    Filter
+                                </button>
+                                <a href="/approval-tasks" class="inbox-filter-btn border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                                    Reset
+                                </a>
+                            </form>
+                        </section>
+
                         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                             <div class="overflow-x-auto">
-                                <table class="w-full min-w-[1180px] text-sm">
+                                <table class="w-full min-w-[1360px] text-sm">
                                     <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
                                         <tr>
                                             <th class="px-4 py-3 text-left font-semibold">No</th>
@@ -44,24 +314,25 @@
                                             <th class="px-4 py-3 text-left font-semibold">Requester</th>
                                             <th class="px-4 py-3 text-left font-semibold">Store</th>
                                             <th class="px-4 py-3 text-left font-semibold">Amount</th>
+                                            <th class="px-4 py-3 text-left font-semibold">Type</th>
                                             <th class="px-4 py-3 text-left font-semibold">Urgency</th>
-                                            <th class="px-4 py-3 text-left font-semibold">Step</th>
-                                            <th class="px-4 py-3 text-left font-semibold">Role</th>
-                                            <th class="px-4 py-3 text-left font-semibold">Comment</th>
+                                            <th class="px-4 py-3 text-left font-semibold">Needed Date</th>
                                             <th class="px-4 py-3 text-right font-semibold">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
                                         {{ range $i, $task := .Tasks }}
                                         <tr class="align-top hover:bg-slate-50/70">
-                                            <td class="px-4 py-4 font-semibold text-slate-500">{{ no $i 1 }}</td>
+                                            <td class="px-4 py-4 font-semibold text-slate-500">{{ no $i $.Pagination.From }}</td>
                                             <td class="px-4 py-4">
                                                 <div class="font-bold text-[#003b88]">{{ $task.DocumentNumber }}</div>
-                                                <div class="mt-1 text-xs text-slate-400">{{ $task.RefType }} #{{ $task.RefID }}</div>
                                             </td>
                                             <td class="px-4 py-4 text-slate-700">{{ $task.RequesterName }}</td>
                                             <td class="px-4 py-4 text-slate-700">{{ $task.StoreName }}</td>
                                             <td class="px-4 py-4 font-semibold text-slate-800">{{ $task.AmountDisplay }}</td>
+                                            <td class="px-4 py-4">
+                                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-[#003b88]">{{ $task.SpendType }}</span>
+                                            </td>
                                             <td class="px-4 py-4">
                                                 {{ if eq $task.UrgentLevel "EMERGENCY" }}
                                                 <span class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">Emergency</span>
@@ -71,43 +342,39 @@
                                                 <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">Normal</span>
                                                 {{ end }}
                                             </td>
-                                            <td class="px-4 py-4 text-slate-700">Step {{ $task.StepOrder }}</td>
-                                            <td class="px-4 py-4">
-                                                <div class="font-semibold text-slate-800">{{ $task.RoleName }}</div>
-                                                <div class="mt-1 text-xs text-slate-400">{{ $task.Scope }}</div>
-                                            </td>
-                                            <td class="px-4 py-4">
-                                                <textarea id="comment-{{ $task.ID }}" {{ if index $.Permissions "approval_task_approve" }}form="approve-form-{{ $task.ID }}"{{ end }} name="comment" rows="2" class="w-64 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500" placeholder="Catatan approval"></textarea>
-                                            </td>
+                                            <td class="px-4 py-4 text-slate-700">{{ if $task.NeededDate }}{{ $task.NeededDate }}{{ else }}-{{ end }}</td>
                                             <td class="px-4 py-4 text-right">
-                                                <div class="flex justify-end gap-2">
-                                                    {{ if index $.Permissions "approval_task_approve" }}
-                                                    <form id="approve-form-{{ $task.ID }}" method="post" action="/approval-tasks/{{ $task.ID }}/approve">
-                                                        <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100">
-                                                            <i class="bx bx-check text-base"></i>
-                                                            Approve
-                                                        </button>
-                                                    </form>
-                                                    {{ end }}
-                                                    {{ if index $.Permissions "approval_task_reject" }}
-                                                    <form method="post" action="/approval-tasks/{{ $task.ID }}/reject" onsubmit="return copyRejectComment(this, 'comment-{{ $task.ID }}')">
-                                                        <input type="hidden" name="comment">
-                                                        <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100">
-                                                            <i class="bx bx-x text-base"></i>
-                                                            Reject
-                                                        </button>
-                                                    </form>
-                                                    {{ end }}
-                                                </div>
+                                                <a href="/approval-tasks/{{ $task.ID }}" class="inline-flex items-center gap-2 rounded-lg bg-[#003b88] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#002f6d]">
+                                                    <i class="bx bx-show text-base"></i>
+                                                    Review
+                                                </a>
                                             </td>
                                         </tr>
                                         {{ else }}
                                         <tr>
-                                            <td colspan="10" class="px-4 py-10 text-center text-sm text-slate-500">Tidak ada task approval yang menunggu tindakan Anda.</td>
+                                            <td colspan="9" class="px-4 py-10 text-center text-sm text-slate-500">Tidak ada task approval yang menunggu tindakan Anda.</td>
                                         </tr>
                                         {{ end }}
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="inbox-pagination">
+                                <p>Showing {{ .Pagination.From }} to {{ .Pagination.To }} of {{ .Pagination.TotalRows }} results</p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    {{ if .Pagination.HasPrev }}
+                                    <a href="{{ .Pagination.PrevURL }}" class="inbox-page-link">Previous</a>
+                                    {{ else }}
+                                    <span class="inbox-page-link inbox-page-link-disabled">Previous</span>
+                                    {{ end }}
+                                    {{ range .Pagination.Pages }}
+                                    <a href="{{ .URL }}" class="inbox-page-link {{ if .Active }}inbox-page-link-active{{ end }}">{{ .Page }}</a>
+                                    {{ end }}
+                                    {{ if .Pagination.HasNext }}
+                                    <a href="{{ .Pagination.NextURL }}" class="inbox-page-link">Next</a>
+                                    {{ else }}
+                                    <span class="inbox-page-link inbox-page-link-disabled">Next</span>
+                                    {{ end }}
+                                </div>
                             </div>
                         </section>
                     </div>
@@ -117,13 +384,6 @@
         </div>
         <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
         <script>
-            function copyRejectComment(form, sourceID) {
-                var source = document.getElementById(sourceID);
-                var target = form.querySelector('[name="comment"]');
-                if (source && target) target.value = source.value;
-                return true;
-            }
-
             document.addEventListener('DOMContentLoaded', function () {
                 var sidebar = document.getElementById('app-sidebar');
                 var overlay = document.getElementById('sidebar-overlay');

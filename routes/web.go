@@ -20,6 +20,7 @@ func RegisterWebRoutes(r *gin.Engine) {
 	{
 		auth.GET("/dashboard", middleware.RequirePermission("dashboard_access"), controllers.DashboardIndex)
 		auth.GET("/approval-tasks", middleware.RequirePermission("approval_task_management_access"), controllers.ApprovalTaskInboxIndex)
+		auth.GET("/approval-tasks/:id", middleware.RequirePermission("approval_task_view"), controllers.ApprovalTaskDetail)
 		auth.POST("/approval-tasks/:id/approve", middleware.RequirePermission("approval_task_approve"), controllers.ApprovalTaskApprove)
 		auth.POST("/approval-tasks/:id/reject", middleware.RequirePermission("approval_task_reject"), controllers.ApprovalTaskReject)
 		auth.GET("/purchase-requests", middleware.RequirePermission("purchase_request_management_access"), controllers.PurchaseRequestIndex)
