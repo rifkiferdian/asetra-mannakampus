@@ -165,6 +165,12 @@ func (r *ApprovalRuleRepository) RoleExists(roleID int64) (bool, error) {
 	return count > 0, err
 }
 
+func (r *ApprovalRuleRepository) CountApprovalsByRuleID(ruleID int64) (int, error) {
+	var count int
+	err := r.DB.QueryRow(`SELECT COUNT(1) FROM approvals WHERE rule_id = ?`, ruleID).Scan(&count)
+	return count, err
+}
+
 func (r *ApprovalRuleRepository) Create(input models.ApprovalRuleCreateInput) (int64, error) {
 	tx, err := r.DB.Begin()
 	if err != nil {

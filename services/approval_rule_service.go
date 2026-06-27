@@ -93,6 +93,23 @@ func (s *ApprovalRuleService) DeleteApprovalRule(id int64) error {
 	if id <= 0 {
 		return errors.New("approval rule tidak valid")
 	}
+
+	exists, err := s.Repo.ExistsByID(id)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("approval rule tidak ditemukan")
+	}
+
+	usedCount, err := s.Repo.CountApprovalsByRuleID(id)
+	if err != nil {
+		return err
+	}
+	if usedCount > 0 {
+		return fmt.Errorf("approval rule tidak bisa dihapus karena sudah dipakai oleh %d approval workflow. Nonaktifkan rule jika tidak ingin dipakai untuk PR baru", usedCount)
+	}
+
 	return s.Repo.DeleteByID(id)
 }
 

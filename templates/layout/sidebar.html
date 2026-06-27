@@ -118,14 +118,7 @@
                 </ul>
             </li>
             {{ end }}
-            {{ if index .Permissions "document_type_management_access" }}
-            <li>
-                <a href="#" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-[#f26419] sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px]">
-                    <i class="bx bx-file text-xl"></i>
-                    <span>Document Types</span>
-                </a>
-            </li>
-            {{ end }}
+           
             {{ if index .Permissions "role_management_access" }}
             <li>
                 <a href="{{ baseURL "/role" }}" class="flex items-center gap-3 rounded-2xl px-3 py-3 text-[14px] font-semibold transition sm:gap-4 sm:px-4 sm:py-4 sm:text-[15px] {{ if or (eq .Page "role") (eq .Page "roleForm") (eq .Page "roleEdit") }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if or (eq .Page "role") (eq .Page "roleForm") (eq .Page "roleEdit") }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>

@@ -70,6 +70,7 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "purchase_request_management_access", Group: "purchase_request", GuardName: "web"},
 		{Name: "purchase_request_view", Group: "purchase_request", GuardName: "web"},
 		{Name: "purchase_request_create", Group: "purchase_request", GuardName: "web"},
+		{Name: "purchase_request_edit", Group: "purchase_request", GuardName: "web"},
 	}
 
 	if err := s.Repo.EnsurePermissions(defs); err != nil {

@@ -52,6 +52,22 @@
             .reject-hidden.is-open { display: block; }
             .detail-textarea { width: 100%; min-height: 66px; border: 1px solid #cfd6e4; border-radius: 7px; padding: 9px 10px; font-size: 12px; line-height: 17px; outline: none; resize: vertical; }
             .detail-textarea:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.09); }
+            .edit-panel { display: none; }
+            .edit-panel.is-open { display: block; }
+            .edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+            .edit-label { display: block; margin-bottom: 6px; color: #334155; font-size: 10px; line-height: 13px; font-weight: 800; text-transform: uppercase; }
+            .edit-control { width: 100%; min-height: 38px; border: 1px solid #cfd6e4; border-radius: 7px; background: #f8fafc; padding: 8px 10px; color: #020617; font-size: 12px; outline: none; }
+            .edit-control:focus { border-color: #003b88; background: #fff; box-shadow: 0 0 0 3px rgba(0,59,136,.09); }
+            .edit-span-2 { grid-column: span 2 / span 2; }
+            .edit-table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 12px; }
+            .edit-table th { padding: 10px; background: #eef3ff; color: #334155; text-align: left; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+            .edit-table td { padding: 9px 10px; border-top: 1px solid #d7deea; vertical-align: middle; }
+            .edit-row-total { background: #f8fafc; font-weight: 900; text-align: right; }
+            .edit-items-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+            .edit-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; padding-top: 14px; margin-top: 6px; }
+            .edit-btn { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; gap: 8px; border-radius: 7px; padding: 0 14px; font-size: 12px; font-weight: 900; }
+            .edit-btn-primary { background: #003b88; color: #fff; }
+            .edit-btn-secondary { border: 1px solid #cfd6e4; background: #fff; color: #0f172a; }
             @media (max-width: 1024px) {
                 .detail-grid { grid-template-columns: 1fr; }
                 .detail-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -59,6 +75,8 @@
             @media (max-width: 640px) {
                 .detail-card-pad { padding: 18px; }
                 .detail-meta { grid-template-columns: 1fr; }
+                .edit-grid { grid-template-columns: 1fr; }
+                .edit-span-2 { grid-column: auto; }
                 .detail-table { min-width: 760px; }
             }
         </style>
@@ -76,7 +94,168 @@
                                 <i class="bx bx-arrow-back text-lg"></i>
                                 Back to PR List
                             </a>
+                            {{ if and .CanEditPR (index .Permissions "purchase_request_edit") }}
+                            <button type="button" class="edit-btn edit-btn-primary" data-edit-pr-toggle>
+                                <i class="bx bx-edit"></i>
+                                Edit PR
+                            </button>
+                            {{ end }}
                         </div>
+
+                        {{ if .Error }}
+                        <div class="detail-card border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <div class="flex items-start gap-3">
+                                <i class="bx bx-error-circle mt-0.5 text-lg"></i>
+                                <div>
+                                    <p class="font-extrabold">Approval workflow belum bisa dibuat</p>
+                                    <p class="mt-1">{{ .Error }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {{ end }}
+
+                        {{ if .Success }}
+                        <div class="detail-card border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                            <div class="flex items-start gap-3">
+                                <i class="bx bx-check-circle mt-0.5 text-lg"></i>
+                                <div>
+                                    <p class="font-extrabold">Berhasil</p>
+                                    <p class="mt-1">{{ .Success }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {{ end }}
+
+                        {{ if and .CanEditPR (index .Permissions "purchase_request_edit") }}
+                        <section class="detail-card detail-card-pad edit-panel" data-edit-pr-panel>
+                            <div class="mb-5 flex items-start justify-between gap-4">
+                                <div>
+                                    <h2 class="detail-section-title">Edit Purchase Request</h2>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500">Edit hanya tersedia sebelum approval workflow dibuat.</p>
+                                </div>
+                                <button type="button" class="edit-btn edit-btn-secondary" data-edit-pr-close>
+                                    <i class="bx bx-x"></i>
+                                    Close
+                                </button>
+                            </div>
+
+                            <form method="post" action="/purchase-requests/{{ $pr.ID }}/update" class="space-y-5" data-edit-pr-form>
+                                <div class="edit-grid">
+                                    <div>
+                                        <label class="edit-label">Store Location</label>
+                                        <select name="store_id" class="edit-control" required>
+                                            <option value="">Pilih store</option>
+                                            {{ range .Stores }}
+                                            <option value="{{ .StoreID }}" {{ if eq .StoreID $pr.StoreID }}selected{{ end }}>{{ .StoreCode }} - {{ .StoreName }}</option>
+                                            {{ end }}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Division</label>
+                                        <select name="division_id" class="edit-control">
+                                            <option value="">Pilih division</option>
+                                            {{ range .Divisions }}
+                                            <option value="{{ .ID }}" {{ if eq .ID $pr.DivisionID }}selected{{ end }}>{{ .DivisionName }}</option>
+                                            {{ end }}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">GL Account</label>
+                                        <select name="gl_account_id" class="edit-control" data-edit-gl-account required>
+                                            <option value="">Pilih GL account</option>
+                                            {{ range .GLAccounts }}
+                                            <option value="{{ .ID }}" data-spend-type="{{ .SpendType }}" {{ if eq .ID $pr.GLAccountID }}selected{{ end }}>{{ .GLCode }} - {{ .GLName }}</option>
+                                            {{ end }}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Spend Type</label>
+                                        <select name="spend_type" class="edit-control" data-edit-spend-type required>
+                                            <option value="OPEX" {{ if eq $pr.SpendType "OPEX" }}selected{{ end }}>OPEX</option>
+                                            <option value="CAPEX" {{ if eq $pr.SpendType "CAPEX" }}selected{{ end }}>CAPEX</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Needed Date</label>
+                                        <input type="date" name="needed_date" value="{{ $pr.NeededDate }}" class="edit-control">
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Urgency Level</label>
+                                        <select name="urgent_level" class="edit-control" required>
+                                            <option value="NORMAL" {{ if eq $pr.UrgentLevel "NORMAL" }}selected{{ end }}>Normal</option>
+                                            <option value="URGENT" {{ if eq $pr.UrgentLevel "URGENT" }}selected{{ end }}>Urgent</option>
+                                            <option value="EMERGENCY" {{ if eq $pr.UrgentLevel "EMERGENCY" }}selected{{ end }}>Emergency</option>
+                                        </select>
+                                    </div>
+                                    <div class="edit-span-2">
+                                        <label class="edit-label">Justification / Remarks</label>
+                                        <textarea name="justification" class="detail-textarea">{{ $pr.Justification }}</textarea>
+                                    </div>
+                                </div>
+                                <br>
+                                <div>
+                                    <div class="edit-items-head">
+                                        <h3 class="text-sm font-extrabold text-[#003b88]">Line Items</h3>
+                                        <button type="button" class="edit-btn edit-btn-secondary" data-edit-add-item>
+                                            <i class="bx bx-plus"></i>
+                                            Add Row
+                                        </button>
+                                    </div>
+                                    <div class="overflow-x-auto rounded-lg border border-slate-200">
+                                        <table class="edit-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Item Name</th>
+                                                    <th>Qty</th>
+                                                    <th>UOM</th>
+                                                    <th>Est. Unit Price</th>
+                                                    <th>Est. Total</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody data-edit-item-rows>
+                                                {{ range $pr.Items }}
+                                                <tr data-edit-item-row>
+                                                    <td><input type="text" name="item_name[]" value="{{ .ItemName }}" class="edit-control" required><input type="hidden" name="notes[]" value="{{ .Notes }}"></td>
+                                                    <td><input type="number" step="0.01" min="0.01" name="qty[]" value="{{ .Qty }}" class="edit-control" data-edit-qty required></td>
+                                                    <td>
+                                                        <select name="uom[]" class="edit-control" required>
+                                                            <option value="Unit" {{ if eq .UOM "Unit" }}selected{{ end }}>Unit</option>
+                                                            <option value="pcs" {{ if eq .UOM "pcs" }}selected{{ end }}>pcs</option>
+                                                            <option value="box" {{ if eq .UOM "box" }}selected{{ end }}>box</option>
+                                                            <option value="pack" {{ if eq .UOM "pack" }}selected{{ end }}>pack</option>
+                                                            <option value="meter" {{ if eq .UOM "meter" }}selected{{ end }}>meter</option>
+                                                            <option value="kg" {{ if eq .UOM "kg" }}selected{{ end }}>kg</option>
+                                                            <option value="liter" {{ if eq .UOM "liter" }}selected{{ end }}>liter</option>
+                                                        </select>
+                                                    </td>
+                                                    <td><input type="number" step="0.01" min="0" name="est_unit_price[]" value="{{ printf "%.0f" .EstUnitPrice }}" class="edit-control" data-edit-price required></td>
+                                                    <td><input type="text" class="edit-control edit-row-total" data-edit-total readonly></td>
+                                                    <td class="text-right"><button type="button" class="text-red-600" data-edit-remove-item aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>
+                                                </tr>
+                                                {{ end }}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="4" class="px-3 py-3 text-right font-extrabold">Grand Total</td>
+                                                    <td class="px-3 py-3"><input type="text" class="edit-control edit-row-total" data-edit-grand-total readonly></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="edit-actions">
+                                    <button type="button" class="edit-btn edit-btn-secondary" data-edit-pr-close>Batal</button>
+                                    <button type="submit" class="edit-btn edit-btn-primary">
+                                        <i class="bx bx-save"></i>
+                                        Simpan Perubahan
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+                        {{ end }}
 
                         <div class="detail-grid">
                             <div class="detail-stack">
@@ -210,6 +389,15 @@
                                     </div>
                                     {{ else }}
                                     <p class="text-sm text-slate-500">Approval workflow belum dibuat.</p>
+                                    {{ if and $.CanRegenerateApproval (index $.Permissions "purchase_request_management_access") }}
+                                    <form method="post" action="/purchase-requests/{{ $pr.ID }}/regenerate-approval" class="mt-4">
+                                        <button type="submit" class="action-btn bg-[#003b88] text-white hover:bg-[#002f6d]">
+                                            <i class="bx bx-refresh"></i>
+                                            Generate Approval Workflow
+                                        </button>
+                                    </form>
+                                    <p class="mt-3 text-xs leading-5 text-slate-500">Gunakan ini untuk PR lama yang sudah dibuat sebelum approval rule disiapkan.</p>
+                                    {{ end }}
                                     {{ end }}
                                 </section>
 
@@ -251,6 +439,96 @@
                 function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
                 toggleButtons.forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar(); }); });
                 if (overlay) overlay.addEventListener('click', closeSidebar);
+
+                var editPanel = document.querySelector('[data-edit-pr-panel]');
+                var editToggle = document.querySelector('[data-edit-pr-toggle]');
+                var editCloseButtons = document.querySelectorAll('[data-edit-pr-close]');
+                var editRows = document.querySelector('[data-edit-item-rows]');
+                var editAddButton = document.querySelector('[data-edit-add-item]');
+                var editGrandTotal = document.querySelector('[data-edit-grand-total]');
+                var editGlAccount = document.querySelector('[data-edit-gl-account]');
+                var editSpendType = document.querySelector('[data-edit-spend-type]');
+                var rupiahFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+
+                function openEditPanel() {
+                    if (!editPanel) return;
+                    editPanel.classList.add('is-open');
+                    editPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+
+                function closeEditPanel() {
+                    if (!editPanel) return;
+                    editPanel.classList.remove('is-open');
+                }
+
+                function updateEditRowTotal(row) {
+                    var qtyInput = row.querySelector('[data-edit-qty]');
+                    var priceInput = row.querySelector('[data-edit-price]');
+                    var totalInput = row.querySelector('[data-edit-total]');
+                    var qty = parseFloat(qtyInput && qtyInput.value || '0');
+                    var price = parseFloat(priceInput && priceInput.value || '0');
+                    var total = qty * price;
+                    if (totalInput) totalInput.value = total > 0 ? 'Rp ' + rupiahFormatter.format(total) : 'Rp 0';
+                    return total;
+                }
+
+                function updateEditGrandTotal() {
+                    if (!editRows) return;
+                    var total = 0;
+                    editRows.querySelectorAll('[data-edit-item-row]').forEach(function (row) {
+                        total += updateEditRowTotal(row);
+                    });
+                    if (editGrandTotal) editGrandTotal.value = 'Rp ' + rupiahFormatter.format(total);
+                }
+
+                function bindEditRows() {
+                    if (!editRows) return;
+                    editRows.querySelectorAll('[data-edit-item-row]').forEach(function (row) {
+                        var qtyInput = row.querySelector('[data-edit-qty]');
+                        var priceInput = row.querySelector('[data-edit-price]');
+                        var removeButton = row.querySelector('[data-edit-remove-item]');
+                        if (qtyInput) qtyInput.oninput = updateEditGrandTotal;
+                        if (priceInput) priceInput.oninput = updateEditGrandTotal;
+                        if (removeButton) {
+                            removeButton.onclick = function () {
+                                if (editRows.querySelectorAll('[data-edit-item-row]').length <= 1) return;
+                                row.remove();
+                                updateEditGrandTotal();
+                            };
+                        }
+                    });
+                }
+
+                function addEditItemRow() {
+                    if (!editRows) return;
+                    var row = document.createElement('tr');
+                    row.setAttribute('data-edit-item-row', '');
+                    row.innerHTML = '' +
+                        '<td><input type="text" name="item_name[]" class="edit-control" required><input type="hidden" name="notes[]" value=""></td>' +
+                        '<td><input type="number" step="0.01" min="0.01" name="qty[]" class="edit-control" data-edit-qty required></td>' +
+                        '<td><select name="uom[]" class="edit-control" required><option value="Unit">Unit</option><option value="pcs">pcs</option><option value="box">box</option><option value="pack">pack</option><option value="meter">meter</option><option value="kg">kg</option><option value="liter">liter</option></select></td>' +
+                        '<td><input type="number" step="0.01" min="0" name="est_unit_price[]" class="edit-control" data-edit-price required></td>' +
+                        '<td><input type="text" class="edit-control edit-row-total" data-edit-total readonly></td>' +
+                        '<td class="text-right"><button type="button" class="text-red-600" data-edit-remove-item aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>';
+                    editRows.appendChild(row);
+                    bindEditRows();
+                    updateEditGrandTotal();
+                }
+
+                if (editToggle) editToggle.addEventListener('click', openEditPanel);
+                editCloseButtons.forEach(function (button) {
+                    button.addEventListener('click', closeEditPanel);
+                });
+                if (editAddButton) editAddButton.addEventListener('click', addEditItemRow);
+                if (editGlAccount && editSpendType) {
+                    editGlAccount.addEventListener('change', function () {
+                        var selected = editGlAccount.options[editGlAccount.selectedIndex];
+                        var spendType = selected ? selected.getAttribute('data-spend-type') : '';
+                        if (spendType) editSpendType.value = spendType;
+                    });
+                }
+                bindEditRows();
+                updateEditGrandTotal();
 
                 document.querySelectorAll('[data-reject-toggle]').forEach(function (button) {
                     button.addEventListener('click', function () {

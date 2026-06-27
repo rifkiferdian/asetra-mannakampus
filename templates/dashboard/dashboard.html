@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -9,7 +9,7 @@
             {{ if .Title }}
                 {{ .Title }}
             {{ else }}
-                Stock Hadiah App
+                Asetra Dashboard
             {{ end }}
         </title>
 
@@ -21,176 +21,619 @@
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
 
         <style>
-            .dash-surface {
-                background: radial-gradient(120% 120% at 10% 0%, #fff7ed 0%, #ffedd5 38%, #f8fafc 100%);
+            body {
+                background: #f6f7fb;
+            }
+            .dashboard-shell {
+                width: 100%;
+                max-width: 1260px;
+                margin: 0 auto;
+                display: grid;
+                gap: 22px;
+            }
+            .kpi-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 22px;
+            }
+            .content-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+                gap: 22px;
+            }
+            .bottom-grid {
+                display: grid;
+                grid-template-columns: minmax(290px, 0.95fr) minmax(0, 1.95fr);
+                gap: 22px;
+            }
+            .dashboard-card {
+                border: 1px solid #cfd6e6;
+                background: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.7);
+                overflow: hidden;
+            }
+            .kpi-card {
+                min-height: 112px;
+                padding: 22px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            .kpi-alert {
+                border-left: 4px solid #dc2626;
+            }
+            .metric-label {
+                margin: 0;
+                color: #334155;
+                font-size: 12px;
+                font-weight: 800;
+            }
+            .metric-row {
+                margin-top: 22px;
+                display: flex;
+                align-items: flex-end;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .metric-value {
+                color: #001f66;
+                font-size: 31px;
+                line-height: 0.95;
+                font-weight: 900;
+                letter-spacing: -0.02em;
+            }
+            .metric-sub {
+                margin-bottom: 2px;
+                color: #047857;
+                font-size: 12px;
+                font-weight: 800;
+            }
+            .metric-red {
+                color: #dc2626;
+            }
+            .metric-unit {
+                margin-bottom: 2px;
+                color: #0f172a;
+                font-size: 14px;
+                font-weight: 900;
+            }
+            .icon-box {
+                width: 34px;
+                height: 34px;
+                flex: 0 0 34px;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+            }
+            .panel-head {
+                min-height: 52px;
+                padding: 0 22px;
+                border-bottom: 1px solid #d8deec;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            .panel-title {
+                margin: 0;
+                color: #002776;
+                font-size: 17px;
+                font-weight: 900;
+            }
+            .queue-table-wrap {
+                overflow-x: auto;
+            }
+            .queue-table {
+                width: 100%;
+                min-width: 760px;
+                border-collapse: collapse;
+                color: #001642;
+                font-size: 13px;
+            }
+            .queue-table thead {
+                background: #eef2fb;
+            }
+            .queue-table th,
+            .queue-table td {
+                padding: 15px 22px;
+                border-bottom: 1px solid #d8deec;
+                text-align: left;
+                white-space: nowrap;
+            }
+            .queue-table th {
+                color: #334155;
+                font-size: 11px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+            .queue-table tbody tr:hover {
+                background: #f8fafc;
+            }
+            .avatar {
+                width: 27px;
+                height: 27px;
+                margin-right: 9px;
+                border-radius: 999px;
+                background: #d6e0f2;
+                color: #002776;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 900;
+                vertical-align: middle;
+            }
+            .badge {
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-size: 10px;
+                font-weight: 900;
+            }
+            .review-btn {
+                display: inline-flex;
+                min-width: 72px;
+                min-height: 32px;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                background: #002776;
+                color: #ffffff;
+                font-size: 12px;
+                font-weight: 900;
+            }
+            .review-btn:hover {
+                background: #001d5a;
+                color: #ffffff;
+            }
+            .budget-panel {
+                padding: 22px;
+            }
+            .progress-track {
+                height: 12px;
+                overflow: hidden;
+                border-radius: 999px;
+                background: #dbe7ff;
+            }
+            .progress-fill {
+                height: 100%;
+                border-radius: inherit;
+                background: #002776;
+            }
+            .impact-box {
+                margin-top: 24px;
+                border: 1px solid #cfd6e6;
+                border-radius: 8px;
+                background: #eef2fb;
+                padding: 18px;
+            }
+            .category-card {
+                padding: 24px;
+            }
+            .donut-wrap {
+                margin: 28px auto 26px;
+                width: 170px;
+                height: 170px;
+                position: relative;
+            }
+            .donut-center {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                pointer-events: none;
+            }
+            .legend-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                margin-top: 14px;
+                color: #001642;
+                font-size: 13px;
+            }
+            .legend-label {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 999px;
+                display: inline-block;
+            }
+            .sla-card {
+                padding: 24px;
+            }
+            .sla-head {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+            .sla-list {
+                margin-top: 24px;
+                display: grid;
+                gap: 24px;
+            }
+            .sla-row-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                color: #001642;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .sla-person {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .mini-avatar {
+                width: 31px;
+                height: 31px;
+                border-radius: 999px;
+                background: linear-gradient(135deg, #dbeafe, #fef3c7);
+                border: 1px solid #cbd5e1;
+                color: #002776;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 900;
+            }
+            .sla-bar {
+                height: 12px;
+                margin-top: 10px;
+                display: flex;
+                overflow: hidden;
+                border-radius: 999px;
+                background: #dbe7ff;
+            }
+            .sla-bar span + span {
+                border-left: 4px solid #ffffff;
+            }
+            .sla-foot {
+                margin-top: 42px;
+                padding-top: 16px;
+                border-top: 1px solid #d8deec;
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+                color: #001642;
+                font-size: 11px;
+                font-weight: 700;
             }
             main a {
-                color: #f26419;
+                color: #002776;
             }
             main a:hover {
-                color: #dc5a15;
+                color: #001d5a;
+            }
+            @media (max-width: 1180px) {
+                .kpi-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+                .content-grid,
+                .bottom-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            @media (max-width: 640px) {
+                .dashboard-shell {
+                    gap: 16px;
+                }
+                .kpi-grid {
+                    grid-template-columns: 1fr;
+                    gap: 16px;
+                }
+                .content-grid,
+                .bottom-grid {
+                    gap: 16px;
+                }
+                .kpi-card,
+                .budget-panel,
+                .category-card,
+                .sla-card {
+                    padding: 18px;
+                }
+                .metric-value {
+                    font-size: 28px;
+                }
+                .panel-head {
+                    padding: 0 18px;
+                }
+                .sla-row-head {
+                    align-items: flex-start;
+                    flex-direction: column;
+                    gap: 8px;
+                }
             }
         </style>
 
     </head>
-    <body class="bg-slate-100 font-display text-slate-900">
+    <body class="bg-[#f6f7fb] font-display text-[#001642]">
         <div class="flex min-h-screen">
             {{ template "sidebar" . }}
 
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
                 {{ template "header" . }}
 
-                <main class="flex-1 px-4 py-6 lg:px-8">
-                    <div class="mx-auto w-full max-w-7xl">
-                        <div class="dash-surface rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-card sm:p-7 lg:p-8">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <main class="flex-1 px-4 py-5 lg:px-6">
+                    <div class="dashboard-shell">
+                        <section class="kpi-grid">
+                            <article class="dashboard-card kpi-card">
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Admin / Dashboard</p>
-                                    <h2 class="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">System Overview</h2>
+                                    <p class="metric-label">Pending Approvals</p>
+                                    <div class="metric-row">
+                                        <span class="metric-value">24</span>
+                                        <span class="metric-sub"><i class="bx bx-down-arrow-alt"></i> -12% vs LY</span>
+                                    </div>
                                 </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-brand-300 hover:text-[#f26419]">Download Report</button>
-                                    <button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc5a15]">New Submission</button>
-                                </div>
-                            </div>
+                                <span class="icon-box" style="background:#24479b;color:#fff;"><i class="bx bx-calendar-check"></i></span>
+                            </article>
 
-                            <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-[#f26419]">
-                                            <i class="bx bx-file text-lg"></i>
-                                        </div>
-                                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">+12%</span>
+                            <article class="dashboard-card kpi-card">
+                                <div>
+                                    <p class="metric-label">Queue Value</p>
+                                    <div class="metric-row">
+                                        <span class="metric-value" style="color:#020617;">$142.8k</span>
+                                        <span class="metric-sub metric-red"><i class="bx bx-up-arrow-alt"></i> +5%</span>
                                     </div>
-                                    <p class="mt-4 text-sm text-slate-500">Total Submissions</p>
-                                    <p class="mt-1 text-2xl font-semibold text-slate-900">1,284</p>
                                 </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
-                                            <i class="bx bx-folder-open text-lg"></i>
-                                        </div>
-                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Active</span>
-                                    </div>
-                                    <p class="mt-4 text-sm text-slate-500">Pending Approval</p>
-                                    <p class="mt-1 text-2xl font-semibold text-slate-900">45</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500">
-                                            <i class="bx bx-check-circle text-lg"></i>
-                                        </div>
-                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">This Month</span>
-                                    </div>
-                                    <p class="mt-4 text-sm text-slate-500">Approved</p>
-                                    <p class="mt-1 text-2xl font-semibold text-slate-900">1,120</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
-                                            <i class="bx bx-x-circle text-lg"></i>
-                                        </div>
-                                        <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-500">-3%</span>
-                                    </div>
-                                    <p class="mt-4 text-sm text-slate-500">Rejected</p>
-                                    <p class="mt-1 text-2xl font-semibold text-slate-900">119</p>
-                                </div>
-                            </div>
+                                <span class="icon-box" style="background:#6ee7b7;color:#065f46;"><i class="bx bx-money-withdraw"></i></span>
+                            </article>
 
-                            <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                                <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <h3 class="text-base font-semibold text-slate-900">Recent Activity</h3>
-                                    <a href="#" class="text-sm font-semibold text-[#f26419] hover:text-[#dc5a15]">View All</a>
+                            <article class="dashboard-card kpi-card">
+                                <div>
+                                    <p class="metric-label">Avg. Turnaround</p>
+                                    <div class="metric-row">
+                                        <span class="metric-value" style="color:#020617;">1.4</span>
+                                        <span class="metric-unit">hrs</span>
+                                        <span class="badge" style="background:#d1fae5;color:#047857;">WELL WITHIN SLA</span>
+                                    </div>
                                 </div>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full min-w-[720px] text-sm">
-                                        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                                <span class="icon-box" style="background:#dbeafe;color:#24479b;"><i class="bx bx-timer"></i></span>
+                            </article>
+
+                            <article class="dashboard-card kpi-card kpi-alert">
+                                <div>
+                                    <p class="metric-label" style="color:#b91c1c;">Budget Alerts</p>
+                                    <div class="metric-row">
+                                        <span class="metric-value metric-red">3</span>
+                                        <span class="metric-unit" style="font-size:12px;">Over-limit PRs</span>
+                                    </div>
+                                </div>
+                                <span class="icon-box" style="background:#fee2e2;color:#b91c1c;"><i class="bx bx-error"></i></span>
+                            </article>
+                        </section>
+
+                        <section class="content-grid">
+                            <article class="dashboard-card">
+                                <div class="panel-head">
+                                    <h2 class="panel-title"><span style="font-size:22px;margin-right:10px;">!</span>Priority Approval Queue</h2>
+                                    <a href="/approval-tasks" style="font-size:12px;font-weight:900;">View All Queue</a>
+                                </div>
+                                <div class="queue-table-wrap">
+                                    <table class="queue-table">
+                                        <thead>
                                             <tr>
-                                                <th class="px-4 py-3 text-left font-semibold">Document ID</th>
-                                                <th class="px-4 py-3 text-left font-semibold">Document Type</th>
-                                                <th class="px-4 py-3 text-left font-semibold">Submitted By</th>
-                                                <th class="px-4 py-3 text-left font-semibold">Current Step</th>
-                                                <th class="px-4 py-3 text-left font-semibold">Status</th>
-                                                <th class="px-4 py-3 text-right font-semibold">Actions</th>
+                                                <th>PR#</th>
+                                                <th>Requester</th>
+                                                <th>Category</th>
+                                                <th>Amount</th>
+                                                <th>Urgency</th>
+                                                <th style="text-align:right;">Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody class="divide-y divide-slate-100">
-                                            <tr class="hover:bg-slate-50/60">
-                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-001</td>
-                                                <td class="px-4 py-3 text-slate-600">Surat Tugas</td>
-                                                <td class="px-4 py-3 text-slate-600">
-                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">JD</span>
-                                                    John Doe
+                                        <tbody>
+                                            <tr>
+                                                <td style="font-weight:900;color:#002776;">PR-9421</td>
+                                                <td>
+                                                    <span class="avatar">SJ</span>
+                                                    Sarah Jenkins
                                                 </td>
-                                                <td class="px-4 py-3 text-slate-600">Finance Verification</td>
-                                                <td class="px-4 py-3">
-                                                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600">Pending</span>
+                                                <td>Cloud Infrastructure</td>
+                                                <td style="font-weight:900;">$42,500.00</td>
+                                                <td>
+                                                    <span class="badge" style="background:#fee2e2;color:#b91c1c;">EMERGENCY</span>
                                                 </td>
-                                                <td class="px-4 py-3 text-right">
-                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
-                                                </td>
-                                            </tr>
-                                            <tr class="hover:bg-slate-50/60">
-                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-002</td>
-                                                <td class="px-4 py-3 text-slate-600">Leave Request</td>
-                                                <td class="px-4 py-3 text-slate-600">
-                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">AS</span>
-                                                    Alice Smith
-                                                </td>
-                                                <td class="px-4 py-3 text-slate-600">Completed</td>
-                                                <td class="px-4 py-3">
-                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">Approved</span>
-                                                </td>
-                                                <td class="px-4 py-3 text-right">
-                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                <td style="text-align:right;">
+                                                    <a href="/approval-tasks" class="review-btn">Review</a>
                                                 </td>
                                             </tr>
-                                            <tr class="hover:bg-slate-50/60">
-                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-003</td>
-                                                <td class="px-4 py-3 text-slate-600">Surat Tugas</td>
-                                                <td class="px-4 py-3 text-slate-600">
-                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">MB</span>
-                                                    Michael Brown
+                                            <tr>
+                                                <td style="font-weight:900;color:#002776;">PR-9408</td>
+                                                <td>
+                                                    <span class="avatar">RB</span>
+                                                    Robert Black
                                                 </td>
-                                                <td class="px-4 py-3 text-slate-600">Unit Head Approval</td>
-                                                <td class="px-4 py-3">
-                                                    <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600">Rejected</span>
+                                                <td>Logistics Fleet</td>
+                                                <td style="font-weight:900;">$12,400.00</td>
+                                                <td>
+                                                    <span class="badge" style="background:#bfdbfe;color:#1d4ed8;">URGENT</span>
                                                 </td>
-                                                <td class="px-4 py-3 text-right">
-                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                <td style="text-align:right;">
+                                                    <a href="/approval-tasks" class="review-btn">Review</a>
                                                 </td>
                                             </tr>
-                                            <tr class="hover:bg-slate-50/60">
-                                                <td class="px-4 py-3 font-semibold text-slate-700">#ST-2023-004</td>
-                                                <td class="px-4 py-3 text-slate-600">Procurement</td>
-                                                <td class="px-4 py-3 text-slate-600">
-                                                    <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">SW</span>
-                                                    Sarah White
+                                            <tr>
+                                                <td style="font-weight:900;color:#002776;">PR-9392</td>
+                                                <td>
+                                                    <span class="avatar">AW</span>
+                                                    Alex Wong
                                                 </td>
-                                                <td class="px-4 py-3 text-slate-600">Final Signature</td>
-                                                <td class="px-4 py-3">
-                                                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600">Pending</span>
+                                                <td>Office Expansion</td>
+                                                <td style="font-weight:900;">$8,900.00</td>
+                                                <td>
+                                                    <span class="badge" style="background:#e2e8f0;color:#475569;">NORMAL</span>
                                                 </td>
-                                                <td class="px-4 py-3 text-right">
-                                                    <a href="#" class="text-slate-400 transition hover:text-[#dc5a15]"><i class="bx bx-show text-lg"></i></a>
+                                                <td style="text-align:right;">
+                                                    <a href="/approval-tasks" class="review-btn">Review</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="font-weight:900;color:#002776;">PR-9388</td>
+                                                <td>
+                                                    <span class="avatar">LM</span>
+                                                    Lisa Miller
+                                                </td>
+                                                <td>Software License</td>
+                                                <td style="font-weight:900;">$2,100.00</td>
+                                                <td>
+                                                    <span class="badge" style="background:#e2e8f0;color:#475569;">NORMAL</span>
+                                                </td>
+                                                <td style="text-align:right;">
+                                                    <a href="/approval-tasks" class="review-btn">Review</a>
                                                 </td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>Showing 4 of 1,284 entries</div>
-                                    <div class="flex items-center gap-2">
-                                        <button class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-brand-300 hover:text-[#dc5a15]">
-                                            <i class="bx bx-chevron-left text-base"></i>
-                                        </button>
-                                        <button class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-brand-300 hover:text-[#dc5a15]">
-                                            <i class="bx bx-chevron-right text-base"></i>
-                                        </button>
+                            </article>
+
+                            <article class="dashboard-card budget-panel">
+                                <h2 class="panel-title">Budget Impact</h2>
+                                <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:900;">
+                                    <span>Operations Budget (Q3)</span>
+                                    <span>78% Utilized</span>
+                                </div>
+                                <div class="progress-track" style="margin-top:10px;">
+                                    <div class="progress-fill" style="width: 78%;"></div>
+                                </div>
+                                <div style="margin-top:10px;display:flex;justify-content:space-between;color:#475569;font-size:11px;font-weight:800;">
+                                    <span>$0</span>
+                                    <span>$1.2M Cap</span>
+                                </div>
+
+                                <div class="impact-box">
+                                    <h3 style="margin:0;display:flex;align-items:center;gap:8px;color:#002776;font-size:14px;font-weight:900;">
+                                        <i class="bx bx-calculator" style="color:#087c5c;font-size:18px;"></i>
+                                        Impact of Queue Approvals
+                                    </h3>
+                                    <div style="margin-top:14px;display:grid;gap:10px;font-size:13px;">
+                                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                                            <span style="color:#334155;">Current Pending Value</span>
+                                            <span style="color:#b91c1c;font-weight:900;">+$142,800</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                                            <span style="color:#334155;">Remaining headroom</span>
+                                            <span style="color:#087c5c;font-weight:900;">$221,200</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+
+                                <p style="margin:28px 0 0;text-align:center;color:#334155;font-size:12px;font-style:italic;">
+                                    Approving all pending items will leave 18.4% of total Q3 budget.
+                                </p>
+                            </article>
+                        </section>
+
+                        <section class="bottom-grid">
+                            <article class="dashboard-card category-card">
+                                <h2 class="panel-title">Pending by Category</h2>
+                                <div class="donut-wrap">
+                                    <svg width="170" height="170" viewBox="0 0 170 170" role="img" aria-label="Pending category chart">
+                                        <circle cx="85" cy="85" r="58" fill="none" stroke="#e8edf8" stroke-width="18"></circle>
+                                        <circle cx="85" cy="85" r="58" fill="none" stroke="#1f3f95" stroke-width="18" stroke-linecap="butt" stroke-dasharray="273.3 91.1" transform="rotate(-90 85 85)"></circle>
+                                        <circle cx="85" cy="85" r="58" fill="none" stroke="#087c5c" stroke-width="18" stroke-linecap="butt" stroke-dasharray="91.1 273.3" stroke-dashoffset="-273.3" transform="rotate(-90 85 85)"></circle>
+                                    </svg>
+                                    <div class="donut-center">
+                                        <div style="color:#001642;font-size:24px;font-weight:900;line-height:1;">24</div>
+                                        <div style="margin-top:4px;color:#334155;font-size:12px;font-weight:800;">Total</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="legend-row">
+                                        <span class="legend-label">
+                                            <span class="dot" style="background:#002776;"></span>
+                                            OPEX (Operating)
+                                        </span>
+                                        <span style="font-weight:900;">18 items</span>
+                                    </div>
+                                    <div class="legend-row">
+                                        <span class="legend-label">
+                                            <span class="dot" style="background:#087c5c;"></span>
+                                            CAPEX (Capital)
+                                        </span>
+                                        <span style="font-weight:900;">6 items</span>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="dashboard-card sla-card">
+                                <div class="sla-head">
+                                    <h2 class="panel-title">Queue SLA Status</h2>
+                                    <div style="display:flex;align-items:center;gap:24px;font-size:12px;font-weight:800;">
+                                        <span class="legend-label"><span class="dot" style="background:#087c5c;width:7px;height:7px;"></span> Under 2h</span>
+                                        <span class="legend-label"><span class="dot" style="background:#b91c1c;width:7px;height:7px;"></span> Over 4h</span>
+                                    </div>
+                                </div>
+
+                                <div class="sla-list">
+                                    <div>
+                                        <div class="sla-row-head">
+                                            <div class="sla-person">
+                                                <span class="mini-avatar">SJ</span>
+                                                <span class="font-semibold">Sarah J. (Operations)</span>
+                                            </div>
+                                            <span style="color:#087c5c;font-weight:900;">0 Overdue</span>
+                                        </div>
+                                        <div class="sla-bar">
+                                            <span style="width:31%;background:#087c5c;"></span>
+                                            <span style="width:16%;background:#087c5c;"></span>
+                                            <span style="width:6%;background:#6ee7b7;"></span>
+                                            <span style="flex:1;background:#dbe7ff;"></span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="sla-row-head">
+                                            <div class="sla-person">
+                                                <span class="mini-avatar" style="background:linear-gradient(135deg,#cffafe,#e2e8f0);">RB</span>
+                                                <span class="font-semibold">Robert B. (Logistics)</span>
+                                            </div>
+                                            <span style="color:#b91c1c;font-weight:900;">2 Overdue</span>
+                                        </div>
+                                        <div class="sla-bar" style="background:#fee2e2;">
+                                            <span style="width:41%;background:#087c5c;"></span>
+                                            <span style="width:27%;background:#087c5c;"></span>
+                                            <span style="width:10%;background:#b91c1c;"></span>
+                                            <span style="flex:1;background:#fee2e2;"></span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="sla-row-head">
+                                            <div class="sla-person">
+                                                <span class="mini-avatar" style="background:linear-gradient(135deg,#fce7f3,#dbeafe);">LM</span>
+                                                <span class="font-semibold">Lisa M. (IT Admin)</span>
+                                            </div>
+                                            <span style="color:#087c5c;font-weight:900;">0 Overdue</span>
+                                        </div>
+                                        <div class="sla-bar">
+                                            <span style="width:49%;background:#087c5c;"></span>
+                                            <span style="width:26%;background:#087c5c;"></span>
+                                            <span style="flex:1;background:#dbe7ff;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sla-foot">
+                                    <span>Global Team SLA Target: <strong style="color:#002776;">94.2%</strong></span>
+                                    <span>Avg Item Lifetime: <strong style="color:#002776;">1h 12m</strong></span>
+                                </div>
+                            </article>
+                        </section>
                     </div>
                 </main>
 
@@ -243,5 +686,3 @@
         </script>
     </body>
 </html>
-
-

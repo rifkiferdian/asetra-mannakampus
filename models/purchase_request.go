@@ -77,6 +77,19 @@ type PurchaseRequestCreateInput struct {
 	AuditContext    AuditContext
 }
 
+type PurchaseRequestUpdateInput struct {
+	ID            int64
+	StoreID       int
+	DivisionID    int
+	GLAccountID   int
+	SpendType     string
+	UrgentLevel   string
+	NeededDate    string
+	Justification string
+	Items         []PurchaseRequestItemInput
+	AuditContext  AuditContext
+}
+
 type PurchaseRequestItemInput struct {
 	ItemName     string
 	Qty          float64

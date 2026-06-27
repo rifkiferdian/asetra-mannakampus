@@ -82,11 +82,14 @@
                                     <div>
                                         <h2 class="text-base font-semibold text-slate-900">Approval Steps</h2>
                                         <p class="mt-1 text-sm text-slate-500">Tentukan urutan approver berdasarkan role dan scope.</p>
-                                        <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
-                                            <p><span class="font-semibold">Scope STORE</span>: approver dicari dari mapping store yang mengajukan dokumen, misalnya manager store MK4.</p>
-                                            <p class="mt-1"><span class="font-semibold">Scope HO</span>: approver dicari dari level pusat / head office, misalnya finance manager atau GM pusat.</p>
-                                            <p class="mt-1"><span class="font-semibold">Parallel = Yes</span>: beberapa approver pada step order yang sama bisa jalan bersamaan.</p>
+                                        <div class="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-900">
+                                            <p class="font-semibold">Panduan memilih scope approval step</p>
+                                            <p class="mt-2"><span class="font-semibold">STORE</span>: sistem mencari approver dari menu <span class="font-semibold">Store Approver</span> berdasarkan store PR. Contoh: PR dari MK4 Palagan + role manager akan mencari manager yang dimapping untuk MK4 Palagan.</p>
+                                            <p class="mt-1"><span class="font-semibold">HO</span>: sistem mencari user aktif yang punya role tersebut di <span class="font-semibold">User Management</span>. Tidak perlu data Store Approver. Cocok untuk finance-manager, GM, atau approver pusat.</p>
+                                            <p class="mt-1"><span class="font-semibold">Contoh umum</span>: Store Manager pakai STORE, Finance Manager pakai HO, GM pusat pakai HO.</p>
+                                            <p class="mt-2"><span class="font-semibold">Parallel = Yes</span>: beberapa approver pada step order yang sama bisa berjalan bersamaan.</p>
                                             <p class="mt-1"><span class="font-semibold">Required = Yes</span>: approver ini wajib approve agar proses bisa lanjut.</p>
+                                            <p class="mt-2 text-blue-700"><span class="font-semibold">Catatan</span>: jika scope salah, workflow bisa gagal dibuat karena sistem mencari approver dari sumber yang berbeda.</p>
                                         </div>
                                     </div>
                                     <button type="button" id="add-step-button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition" style="background-color: #16a34a;" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'">

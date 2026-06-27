@@ -8,6 +8,7 @@ import (
 	"gobase-app/services"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -70,11 +71,156 @@ func PurchaseRequestDetailIndex(c *gin.Context) {
 		return
 	}
 
+	storeRepo := &repositories.StoreRepository{DB: config.DB}
+	stores, err := storeRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	divRepo := &repositories.DivisionRepository{DB: config.DB}
+	divisions, err := divRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	glRepo := &repositories.GLAccountRepository{DB: config.DB}
+	glAccounts, err := glRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	canEditPR := (detail.Status == "DRAFT" || detail.Status == "SUBMITTED") && len(detail.ApprovalSteps) == 0
 	Render(c, "purchase_request_detail.html", gin.H{
-		"Title": "PR Detail",
-		"Page":  "purchase_request",
-		"PR":    detail,
+		"Title":                 "PR Detail",
+		"Page":                  "purchase_request",
+		"PR":                    detail,
+		"Stores":                stores,
+		"Divisions":             divisions,
+		"GLAccounts":            glAccounts,
+		"Error":                 strings.TrimSpace(c.Query("error")),
+		"Success":               strings.TrimSpace(c.Query("success")),
+		"CanRegenerateApproval": canEditPR && detail.Status == "SUBMITTED",
+		"CanEditPR":             canEditPR,
 	})
+}
+
+func PurchaseRequestUpdate(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.Redirect(http.StatusSeeOther, "/purchase-requests?error="+url.QueryEscape("purchase request tidak valid"))
+		return
+	}
+
+	input, errMessage := bindPurchaseRequestUpdateInput(c, id)
+	if errMessage != "" {
+		c.Redirect(http.StatusSeeOther, "/purchase-requests/"+strconv.FormatInt(id, 10)+"?error="+url.QueryEscape(errMessage))
+		return
+	}
+
+	service := buildPurchaseRequestService()
+	if err := service.UpdatePurchaseRequest(input); err != nil {
+		c.Redirect(http.StatusSeeOther, "/purchase-requests/"+strconv.FormatInt(id, 10)+"?error="+url.QueryEscape(err.Error()))
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/purchase-requests/"+strconv.FormatInt(id, 10)+"?success="+url.QueryEscape("Purchase request berhasil diupdate"))
+}
+
+func PurchaseRequestRegenerateApproval(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.Redirect(http.StatusSeeOther, "/purchase-requests?error="+url.QueryEscape("purchase request tidak valid"))
+		return
+	}
+
+	session := sessions.Default(c)
+	userID := sessionUserID(session)
+
+	service := buildPurchaseRequestService()
+	err = service.RegenerateApprovalFlow(id, models.AuditContext{
+		ActorUserID: userID,
+		IPAddress:   c.ClientIP(),
+		UserAgent:   c.Request.UserAgent(),
+	})
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/purchase-requests/"+strconv.FormatInt(id, 10)+"?error="+url.QueryEscape(err.Error()))
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/purchase-requests/"+strconv.FormatInt(id, 10)+"?success="+url.QueryEscape("Approval workflow berhasil dibuat untuk PR ini"))
+}
+
+func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRequestUpdateInput, string) {
+	session := sessions.Default(c)
+	userID := sessionUserID(session)
+	if userID <= 0 {
+		return models.PurchaseRequestUpdateInput{}, "user login tidak valid"
+	}
+
+	storeID, err := strconv.Atoi(strings.TrimSpace(c.PostForm("store_id")))
+	if err != nil {
+		return models.PurchaseRequestUpdateInput{}, "store wajib dipilih"
+	}
+
+	divisionID := 0
+	if val := strings.TrimSpace(c.PostForm("division_id")); val != "" {
+		divisionID, err = strconv.Atoi(val)
+		if err != nil {
+			return models.PurchaseRequestUpdateInput{}, "division tidak valid"
+		}
+	}
+
+	glAccountID, err := strconv.Atoi(strings.TrimSpace(c.PostForm("gl_account_id")))
+	if err != nil {
+		return models.PurchaseRequestUpdateInput{}, "GL account wajib dipilih"
+	}
+
+	itemNames := c.PostFormArray("item_name[]")
+	qtyVals := c.PostFormArray("qty[]")
+	uoms := c.PostFormArray("uom[]")
+	priceVals := c.PostFormArray("est_unit_price[]")
+	notesVals := c.PostFormArray("notes[]")
+
+	if len(itemNames) == 0 || len(itemNames) != len(qtyVals) || len(itemNames) != len(uoms) || len(itemNames) != len(priceVals) || len(itemNames) != len(notesVals) {
+		return models.PurchaseRequestUpdateInput{}, "data item PR tidak lengkap"
+	}
+
+	items := make([]models.PurchaseRequestItemInput, 0, len(itemNames))
+	for i := range itemNames {
+		qty, err := strconv.ParseFloat(strings.TrimSpace(qtyVals[i]), 64)
+		if err != nil {
+			return models.PurchaseRequestUpdateInput{}, fmt.Sprintf("qty item baris %d tidak valid", i+1)
+		}
+		price, err := strconv.ParseFloat(strings.TrimSpace(priceVals[i]), 64)
+		if err != nil {
+			return models.PurchaseRequestUpdateInput{}, fmt.Sprintf("estimasi harga item baris %d tidak valid", i+1)
+		}
+		items = append(items, models.PurchaseRequestItemInput{
+			ItemName:     strings.TrimSpace(itemNames[i]),
+			Qty:          qty,
+			UOM:          strings.TrimSpace(uoms[i]),
+			EstUnitPrice: price,
+			Notes:        strings.TrimSpace(notesVals[i]),
+		})
+	}
+
+	return models.PurchaseRequestUpdateInput{
+		ID:            id,
+		StoreID:       storeID,
+		DivisionID:    divisionID,
+		GLAccountID:   glAccountID,
+		SpendType:     strings.ToUpper(strings.TrimSpace(c.PostForm("spend_type"))),
+		UrgentLevel:   strings.ToUpper(strings.TrimSpace(c.PostForm("urgent_level"))),
+		NeededDate:    strings.TrimSpace(c.PostForm("needed_date")),
+		Justification: strings.TrimSpace(c.PostForm("justification")),
+		Items:         items,
+		AuditContext: models.AuditContext{
+			ActorUserID: userID,
+			IPAddress:   c.ClientIP(),
+			UserAgent:   c.Request.UserAgent(),
+		},
+	}, ""
 }
 
 func PurchaseRequestStore(c *gin.Context) {

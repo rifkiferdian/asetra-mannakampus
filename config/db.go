@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -27,6 +28,11 @@ func Connect() {
 	if err != nil {
 		panic(err)
 	}
+
+	DB.SetMaxOpenConns(25)
+	DB.SetMaxIdleConns(10)
+	DB.SetConnMaxIdleTime(5 * time.Minute)
+	DB.SetConnMaxLifetime(30 * time.Minute)
 
 	err = DB.Ping()
 	if err != nil {

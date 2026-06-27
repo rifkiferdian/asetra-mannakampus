@@ -6,6 +6,7 @@ import (
 	"gobase-app/repositories"
 	"gobase-app/services"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -23,9 +24,11 @@ func ApprovalRuleIndex(c *gin.Context) {
 	}
 
 	Render(c, "approval_rule.html", gin.H{
-		"Title": "Approval Rules",
-		"Page":  "approval_rule",
-		"Rules": rules,
+		"Title":   "Approval Rules",
+		"Page":    "approval_rule",
+		"Rules":   rules,
+		"Error":   strings.TrimSpace(c.Query("error")),
+		"Success": strings.TrimSpace(c.Query("success")),
 	})
 }
 
@@ -113,11 +116,11 @@ func ApprovalRuleDelete(c *gin.Context) {
 	repo := &repositories.ApprovalRuleRepository{DB: config.DB}
 	service := &services.ApprovalRuleService{Repo: repo}
 	if err := service.DeleteApprovalRule(id); err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		c.Redirect(http.StatusSeeOther, "/approval-rules?error="+url.QueryEscape(err.Error()))
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/approval-rules")
+	c.Redirect(http.StatusSeeOther, "/approval-rules?success="+url.QueryEscape("Approval rule berhasil dihapus"))
 }
 
 func renderApprovalRuleForm(c *gin.Context, detail models.ApprovalRuleDetail, message string, statusCode *int) {

@@ -56,10 +56,75 @@ func (s *PurchaseRequestService) CreatePurchaseRequest(input models.PurchaseRequ
 	return err
 }
 
+func (s *PurchaseRequestService) RegenerateApprovalFlow(prID int64, auditCtx models.AuditContext) error {
+	if prID <= 0 {
+		return errors.New("purchase request tidak valid")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return errors.New("user login tidak valid")
+	}
+	return s.Repo.RegenerateApprovalFlow(prID, auditCtx)
+}
+
+func (s *PurchaseRequestService) UpdatePurchaseRequest(input models.PurchaseRequestUpdateInput) error {
+	if input.ID <= 0 {
+		return errors.New("purchase request tidak valid")
+	}
+
+	createLike := models.PurchaseRequestCreateInput{
+		StoreID:       input.StoreID,
+		DivisionID:    input.DivisionID,
+		GLAccountID:   input.GLAccountID,
+		SpendType:     strings.ToUpper(strings.TrimSpace(input.SpendType)),
+		UrgentLevel:   strings.ToUpper(strings.TrimSpace(input.UrgentLevel)),
+		NeededDate:    strings.TrimSpace(input.NeededDate),
+		Justification: strings.TrimSpace(input.Justification),
+		Action:        "draft",
+		Items:         input.Items,
+	}
+
+	if err := s.validateEditableInput(createLike); err != nil {
+		return err
+	}
+
+	totalAmount := 0.0
+	normalizedItems := make([]models.PurchaseRequestItemInput, 0, len(input.Items))
+	for _, item := range input.Items {
+		normalized := models.PurchaseRequestItemInput{
+			ItemName:     strings.TrimSpace(item.ItemName),
+			Qty:          item.Qty,
+			UOM:          strings.TrimSpace(item.UOM),
+			EstUnitPrice: item.EstUnitPrice,
+			Notes:        strings.TrimSpace(item.Notes),
+		}
+		totalAmount += normalized.Qty * normalized.EstUnitPrice
+		normalizedItems = append(normalizedItems, normalized)
+	}
+
+	input.Items = normalizedItems
+	input.SpendType = strings.ToUpper(strings.TrimSpace(input.SpendType))
+	input.UrgentLevel = strings.ToUpper(strings.TrimSpace(input.UrgentLevel))
+	input.NeededDate = strings.TrimSpace(input.NeededDate)
+	input.Justification = strings.TrimSpace(input.Justification)
+
+	return s.Repo.UpdateEditable(input, totalAmount)
+}
+
 func (s *PurchaseRequestService) validateInput(input models.PurchaseRequestCreateInput) error {
 	if input.RequesterUserID <= 0 {
 		return errors.New("requester tidak valid")
 	}
+	exists, err := s.Repo.UserExists(input.RequesterUserID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("requester tidak ditemukan")
+	}
+	return s.validateEditableInput(input)
+}
+
+func (s *PurchaseRequestService) validateEditableInput(input models.PurchaseRequestCreateInput) error {
 	if input.StoreID <= 0 {
 		return errors.New("store wajib dipilih")
 	}
@@ -84,15 +149,7 @@ func (s *PurchaseRequestService) validateInput(input models.PurchaseRequestCreat
 		}
 	}
 
-	exists, err := s.Repo.UserExists(input.RequesterUserID)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return errors.New("requester tidak ditemukan")
-	}
-
-	exists, err = s.Repo.StoreExists(input.StoreID)
+	exists, err := s.Repo.StoreExists(input.StoreID)
 	if err != nil {
 		return err
 	}
