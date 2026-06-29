@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Profile{{ end }}</title>
+
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+
+        <style>
+            .profile-page {
+                width: 100%;
+                max-width: 1140px;
+                margin: 0 auto;
+                color: #001642;
+                font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+            }
+            .profile-alert {
+                margin-bottom: 14px;
+                border-radius: 8px;
+                padding: 12px 14px;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .profile-alert-success {
+                border: 1px solid #a7f3d0;
+                background: #ecfdf5;
+                color: #047857;
+            }
+            .profile-alert-error {
+                border: 1px solid #fecdd3;
+                background: #fff1f2;
+                color: #be123c;
+            }
+            .profile-card {
+                border: 1px solid #c9d1e3;
+                border-radius: 9px;
+                background: #ffffff;
+                box-shadow: 0 12px 28px -24px rgba(15, 23, 42, 0.9);
+            }
+            .profile-hero {
+                overflow: hidden;
+            }
+            .profile-hero-main {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 24px;
+                padding: 32px 32px 18px;
+            }
+            .profile-identity {
+                display: flex;
+                min-width: 0;
+                align-items: center;
+                gap: 24px;
+            }
+            .profile-avatar-wrap {
+                position: relative;
+                flex: 0 0 auto;
+            }
+            .profile-avatar {
+                width: 92px;
+                height: 92px;
+                overflow: hidden;
+                border: 1px solid #b9c3d6;
+                border-radius: 7px;
+                background:
+                    linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 42%),
+                    linear-gradient(135deg, #29415d 0%, #7f9ab8 100%);
+                box-shadow: 0 14px 24px -20px rgba(15, 23, 42, 0.9);
+            }
+            .profile-avatar-face {
+                display: flex;
+                width: 100%;
+                height: 100%;
+                align-items: center;
+                justify-content: center;
+                background:
+                    radial-gradient(circle at 50% 36%, #f1c7aa 0 17px, transparent 18px),
+                    radial-gradient(circle at 50% 28%, #233247 0 18px, transparent 19px),
+                    linear-gradient(150deg, transparent 0 50%, rgba(0, 39, 118, 0.24) 51%),
+                    linear-gradient(to bottom, transparent 0 51px, #dbe6f6 52px 66px, #102a52 67px);
+                color: #ffffff;
+                font-size: 0;
+                font-weight: 900;
+            }
+            .profile-avatar-edit {
+                position: absolute;
+                right: -7px;
+                bottom: -7px;
+                display: inline-flex;
+                width: 34px;
+                height: 34px;
+                align-items: center;
+                justify-content: center;
+                border: 0;
+                border-radius: 999px;
+                background: #002776;
+                color: #ffffff;
+                cursor: pointer;
+                box-shadow: 0 8px 16px -10px rgba(0, 39, 118, 0.9);
+            }
+            .profile-title {
+                min-width: 0;
+            }
+            .profile-name {
+                margin: 0;
+                color: #001642;
+                font-size: 29px;
+                line-height: 1.05;
+                font-weight: 900;
+            }
+            .profile-role {
+                margin: 6px 0 0;
+                color: #0f2a55;
+                font-size: 16px;
+                font-weight: 800;
+            }
+            .profile-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 18px;
+                margin-top: 16px;
+                color: #0f2a55;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .profile-meta span {
+                display: inline-flex;
+                min-width: 0;
+                align-items: center;
+                gap: 6px;
+            }
+            .profile-meta i {
+                color: #002776;
+                font-size: 14px;
+            }
+            .profile-save-top,
+            .profile-primary-btn,
+            .profile-secondary-btn {
+                display: inline-flex;
+                min-height: 37px;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                border: 0;
+                border-radius: 6px;
+                background: #002776;
+                padding: 0 20px;
+                color: #ffffff;
+                font-size: 12px;
+                font-weight: 900;
+                cursor: pointer;
+                box-shadow: 0 10px 18px -16px rgba(0, 39, 118, 1);
+            }
+            .profile-secondary-btn {
+                border: 1px solid #cbd5e1;
+                background: #ffffff;
+                color: #0f2a55;
+                box-shadow: none;
+            }
+            .profile-save-top:hover,
+            .profile-primary-btn:hover {
+                background: #001d5a;
+            }
+            .profile-secondary-btn:hover {
+                background: #f8fafc;
+            }
+            .profile-save-top[hidden],
+            .profile-form-actions[hidden] {
+                display: none;
+            }
+            .profile-tabs {
+                display: flex;
+                gap: 26px;
+                margin: 0 32px;
+                overflow-x: auto;
+                border-top: 1px solid #eef2f7;
+                padding-top: 17px;
+            }
+            .profile-tab {
+                min-height: 38px;
+                border: 0;
+                border-bottom: 2px solid transparent;
+                background: transparent;
+                color: #0f2a55;
+                white-space: nowrap;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .profile-tab.active {
+                border-color: #002776;
+                color: #001f66;
+            }
+            .profile-layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 360px;
+                gap: 24px;
+                margin-top: 24px;
+                align-items: start;
+            }
+            .profile-main-col,
+            .profile-side-col {
+                display: grid;
+                gap: 24px;
+            }
+            .tab-panel {
+                display: none;
+            }
+            .tab-panel.active {
+                display: block;
+            }
+            .profile-section {
+                padding: 28px;
+            }
+            .profile-section-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                margin-bottom: 24px;
+            }
+            .profile-section-title {
+                margin: 0;
+                color: #001642;
+                font-size: 16px;
+                font-weight: 900;
+            }
+            .profile-edit-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                border: 0;
+                background: transparent;
+                color: #002776;
+                font-size: 12px;
+                font-weight: 900;
+                cursor: pointer;
+            }
+            .profile-edit-link[hidden] {
+                display: none;
+            }
+            .profile-form-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 20px 28px;
+            }
+            .profile-field-full {
+                grid-column: 1 / -1;
+            }
+            .profile-label {
+                display: block;
+                margin-bottom: 9px;
+                color: #334155;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .profile-input,
+            .profile-readonly {
+                width: 100%;
+                min-height: 44px;
+                border: 1px solid #cbd5e1;
+                border-radius: 7px;
+                background: #eef3ff;
+                padding: 11px 15px;
+                color: #001642;
+                font-size: 13px;
+                font-weight: 600;
+                outline: none;
+            }
+            .profile-input:focus {
+                border-color: #002776;
+                background: #ffffff;
+                box-shadow: 0 0 0 3px rgba(0, 39, 118, 0.08);
+            }
+            .profile-input[readonly] {
+                cursor: default;
+                color: #334155;
+            }
+            .profile-input.profile-editing {
+                background: #ffffff;
+            }
+            .password-field {
+                position: relative;
+            }
+            .password-field .profile-input {
+                padding-right: 48px;
+            }
+            .password-toggle {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                display: inline-flex;
+                width: 30px;
+                height: 30px;
+                align-items: center;
+                justify-content: center;
+                transform: translateY(-50%);
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: #0f2a55;
+                cursor: pointer;
+            }
+            .password-toggle:hover {
+                background: #dfe8f8;
+                color: #002776;
+            }
+            .password-toggle i {
+                font-size: 18px;
+            }
+            .profile-readonly {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .profile-form-actions {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 24px;
+                border-top: 1px solid #eef2f7;
+                padding-top: 20px;
+            }
+            .access-card {
+                padding: 26px;
+            }
+            .access-head {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .access-icon {
+                display: inline-flex;
+                width: 48px;
+                height: 48px;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                background: #eef3ff;
+                color: #002776;
+                font-size: 27px;
+            }
+            .access-title {
+                margin: 0;
+                color: #001642;
+                font-size: 16px;
+                font-weight: 900;
+            }
+            .access-subtitle {
+                margin: 3px 0 0;
+                color: #0f2a55;
+                font-size: 10px;
+                font-weight: 800;
+                text-transform: uppercase;
+            }
+            .approval-box {
+                margin-top: 22px;
+                border-radius: 7px;
+                background: #cfd8eb;
+                padding: 16px;
+            }
+            .approval-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .approval-name {
+                margin: 0;
+                color: #002776;
+                font-size: 13px;
+                font-weight: 900;
+            }
+            .status-pill {
+                border-radius: 3px;
+                background: #002776;
+                padding: 3px 7px;
+                color: #ffffff;
+                font-size: 9px;
+                font-weight: 900;
+            }
+            .approval-copy {
+                margin: 8px 0 0;
+                color: #0f2a55;
+                font-size: 12px;
+                line-height: 1.55;
+                font-weight: 600;
+            }
+            .permission-title {
+                margin: 22px 0 0;
+                color: #001642;
+                font-size: 13px;
+                font-weight: 900;
+            }
+            .permission-list {
+                display: grid;
+                gap: 8px;
+                margin-top: 12px;
+                color: #0f2a55;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .permission-list p {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin: 0;
+            }
+            .permission-list .allowed i {
+                color: #047857;
+            }
+            .permission-list .disabled {
+                color: #94a3b8;
+            }
+            .permission-matrix-btn {
+                display: flex;
+                width: 100%;
+                min-height: 42px;
+                align-items: center;
+                justify-content: center;
+                margin-top: 22px;
+                border: 1px solid #cbd5e1;
+                border-radius: 7px;
+                background: #ffffff;
+                color: #002776;
+                font-size: 12px;
+                font-weight: 900;
+                cursor: pointer;
+            }
+            .activity-card {
+                overflow: hidden;
+            }
+            .activity-bar {
+                height: 7px;
+                background: #002776;
+            }
+            .activity-body {
+                padding: 24px 26px 26px;
+            }
+            .activity-label {
+                margin: 0;
+                color: #002776;
+                font-size: 13px;
+                font-weight: 800;
+            }
+            .activity-row {
+                display: flex;
+                align-items: flex-end;
+                justify-content: space-between;
+                gap: 18px;
+                margin-top: 26px;
+            }
+            .activity-number {
+                margin: 0;
+                color: #002776;
+                font-size: 31px;
+                line-height: 1;
+                font-weight: 900;
+            }
+            .activity-caption {
+                margin: 4px 0 0;
+                color: #334155;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            .mini-chart {
+                display: flex;
+                height: 42px;
+                align-items: flex-end;
+                gap: 6px;
+            }
+            .mini-chart span {
+                width: 9px;
+                border-radius: 3px 3px 0 0;
+                background: #002776;
+            }
+            .mini-chart span:nth-child(1) { height: 16px; background: #c7d2e8; }
+            .mini-chart span:nth-child(2) { height: 24px; background: #8aa2cf; }
+            .mini-chart span:nth-child(3) { height: 36px; background: #315a9f; }
+            .mini-chart span:nth-child(4) { height: 28px; background: #002776; }
+            .efficiency {
+                margin-top: 26px;
+                border-top: 1px solid #e2e8f0;
+                padding-top: 20px;
+            }
+            .efficiency-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                color: #0f2a55;
+                font-size: 12px;
+                font-weight: 900;
+            }
+            .progress-track {
+                height: 8px;
+                margin-top: 10px;
+                overflow: hidden;
+                border-radius: 999px;
+                background: #e2e8f0;
+            }
+            .progress-fill {
+                width: 94%;
+                height: 100%;
+                border-radius: inherit;
+                background: #047857;
+            }
+            .setting-list,
+            .activity-log-list {
+                display: grid;
+                gap: 12px;
+            }
+            .setting-row {
+                display: flex;
+                min-height: 48px;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                border: 1px solid #dbe3f0;
+                border-radius: 7px;
+                padding: 0 14px;
+                color: #0f2a55;
+                font-size: 13px;
+                font-weight: 800;
+            }
+            .activity-log-item {
+                display: flex;
+                gap: 12px;
+                color: #0f2a55;
+                font-size: 13px;
+            }
+            .activity-dot {
+                width: 8px;
+                height: 8px;
+                margin-top: 6px;
+                border-radius: 999px;
+                background: #002776;
+            }
+            .activity-dot.green {
+                background: #047857;
+            }
+            .activity-log-item p {
+                margin: 0;
+            }
+            .activity-log-item .muted {
+                margin-top: 3px;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            @media (max-width: 1024px) {
+                .profile-layout {
+                    grid-template-columns: 1fr;
+                }
+                .profile-side-col {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+            }
+            @media (max-width: 720px) {
+                .profile-hero-main {
+                    padding: 22px 18px 16px;
+                }
+                .profile-identity {
+                    align-items: flex-start;
+                    gap: 16px;
+                }
+                .profile-avatar {
+                    width: 74px;
+                    height: 74px;
+                }
+                .profile-name {
+                    font-size: 22px;
+                }
+                .profile-role {
+                    font-size: 13px;
+                }
+                .profile-save-top {
+                    display: none;
+                }
+                .profile-tabs {
+                    margin: 0 18px;
+                    gap: 18px;
+                }
+                .profile-form-grid,
+                .profile-side-col {
+                    grid-template-columns: 1fr;
+                }
+                .profile-section,
+                .access-card,
+                .activity-body {
+                    padding: 20px;
+                }
+            }
+            @media (max-width: 520px) {
+                .profile-identity {
+                    flex-direction: column;
+                }
+                .profile-hero-main {
+                    display: block;
+                }
+                .profile-save-top {
+                    display: flex;
+                    width: 100%;
+                    margin-top: 18px;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="profile-page">
+                        {{ if .Success }}
+                        <div class="profile-alert profile-alert-success">{{ .Success }}</div>
+                        {{ end }}
+                        {{ if .Error }}
+                        <div class="profile-alert profile-alert-error">{{ .Error }}</div>
+                        {{ end }}
+
+                        <section class="profile-card profile-hero">
+                            <div class="profile-hero-main">
+                                <div class="profile-identity">
+                                    <div class="profile-avatar-wrap">
+                                        <div class="profile-avatar">
+                                            <div class="profile-avatar-face">{{ if .Initials }}{{ .Initials }}{{ end }}</div>
+                                        </div>
+                                        <button type="button" class="profile-avatar-edit" title="Edit profile photo">
+                                            <i class="bx bx-pencil"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="profile-title">
+                                        <h1 class="profile-name">{{ .Profile.Name }}</h1>
+                                        <p class="profile-role">{{ .Profile.RoleDisplay }}</p>
+                                        <div class="profile-meta">
+                                            <span><i class="bx bx-building-house"></i>{{ .Profile.StoreDisplay }}</span>
+                                            <span><i class="bx bx-envelope"></i>{{ .Profile.Email }}</span>
+                                            <span><i class="bx bx-phone"></i>{{ .Profile.Username }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" form="profile-form" class="profile-save-top" data-profile-save hidden>
+                                    <i class="bx bx-save"></i>
+                                    Save Changes
+                                </button>
+                            </div>
+
+                            <div class="profile-tabs">
+                                <button type="button" class="profile-tab active" data-profile-tab="personal">Personal Info</button>
+                                <button type="button" class="profile-tab" data-profile-tab="security">Security</button>
+                                <button type="button" class="profile-tab" data-profile-tab="notifications">Notifications</button>
+                                <button type="button" class="profile-tab" data-profile-tab="activity">Activity Log</button>
+                            </div>
+                        </section>
+
+                        <div class="profile-layout">
+                            <div class="profile-main-col">
+                                <section class="tab-panel active" data-profile-panel="personal">
+                                    <form id="profile-form" action="/profile" method="post" class="profile-card profile-section">
+                                        <div class="profile-section-head">
+                                            <h2 class="profile-section-title">Personal Information</h2>
+                                            <button type="button" class="profile-edit-link" data-profile-edit>
+                                                <i class="bx bx-pencil"></i>
+                                                Edit Fields
+                                            </button>
+                                        </div>
+
+                                        <div class="profile-form-grid">
+                                            <div>
+                                                <label for="name" class="profile-label">Full Name</label>
+                                                <input type="text" id="name" name="name" value="{{ .Profile.Name }}" required class="profile-input" readonly data-profile-field>
+                                            </div>
+                                            <div>
+                                                <span class="profile-label">Employee ID</span>
+                                                <div class="profile-readonly">AST-{{ .Profile.NIP }}</div>
+                                            </div>
+                                            <div>
+                                                <label for="email" class="profile-label">Email Address</label>
+                                                <input type="email" id="email" name="email" value="{{ .Profile.Email }}" required class="profile-input" readonly data-profile-field>
+                                            </div>
+                                            <div>
+                                                <label for="username" class="profile-label">Phone Number</label>
+                                                <input type="text" id="username" name="username" value="{{ .Profile.Username }}" required class="profile-input" readonly data-profile-field>
+                                            </div>
+                                            <div class="profile-field-full">
+                                                <span class="profile-label">Office Location</span>
+                                                <div class="profile-readonly">
+                                                    <i class="bx bx-map"></i>
+                                                    {{ .Profile.StoreDisplay }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="profile-form-actions" data-profile-actions hidden>
+                                            <button type="button" class="profile-secondary-btn" data-profile-cancel>
+                                                <i class="bx bx-x"></i>
+                                                Close
+                                            </button>
+                                            <button type="submit" class="profile-primary-btn">
+                                                <i class="bx bx-save"></i>
+                                                Save Changes
+                                            </button>
+                                        </div>
+                                    </form>
+                                </section>
+
+                                <section class="tab-panel" data-profile-panel="security">
+                                    <form action="/profile/password" method="post" class="profile-card profile-section">
+                                        <div class="profile-section-head">
+                                            <h2 class="profile-section-title">Security</h2>
+                                        </div>
+
+                                        {{ if .PasswordSuccess }}
+                                        <div class="profile-alert profile-alert-success">{{ .PasswordSuccess }}</div>
+                                        {{ end }}
+                                        {{ if .PasswordError }}
+                                        <div class="profile-alert profile-alert-error">{{ .PasswordError }}</div>
+                                        {{ end }}
+
+                                        <div class="profile-form-grid">
+                                            <div class="profile-field-full">
+                                                <label for="current_password" class="profile-label">Current Password</label>
+                                                <div class="password-field">
+                                                    <input type="password" id="current_password" name="current_password" class="profile-input" required>
+                                                    <button type="button" class="password-toggle" data-password-toggle="current_password" aria-label="Show current password">
+                                                        <i class="bx bx-show"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="new_password" class="profile-label">New Password</label>
+                                                <div class="password-field">
+                                                    <input type="password" id="new_password" name="new_password" minlength="6" class="profile-input" required>
+                                                    <button type="button" class="password-toggle" data-password-toggle="new_password" aria-label="Show new password">
+                                                        <i class="bx bx-show"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="confirm_password" class="profile-label">Confirm Password</label>
+                                                <div class="password-field">
+                                                    <input type="password" id="confirm_password" name="confirm_password" minlength="6" class="profile-input" required>
+                                                    <button type="button" class="password-toggle" data-password-toggle="confirm_password" aria-label="Show confirm password">
+                                                        <i class="bx bx-show"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="profile-form-actions">
+                                            <button type="submit" class="profile-primary-btn">
+                                                <i class="bx bx-lock-alt"></i>
+                                                Update Password
+                                            </button>
+                                        </div>
+                                    </form>
+                                </section>
+
+                                <section class="tab-panel" data-profile-panel="notifications">
+                                    <div class="profile-card profile-section">
+                                        <div class="profile-section-head">
+                                            <h2 class="profile-section-title">Notifications</h2>
+                                        </div>
+                                        <div class="setting-list">
+                                            <label class="setting-row">
+                                                Email approval updates
+                                                <input type="checkbox" checked>
+                                            </label>
+                                            <label class="setting-row">
+                                                Purchase request activity
+                                                <input type="checkbox" checked>
+                                            </label>
+                                            <label class="setting-row">
+                                                Payment reminders
+                                                <input type="checkbox">
+                                            </label>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="tab-panel" data-profile-panel="activity">
+                                    <div class="profile-card profile-section">
+                                        <div class="profile-section-head">
+                                            <h2 class="profile-section-title">Activity Log</h2>
+                                        </div>
+                                        <div class="activity-log-list">
+                                            <div class="activity-log-item">
+                                                <span class="activity-dot green"></span>
+                                                <div>
+                                                    <p><strong>Profile viewed</strong></p>
+                                                    <p class="muted">Current session</p>
+                                                </div>
+                                            </div>
+                                            <div class="activity-log-item">
+                                                <span class="activity-dot"></span>
+                                                <div>
+                                                    <p><strong>Account created</strong></p>
+                                                    <p class="muted">{{ .Profile.CreatedAtDisplay }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <aside class="profile-side-col">
+                                <section class="profile-card access-card">
+                                    <div class="access-head">
+                                        <div class="access-icon">
+                                            <i class="bx bx-shield-quarter"></i>
+                                        </div>
+                                        <div>
+                                            <h2 class="access-title">Access Profile</h2>
+                                            <p class="access-subtitle">{{ .Profile.RoleDisplay }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="approval-box">
+                                        <div class="approval-top">
+                                            <p class="approval-name">Global Approval</p>
+                                            <span class="status-pill">ACTIVE</span>
+                                        </div>
+                                        <p class="approval-copy">Full authority for procurement requests based on assigned role and store.</p>
+                                    </div>
+
+                                    <h3 class="permission-title">Permissions Summary</h3>
+                                    <div class="permission-list">
+                                        <p class="allowed"><i class="bx bx-check-circle"></i>{{ .Profile.RoleDisplay }}</p>
+                                        <p class="allowed"><i class="bx bx-check-circle"></i>User Profile Access</p>
+                                        <p class="allowed"><i class="bx bx-check-circle"></i>Assigned Store Access</p>
+                                        <p class="disabled"><i class="bx bx-block"></i>Billing & Subscription</p>
+                                    </div>
+
+                                    <button type="button" class="permission-matrix-btn">View Full Permission Matrix</button>
+                                </section>
+
+                                <section class="profile-card activity-card">
+                                    <div class="activity-bar"></div>
+                                    <div class="activity-body">
+                                        <p class="activity-label">Platform Activity</p>
+                                        <div class="activity-row">
+                                            <div>
+                                                <p class="activity-number">124</p>
+                                                <p class="activity-caption">Assets Tracked</p>
+                                            </div>
+                                            <div class="mini-chart" aria-hidden="true">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                        </div>
+                                        <div class="efficiency">
+                                            <div class="efficiency-head">
+                                                <span>Approval Efficiency</span>
+                                                <span>94%</span>
+                                            </div>
+                                            <div class="progress-track">
+                                                <div class="progress-fill"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </main>
+
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var toggleButtons = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function closeSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.add('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+
+                function openSidebar() {
+                    if (!sidebar) return;
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+
+                toggleButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        if (sidebar.classList.contains('-translate-x-full')) {
+                            openSidebar();
+                        } else {
+                            closeSidebar();
+                        }
+                    });
+                });
+
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
+
+                var tabs = document.querySelectorAll('[data-profile-tab]');
+                var panels = document.querySelectorAll('[data-profile-panel]');
+
+                function activateTab(name) {
+                    tabs.forEach(function (tab) {
+                        tab.classList.toggle('active', tab.getAttribute('data-profile-tab') === name);
+                    });
+                    panels.forEach(function (panel) {
+                        panel.classList.toggle('active', panel.getAttribute('data-profile-panel') === name);
+                    });
+                }
+
+                tabs.forEach(function (tab) {
+                    tab.addEventListener('click', function () {
+                        activateTab(tab.getAttribute('data-profile-tab'));
+                    });
+                });
+
+                var params = new URLSearchParams(window.location.search);
+                if (params.has('password_error') || params.has('password_success')) {
+                    activateTab('security');
+                }
+
+                var profileForm = document.getElementById('profile-form');
+                var editButton = document.querySelector('[data-profile-edit]');
+                var cancelButton = document.querySelector('[data-profile-cancel]');
+                var actionBar = document.querySelector('[data-profile-actions]');
+                var saveButtons = document.querySelectorAll('[data-profile-save]');
+                var profileFields = document.querySelectorAll('[data-profile-field]');
+                var originalValues = {};
+
+                profileFields.forEach(function (field) {
+                    originalValues[field.name] = field.value;
+                });
+
+                function setProfileEditMode(isEditing) {
+                    profileFields.forEach(function (field) {
+                        field.readOnly = !isEditing;
+                        field.classList.toggle('profile-editing', isEditing);
+                    });
+
+                    if (editButton) editButton.hidden = isEditing;
+                    if (actionBar) actionBar.hidden = !isEditing;
+                    saveButtons.forEach(function (button) {
+                        button.hidden = !isEditing;
+                    });
+
+                    if (isEditing) {
+                        var firstField = document.getElementById('name');
+                        if (firstField) firstField.focus();
+                    }
+                }
+
+                if (editButton) {
+                    editButton.addEventListener('click', function () {
+                        setProfileEditMode(true);
+                    });
+                }
+
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function () {
+                        profileFields.forEach(function (field) {
+                            if (Object.prototype.hasOwnProperty.call(originalValues, field.name)) {
+                                field.value = originalValues[field.name];
+                            }
+                        });
+                        setProfileEditMode(false);
+                    });
+                }
+
+                if (profileForm) {
+                    profileForm.addEventListener('submit', function () {
+                        setProfileEditMode(true);
+                    });
+                }
+
+                if (params.has('error')) {
+                    activateTab('personal');
+                    setProfileEditMode(true);
+                }
+
+                var passwordToggles = document.querySelectorAll('[data-password-toggle]');
+                passwordToggles.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var inputId = button.getAttribute('data-password-toggle');
+                        var input = document.getElementById(inputId);
+                        var icon = button.querySelector('i');
+                        if (!input) return;
+
+                        var isVisible = input.type === 'text';
+                        input.type = isVisible ? 'password' : 'text';
+
+                        if (icon) {
+                            icon.classList.toggle('bx-show', isVisible);
+                            icon.classList.toggle('bx-hide', !isVisible);
+                        }
+
+                        button.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>

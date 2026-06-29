@@ -42,3 +42,19 @@ type UserUpdateInput struct {
 	StoreIDs  []int
 	RoleNames []string
 }
+
+// UserProfileUpdateInput menampung perubahan data diri oleh user login.
+type UserProfileUpdateInput struct {
+	ID       int
+	Username string
+	Name     string
+	Email    string
+}
+
+// UserPasswordUpdateInput menampung perubahan password oleh user login.
+type UserPasswordUpdateInput struct {
+	ID              int
+	CurrentPassword string
+	NewPassword     string
+	ConfirmPassword string
+}

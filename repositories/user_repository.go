@@ -115,6 +115,105 @@ func (r *UserRepository) GetAll() ([]models.User, error) {
 	return users, rows.Err()
 }
 
+// GetByID mengambil satu user beserta role dan store untuk halaman profile.
+func (r *UserRepository) GetByID(id int) (models.User, error) {
+	var (
+		u            models.User
+		storeIDsCSV  string
+		storeDisplay string
+		createdAt    time.Time
+	)
+
+	err := r.DB.QueryRow(`
+		SELECT 
+			u.id, 
+			u.nip,
+			u.username, 
+			u.name, 
+			COALESCE(u.email, '') AS email, 
+			u.status, 
+			COALESCE(GROUP_CONCAT(DISTINCT us.store_id ORDER BY us.store_id SEPARATOR ','), '') AS store_ids,
+			COALESCE(GROUP_CONCAT(DISTINCT s.store_name ORDER BY s.store_name SEPARATOR ', '), '') AS store_display,
+			u.created_at,
+			COALESCE(GROUP_CONCAT(DISTINCT r2.name ORDER BY r2.name SEPARATOR ', '), '') AS role_display
+		FROM users u
+		LEFT JOIN user_stores us ON us.user_id = u.id
+		LEFT JOIN stores s ON s.store_id = us.store_id
+		LEFT JOIN model_has_roles mhr ON mhr.model_id = u.id AND mhr.model_type = ?
+		LEFT JOIN roles r2 ON r2.id = mhr.role_id
+		WHERE u.id = ?
+		GROUP BY 
+			u.id, u.nip, u.username, u.name, u.email, u.status, u.created_at
+	`, userModelType, id).Scan(
+		&u.ID,
+		&u.NIP,
+		&u.Username,
+		&u.Name,
+		&u.Email,
+		&u.Status,
+		&storeIDsCSV,
+		&storeDisplay,
+		&createdAt,
+		&u.RoleDisplay,
+	)
+	if err != nil {
+		return u, err
+	}
+
+	u.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+	u.CreatedAtDisplay = createdAt.Format("02 Jan 2006 15:04:05")
+	if u.Status == "active" {
+		u.StatusLabel = "Aktif"
+	} else {
+		u.StatusLabel = "Non Aktif"
+	}
+	u.StoreIDs = splitIntCSV(storeIDsCSV)
+	u.StoreDisplay = storeDisplay
+	if u.StoreDisplay == "" {
+		u.StoreDisplay = "-"
+	}
+	if u.RoleDisplay == "" {
+		u.RoleDisplay = "-"
+	}
+	u.RoleNames = splitAndTrimCSV(u.RoleDisplay)
+
+	return u, nil
+}
+
+// GetPasswordHashByID mengambil hash password user untuk validasi password lama.
+func (r *UserRepository) GetPasswordHashByID(id int) (string, error) {
+	var hash string
+	err := r.DB.QueryRow(`SELECT password FROM users WHERE id = ?`, id).Scan(&hash)
+	return hash, err
+}
+
+// UpdateOwnProfile memperbarui field profile yang boleh diubah oleh user sendiri.
+func (r *UserRepository) UpdateOwnProfile(id int, username, name, email string) error {
+	var emailVal interface{}
+	if strings.TrimSpace(email) == "" {
+		emailVal = nil
+	} else {
+		emailVal = email
+	}
+
+	_, err := r.DB.Exec(`
+		UPDATE users
+		SET username = ?, name = ?, email = ?
+		WHERE id = ?
+	`, username, name, emailVal, id)
+	return err
+}
+
+// UpdatePassword memperbarui password user.
+func (r *UserRepository) UpdatePassword(id int, hashedPassword string) error {
+	_, err := r.DB.Exec(`
+		UPDATE users
+		SET password = ?
+		WHERE id = ?
+	`, hashedPassword, id)
+	return err
+}
+
 // CreateUserWithRoles menyimpan data user baru beserta assignment rolenya dalam satu transaksi.
 func (r *UserRepository) CreateUserWithRoles(params UserCreateParams, roleIDs []int64) (int64, error) {
 	tx, err := r.DB.Begin()

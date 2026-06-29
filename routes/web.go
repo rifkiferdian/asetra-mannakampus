@@ -18,6 +18,9 @@ func RegisterWebRoutes(r *gin.Engine) {
 	auth := r.Group("/")
 	auth.Use(middleware.AuthRequired(), middleware.PermissionContext())
 	{
+		auth.GET("/profile", controllers.ProfileIndex)
+		auth.POST("/profile", controllers.ProfileUpdate)
+		auth.POST("/profile/password", controllers.ProfilePasswordUpdate)
 		auth.GET("/dashboard", middleware.RequirePermission("dashboard_access"), controllers.DashboardIndex)
 		auth.GET("/approval-tasks", middleware.RequirePermission("approval_task_management_access"), controllers.ApprovalTaskInboxIndex)
 		auth.GET("/approval-tasks/:id", middleware.RequirePermission("approval_task_view"), controllers.ApprovalTaskDetail)

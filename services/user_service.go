@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/mail"
 	"gobase-app/config"
 	"gobase-app/models"
 	"gobase-app/repositories"
+	"net/mail"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -19,6 +19,13 @@ type UserService struct {
 
 func (s *UserService) GetUsers() ([]models.User, error) {
 	return s.Repo.GetAll()
+}
+
+func (s *UserService) GetUserProfile(id int) (models.User, error) {
+	if id <= 0 {
+		return models.User{}, errors.New("user tidak valid")
+	}
+	return s.Repo.GetByID(id)
 }
 
 // CreateUser memproses data dari form, melakukan validasi dasar, hashing password,
@@ -224,6 +231,78 @@ func (s *UserService) UpdateUser(input models.UserUpdateInput) error {
 	}, roleIDs)
 }
 
+// UpdateOwnProfile memperbarui data diri user login tanpa mengubah role, store, atau status.
+func (s *UserService) UpdateOwnProfile(input models.UserProfileUpdateInput) error {
+	username := strings.TrimSpace(input.Username)
+	name := strings.TrimSpace(input.Name)
+	email := strings.TrimSpace(input.Email)
+
+	if input.ID <= 0 {
+		return errors.New("user tidak valid")
+	}
+	if username == "" || name == "" {
+		return errors.New("nama dan username wajib diisi")
+	}
+	if email == "" {
+		return errors.New("email wajib diisi")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return errors.New("email tidak valid")
+	}
+
+	exists, err := s.Repo.ExistsByUsernameExceptID(username, input.ID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("username '%s' sudah digunakan", username)
+	}
+
+	exists, err = s.Repo.ExistsByEmailExceptID(email, input.ID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("email %s sudah digunakan", email)
+	}
+
+	return s.Repo.UpdateOwnProfile(input.ID, username, name, email)
+}
+
+// UpdateOwnPassword mengganti password user login setelah password lama diverifikasi.
+func (s *UserService) UpdateOwnPassword(input models.UserPasswordUpdateInput) error {
+	if input.ID <= 0 {
+		return errors.New("user tidak valid")
+	}
+	if strings.TrimSpace(input.CurrentPassword) == "" || strings.TrimSpace(input.NewPassword) == "" {
+		return errors.New("password lama dan password baru wajib diisi")
+	}
+	if input.NewPassword != input.ConfirmPassword {
+		return errors.New("konfirmasi password baru tidak sesuai")
+	}
+	if len(input.NewPassword) < 6 {
+		return errors.New("password baru minimal 6 karakter")
+	}
+	if input.CurrentPassword == input.NewPassword {
+		return errors.New("password baru harus berbeda dari password lama")
+	}
+
+	currentHash, err := s.Repo.GetPasswordHashByID(input.ID)
+	if err != nil {
+		return err
+	}
+	if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(input.CurrentPassword)) != nil {
+		return errors.New("password lama tidak sesuai")
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return s.Repo.UpdatePassword(input.ID, string(hashed))
+}
+
 const userModelType = "Models\\User"
 
 // DeleteUser removes user data by ID.
@@ -332,4 +411,3 @@ func uniqueInts(values []int) []int {
 	}
 	return result
 }
-
