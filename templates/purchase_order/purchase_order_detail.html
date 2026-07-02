@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}PO Detail{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .po-detail-shell { max-width: 1220px; margin: 0 auto; color: #06142f; }
+            .po-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .po-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; font-weight: 600; }
+            .po-title { margin: 18px 0 0; color: #071329; font-size: 25px; line-height: 1.1; font-weight: 900; }
+            .po-subtitle { margin: 5px 0 0; color: #334155; font-size: 12px; font-weight: 600; }
+            .po-head-actions { display: flex; align-items: center; gap: 10px; margin-top: 38px; }
+            .po-btn { display: inline-flex; min-height: 37px; align-items: center; justify-content: center; gap: 8px; border-radius: 7px; padding: 0 18px; font-size: 12px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+            .po-btn-primary { border: 1px solid #002776; background: #002776; color: #ffffff; box-shadow: 0 12px 22px -18px rgba(0, 39, 118, 1); }
+            .po-btn-primary:hover { background: #001d5a; color: #ffffff; }
+            .po-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .po-btn-secondary:hover { background: #f8fafc; }
+            .po-alert-success { border: 1px solid #a7f3d0; border-radius: 8px; background: #ecfdf5; padding: 12px 14px; color: #047857; font-size: 13px; font-weight: 700; }
+            .po-alert-error { border: 1px solid #fecdd3; border-radius: 8px; background: #fff1f2; padding: 12px 14px; color: #be123c; font-size: 13px; font-weight: 700; }
+            .po-layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 24px; margin-top: 28px; align-items: start; }
+            .po-left, .po-right { display: grid; gap: 24px; }
+            .po-card { border: 1px solid #c9d1e3; border-radius: 8px; background: #ffffff; box-shadow: 0 12px 28px -24px rgba(15, 23, 42, 0.9); }
+            .po-card-head { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 14px; padding: 0 24px; border-bottom: 1px solid #e2e8f0; }
+            .po-card-title { display: inline-flex; align-items: center; gap: 9px; margin: 0; color: #06142f; font-size: 15px; font-weight: 900; }
+            .po-card-title i { color: #002776; font-size: 17px; }
+            .po-card-sub { color: #334155; font-size: 12px; font-weight: 700; }
+            .po-source-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; padding: 24px; }
+            .po-label { display: block; margin-bottom: 9px; color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+            .po-source-box { display: flex; min-height: 66px; align-items: center; gap: 12px; border: 1px solid #cbd5e1; border-radius: 7px; background: #eef3ff; padding: 0 16px; color: #06142f; font-size: 15px; font-weight: 900; }
+            .po-source-box i { color: #64748b; font-size: 18px; }
+            .po-status-pill { display: inline-flex; align-items: center; border: 1px solid #99f6e4; border-radius: 999px; background: #ccfbf1; padding: 3px 9px; color: #0f766e; font-size: 11px; font-weight: 900; }
+            .po-vendor-body, .po-timeline-body { padding: 24px; }
+            .po-vendor-box { border: 1px solid #cbd5e1; border-radius: 7px; background: #eef3ff; padding: 16px; color: #06142f; font-size: 15px; font-weight: 900; }
+            .po-vendor-meta { margin-top: 8px; color: #64748b; font-size: 12px; font-weight: 700; }
+            .po-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+            .po-table thead { background: #dfe9fb; color: #06142f; }
+            .po-table th { padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 900; }
+            .po-table td { padding: 16px; border-top: 1px solid #dbe3f0; color: #334155; vertical-align: middle; }
+            .po-item-cell { display: flex; align-items: center; gap: 12px; }
+            .po-item-icon { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 5px; background: #eef3ff; color: #64748b; font-size: 18px; }
+            .po-item-name { color: #06142f; font-size: 13px; font-weight: 900; }
+            .po-item-sku { margin-top: 3px; color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+            .po-money-muted { color: #64748b; font-weight: 800; text-align: right; }
+            .po-money-strong { color: #06142f; font-weight: 900; text-align: right; }
+            .po-summary-card { overflow: hidden; border-color: #002776; background: #002776; color: #ffffff; box-shadow: 0 18px 34px -22px rgba(0, 39, 118, 1); }
+            .po-summary-body { padding: 24px; }
+            .po-summary-title { margin: 0 0 22px; font-size: 17px; font-weight: 900; }
+            .po-summary-row { display: flex; justify-content: space-between; gap: 16px; margin-top: 14px; color: #dbeafe; font-size: 13px; font-weight: 800; }
+            .po-summary-grand { margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.18); color: #ffffff; font-size: 21px; font-weight: 900; }
+            .po-budget-box { display: flex; align-items: center; gap: 12px; margin-top: 28px; border-radius: 7px; background: rgba(255,255,255,.12); padding: 16px; color: #ffffff; }
+            .po-budget-box i { font-size: 20px; color: #bfdbfe; }
+            .po-budget-label { font-size: 11px; color: #bfdbfe; font-weight: 900; }
+            .po-budget-value { margin-top: 2px; font-size: 13px; font-weight: 900; }
+            .po-readonly-field { border: 1px solid #cbd5e1; border-radius: 7px; background: #f8fafc; padding: 12px; color: #0f172a; font-size: 13px; font-weight: 800; }
+            @media (max-width: 1100px) { .po-layout { grid-template-columns: 1fr; } .po-right { grid-template-columns: repeat(2, minmax(0, 1fr)); } .po-right .po-summary-card { grid-column: 1 / -1; } }
+            @media (max-width: 760px) { .po-head, .po-head-actions { flex-direction: column; align-items: stretch; } .po-head-actions { margin-top: 0; } .po-source-grid, .po-right { grid-template-columns: 1fr; } .po-btn { width: 100%; } .po-table { min-width: 720px; } .po-card-head { padding: 0 18px; } }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="po-detail-shell">
+                        <div class="po-head">
+                            <div>
+                                <nav class="po-breadcrumb">
+                                    <span>Dashboard</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <a href="/purchase-orders" class="text-[#003b88]">Purchase Orders</a>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span>{{ .PO.PONumber }}</span>
+                                </nav>
+                                <h1 class="po-title">Purchase Order Detail</h1>
+                                <p class="po-subtitle">{{ .PO.PONumber }} generated from {{ .PO.PRNumber }}</p>
+                            </div>
+                            <div class="po-head-actions">
+                                <a href="/purchase-orders" class="po-btn po-btn-secondary">Back</a>
+                                <button type="button" class="po-btn po-btn-primary" onclick="window.print()">
+                                    <i class="bx bx-printer"></i>
+                                    Print Purchase Order
+                                </button>
+                            </div>
+                        </div>
+
+                        {{ if .Success }}<div class="po-alert-success mt-5">{{ .Success }}</div>{{ end }}
+                        {{ if .Error }}<div class="po-alert-error mt-5">{{ .Error }}</div>{{ end }}
+
+                        <div class="po-layout">
+                            <div class="po-left">
+                                <section class="po-card">
+                                    <div class="po-card-head">
+                                        <h2 class="po-card-title"><i class="bx bxs-file-doc"></i>Source Information</h2>
+                                    </div>
+                                    <div class="po-source-grid">
+                                        <div>
+                                            <span class="po-label">Source PR</span>
+                                            <div class="po-source-box">
+                                                <span>{{ .PO.PRNumber }}</span>
+                                                <span class="po-status-pill">{{ .PO.StatusLabel }}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="po-label">Storage Destination</span>
+                                            <div class="po-source-box">
+                                                <i class="bx bx-store"></i>
+                                                <span>{{ .PO.StoreName }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="po-card">
+                                    <div class="po-card-head">
+                                        <h2 class="po-card-title"><i class="bx bxs-detail"></i>Requested Items</h2>
+                                        <span class="po-card-sub">Total Items: {{ len .PO.Items }}</span>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="po-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 43%;">Item Description</th>
+                                                    <th style="width: 10%;">Qty</th>
+                                                    <th style="width: 18%; text-align: right;">Final Unit Price</th>
+                                                    <th style="width: 29%; text-align: right;">Line Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {{ range .PO.Items }}
+                                                <tr>
+                                                    <td>
+                                                        <div class="po-item-cell">
+                                                            <span class="po-item-icon"><i class="bx bx-package"></i></span>
+                                                            <div>
+                                                                <div class="po-item-name">{{ .ItemName }}</div>
+                                                                <div class="po-item-sku">PO Item #{{ .ID }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="font-bold text-slate-800">{{ .QtyDisplay }}</td>
+                                                    <td class="po-money-muted">{{ .UnitPriceDisplay }}</td>
+                                                    <td class="po-money-strong">{{ .TotalDisplay }}</td>
+                                                </tr>
+                                                {{ else }}
+                                                <tr><td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500">Belum ada item PO</td></tr>
+                                                {{ end }}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <aside class="po-right">
+                                <section class="po-card">
+                                    <div class="po-card-head">
+                                        <h2 class="po-card-title"><i class="bx bxs-store-alt"></i>Vendor Selection</h2>
+                                    </div>
+                                    <div class="po-vendor-body">
+                                        <span class="po-label">Selected Vendor</span>
+                                        <div class="po-vendor-box">
+                                            {{ .PO.VendorName }}
+                                            <div class="po-vendor-meta">Vendor ID #{{ .PO.VendorID }}</div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="po-card po-summary-card">
+                                    <div class="po-summary-body">
+                                        <h2 class="po-summary-title">Order Summary</h2>
+                                        <div class="po-summary-row">
+                                            <span>Subtotal</span>
+                                            <span>{{ .PO.TotalAmountDisplay }}</span>
+                                        </div>
+                                        <div class="po-summary-row">
+                                            <span>Est. Tax (0%)</span>
+                                            <span>IDR 0</span>
+                                        </div>
+                                        <div class="po-summary-row po-summary-grand">
+                                            <span>Grand Total</span>
+                                            <span>{{ .PO.TotalAmountDisplay }}</span>
+                                        </div>
+                                        <div class="po-budget-box">
+                                            <i class="bx bx-wallet"></i>
+                                            <div>
+                                                <div class="po-budget-label">Committed Value</div>
+                                                <div class="po-budget-value">{{ .PO.TotalAmountDisplay }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="po-card">
+                                    <div class="po-card-head">
+                                        <h2 class="po-card-title" style="font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #64748b;">Delivery Timeline</h2>
+                                    </div>
+                                    <div class="po-timeline-body">
+                                        <span class="po-label">Created Date</span>
+                                        <div class="po-readonly-field">{{ .PO.CreatedAtDisplay }}</div>
+
+                                        <span class="po-label" style="margin-top: 18px;">Notes for Vendor</span>
+                                        <div class="po-readonly-field" style="min-height: 86px; font-weight: 600; color: #64748b;">No vendor notes recorded.</div>
+                                    </div>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        var closed = sidebar.classList.contains('-translate-x-full');
+                        sidebar.classList.toggle('-translate-x-full', !closed);
+                        if (overlay) overlay.classList.toggle('hidden', !closed);
+                        document.body.classList.toggle('overflow-hidden', closed);
+                    });
+                });
+                if (overlay) {
+                    overlay.addEventListener('click', function () {
+                        if (sidebar) sidebar.classList.add('-translate-x-full');
+                        overlay.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>

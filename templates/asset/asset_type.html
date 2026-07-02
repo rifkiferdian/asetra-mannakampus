@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ .Title }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .asset-type-shell { color: #06143a; background: linear-gradient(180deg, #f2f5ff 0%, #f7f9fe 38%, #f5f7fc 100%); }
+            .asset-panel { border: 1px solid #d4dced; border-radius: 8px; background: #ffffff; box-shadow: 0 18px 38px -30px rgba(15, 23, 42, 0.58); }
+            .asset-kpi { min-height: 9.75rem; position: relative; overflow: hidden; }
+            .asset-kpi::after { content: ""; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--accent, #07317f); }
+            .asset-kpi-blue { --accent: #07317f; --asset-icon-color: #003b88; --asset-icon-bg: #eef3ff; background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%); }
+            .asset-kpi-indigo { --accent: #3556d8; --asset-icon-color: #3556d8; --asset-icon-bg: #eef2ff; background: linear-gradient(180deg, #ffffff 0%, #f4f6ff 100%); }
+            .asset-kpi-green { --accent: #18b981; --asset-icon-color: #047857; --asset-icon-bg: #d1fae5; background: linear-gradient(180deg, #ffffff 0%, #f1fff8 100%); }
+            .asset-kpi-red { --accent: #dc2626; --asset-icon-color: #dc2626; --asset-icon-bg: #fee2e2; background: linear-gradient(180deg, #ffffff 0%, #fff6f6 100%); }
+            .asset-kpi-icon { display: inline-flex; height: 38px; width: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--asset-icon-bg, #eef3ff); color: var(--asset-icon-color, #003b88); font-size: 21px; line-height: 1; }
+            .asset-kpi-icon .bx, .asset-type-avatar .bx, .ai-title .bx { display: inline-flex; align-items: center; justify-content: center; color: currentColor; line-height: 1; }
+            .asset-type-avatar .bx { font-size: 1.25rem; }
+            .ai-title .bx { font-size: 1.85rem; }
+            .asset-kpi-icon svg, .asset-type-avatar svg, .ai-title svg { display: block; height: 1.55rem; width: 1.55rem; color: currentColor; }
+            .asset-type-avatar svg { height: 1.25rem; width: 1.25rem; }
+            .ai-title svg { height: 1.85rem; width: 1.85rem; flex: 0 0 auto; }
+            .asset-kpi-value { font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1; letter-spacing: 0; font-weight: 900; }
+            .asset-action-btn { display: inline-flex; height: 2.55rem; align-items: center; gap: .5rem; border-radius: 6px; border: 1px solid #d1d9eb; background: #fff; padding: 0 1rem; font-size: .8rem; font-weight: 800; color: #10204f; box-shadow: 0 10px 24px -20px rgba(15,23,42,.7); }
+            .asset-primary-btn { display: inline-flex; height: 2.85rem; align-items: center; gap: .55rem; border-radius: 6px; background: #07317f; padding: 0 1.15rem; font-size: .88rem; font-weight: 900; color: #fff; box-shadow: 0 18px 28px -20px rgba(7, 49, 127, .95); }
+            .asset-table th { height: 2.35rem; background: #edf3ff; color: #263760; padding: .5rem .75rem; font-size: .68rem; font-weight: 900; }
+            .asset-table td { height: 2.9rem; border-top: 1px solid #e0e6f2; padding: .42rem .75rem; color: #14213f; font-size: .78rem; }
+            .asset-status { display: inline-flex; align-items: center; border-radius: 999px; padding: .16rem .5rem; font-size: .66rem; font-weight: 800; }
+            .asset-type-avatar { display: flex; height: 2.05rem; width: 2.05rem; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 7px; background: #dbe7ff; color: #07317f; }
+            .asset-row-desc { max-width: 20rem; font-size: .68rem; line-height: 1.15; }
+            .asset-page-btn { display: inline-flex; height: 2rem; min-width: 2rem; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #d1d9eb; background: #fff; padding: 0 .65rem; color: #10204f; font-size: .72rem; font-weight: 900; }
+            .asset-page-btn:hover { background: #f8fbff; color: #07317f; }
+            .asset-page-btn.is-disabled { pointer-events: none; color: #aab4c5; background: #f8fafc; }
+            .guide-card { display: grid; min-height: 14.5rem; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 1.75rem; border-color: #c3cbe0; background: #eef3ff; padding: 1.75rem; }
+            .guide-media { height: 10.8rem; width: 100%; overflow: hidden; border-radius: 8px; background: #fff; }
+            .guide-badge { position: absolute; left: .8rem; top: .75rem; z-index: 2; border: 1px solid #cbd8f5; border-radius: 6px; background: #ffffff; color: #07317f; padding: .32rem .55rem; font-size: .68rem; line-height: 1; font-weight: 900; box-shadow: 0 8px 18px -14px rgba(7,49,127,.8); }
+            .guide-title { color: #07317f; font-size: 1.5rem; line-height: 1.2; font-weight: 900; letter-spacing: 0; }
+            .guide-copy { color: #243152; font-size: 1rem; line-height: 1.55; font-weight: 500; }
+            .ai-card { min-height: 14.5rem; border-radius: 12px; background: #07317f; color: #ffffff; box-shadow: 0 18px 34px -24px rgba(7, 49, 127, .9); padding: 1.75rem; }
+            .ai-title { color: #ffffff; font-size: 1.25rem; line-height: 1.2; font-weight: 900; letter-spacing: 0; }
+            .ai-message { color: #ffffff; font-size: 1.28rem; line-height: 1.18; font-weight: 900; letter-spacing: 0; }
+            .ai-cta { height: 2.9rem; border-radius: 8px; background: #ffffff; color: #07317f; font-size: .95rem; font-weight: 900; box-shadow: 0 12px 24px -18px rgba(0,0,0,.55); }
+            .ai-cta:hover { background: #eef6ff; }
+            .asset-bottom-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: stretch; }
+            @media (min-width: 900px) {
+                .asset-bottom-grid { grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem); }
+                .guide-card { grid-template-columns: minmax(15rem, 19.25rem) minmax(0, 1fr); gap: 2.4rem; }
+            }
+            .modal-backdrop { background: rgba(10, 18, 38, .55); padding: 1.25rem; }
+            .asset-modal { width: min(100%, 30rem); max-height: min(88vh, 42rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7, 20, 58, .75); }
+            .asset-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .asset-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .asset-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .asset-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .asset-modal-body { max-height: calc(min(88vh, 42rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .asset-modal-field { display: block; }
+            .asset-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .asset-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .asset-modal-control:focus { border-color: #07317f; box-shadow: 0 0 0 3px rgba(7,49,127,.08); }
+            .asset-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .asset-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .asset-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .asset-modal-btn-primary { border: 1px solid #07317f; background: #07317f; color: #fff; }
+        </style>
+    </head>
+    <body class="bg-[#f5f7fc] font-display">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="asset-type-shell flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                                    <span>Settings</span>
+                                    <i class="bx bx-chevron-right text-base"></i>
+                                    <span class="text-[#07317f]">Asset Types</span>
+                                </div>
+                                <h1 class="mt-2 text-[1.7rem] font-extrabold leading-tight text-[#06143a]">Manage Asset Types</h1>
+                                <p class="mt-1 max-w-2xl text-sm text-slate-500">Define and configure how asset categories are handled across the enterprise.</p>
+                            </div>
+                            {{ if index .Permissions "asset_type_create" }}
+                            <button type="button" class="asset-primary-btn" data-open-modal="createModal">
+                                <i class="bx bx-plus text-lg"></i>
+                                <span>Create New Asset Type</span>
+                            </button>
+                            {{ end }}
+                        </div>
+
+                        {{ if .Error }}
+                        <div class="asset-panel border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ .Error }}</div>
+                        {{ end }}
+
+                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            <div class="asset-panel asset-kpi asset-kpi-blue p-6">
+                                <div class="flex items-start justify-between">
+                                    <p class="text-sm font-bold text-[#1b2a52]">Total Categories</p>
+                                    <span class="asset-kpi-icon"><i class="bx bx-package"></i></span>
+                                </div>
+                                <div class="mt-7 flex items-end gap-3">
+                                    <p class="asset-kpi-value text-[#06143a]">{{ .TotalCategories }}</p>
+                                    <span class="mb-2 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-extrabold text-emerald-700">+{{ .ActiveTypes }} Active</span>
+                                </div>
+                            </div>
+                            <div class="asset-panel asset-kpi asset-kpi-indigo p-6">
+                                <div class="flex items-start justify-between">
+                                    <p class="text-sm font-bold text-[#1b2a52]">Linked Assets</p>
+                                    <span class="asset-kpi-icon"><i class="bx bx-link-alt"></i></span>
+                                </div>
+                                <p class="asset-kpi-value mt-7 text-[#06143a]">{{ .TotalAssets }}</p>
+                                <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-200"><div class="h-full w-2/3 bg-[#3556d8]"></div></div>
+                            </div>
+                            <div class="asset-panel asset-kpi asset-kpi-green p-6">
+                                <div class="flex items-start justify-between">
+                                    <p class="text-sm font-bold text-[#1b2a52]">Active Types</p>
+                                    <span class="asset-kpi-icon"><i class="bx bx-check-shield"></i></span>
+                                </div>
+                                <p class="asset-kpi-value mt-7 text-[#06143a]">{{ .ActiveTypes }}</p>
+                                <p class="mt-2 text-xs font-bold text-emerald-700">Available for asset registration</p>
+                            </div>
+                            <div class="asset-panel asset-kpi asset-kpi-red p-6">
+                                <div class="flex items-start justify-between">
+                                    <p class="text-sm font-bold text-[#1b2a52]">Inactive Types</p>
+                                    <span class="asset-kpi-icon"><i class="bx bx-error-alt"></i></span>
+                                </div>
+                                <p class="asset-kpi-value mt-7 text-[#dc2626]">{{ .InactiveTypes }}</p>
+                                <p class="mt-2 text-xs font-bold text-rose-700">Hidden from new asset forms</p>
+                            </div>
+                        </div>
+
+                        <div class="asset-panel overflow-hidden">
+                            <div class="flex flex-col gap-3 border-b border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <button type="button" class="asset-action-btn"><i class="bx bx-filter-alt"></i><span>Filter</span></button>
+                                    <button type="button" class="asset-action-btn"><i class="bx bx-download"></i><span>Export CSV</span></button>
+                                </div>
+                                <p class="text-xs font-bold text-slate-500">Showing {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} of {{ .Pagination.TotalRows }} types</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="asset-table w-full min-w-[920px] text-xs">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-12 px-5 text-left"><input type="checkbox" class="rounded border-slate-300"></th>
+                                            <th class="px-4 text-left">Asset Type Name</th>
+                                            <th class="px-4 text-left">Code</th>
+                                            <th class="px-4 text-left">Status</th>
+                                            <th class="px-4 text-left">Total Assets</th>
+                                            <th class="px-4 text-left">Updated At</th>
+                                            <th class="px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range .Items }}
+                                        <tr class="bg-white hover:bg-[#f8fbff]">
+                                            <td class="px-5"><input type="checkbox" class="rounded border-slate-300"></td>
+                                            <td class="px-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="asset-type-avatar"><i class="bx bx-package"></i></div>
+                                                    <div>
+                                                        <p class="font-extrabold text-[#06143a]">{{ .Name }}</p>
+                                                        <p class="asset-row-desc mt-0.5 truncate font-semibold text-slate-500">{{ if .Description }}{{ .Description }}{{ else }}No description{{ end }}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 font-bold text-[#1f3260]">{{ .Code }}</td>
+                                            <td class="px-4">
+                                                {{ if .IsActive }}
+                                                <span class="asset-status bg-[#dce9ff] text-[#07317f]">Active</span>
+                                                {{ else }}
+                                                <span class="asset-status bg-slate-100 text-slate-500">Inactive</span>
+                                                {{ end }}
+                                            </td>
+                                            <td class="px-4 font-extrabold text-[#06143a]">{{ .AssetCount }}</td>
+                                            <td class="px-4 text-xs font-semibold text-slate-500">{{ .UpdatedAtDisplay }}</td>
+                                            <td class="px-4">
+                                                <div class="flex justify-end gap-3">
+                                                    {{ if index $.Permissions "asset_type_edit" }}
+                                                    <button type="button" class="text-[#06143a] transition hover:text-[#07317f]" title="Edit" data-edit data-id="{{ .ID }}" data-code="{{ .Code }}" data-name="{{ .Name }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}">
+                                                        <i class="bx bx-pencil text-base"></i>
+                                                    </button>
+                                                    {{ end }}
+                                                    {{ if index $.Permissions "asset_type_delete" }}
+                                                    <a href="/asset-types/delete/{{ .ID }}" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus asset type {{ .Code }}?">
+                                                        <i class="bx bx-trash text-base"></i>
+                                                    </a>
+                                                    {{ end }}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {{ else }}
+                                        <tr><td colspan="7" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada asset type</td></tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex flex-col gap-3 border-t border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
+                                    <span>Rows per page:</span>
+                                    <span class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[#07317f]">{{ .Pagination.PageSize }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs font-bold">
+                                    {{ if .Pagination.HasPrev }}
+                                    <a href="/asset-types?page={{ .Pagination.PrevPage }}" class="asset-page-btn"><i class="bx bx-chevron-left text-base"></i></a>
+                                    {{ else }}
+                                    <span class="asset-page-btn is-disabled"><i class="bx bx-chevron-left text-base"></i></span>
+                                    {{ end }}
+                                    <span class="asset-page-btn bg-[#07317f] text-white hover:bg-[#07317f] hover:text-white">{{ .Pagination.CurrentPage }} / {{ .Pagination.TotalPages }}</span>
+                                    {{ if .Pagination.HasNext }}
+                                    <a href="/asset-types?page={{ .Pagination.NextPage }}" class="asset-page-btn"><i class="bx bx-chevron-right text-base"></i></a>
+                                    {{ else }}
+                                    <span class="asset-page-btn is-disabled"><i class="bx bx-chevron-right text-base"></i></span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="asset-bottom-grid">
+                            <div class="asset-panel guide-card">
+                                <div class="guide-media relative shadow-sm">
+                                    <img src="/assets/images/asset/asset-types-guide.png" alt="Asset types configuration illustration" class="h-full w-full object-cover">
+                                    <div class="guide-badge">
+                                        Asetra - Asset Types Configuration
+                                    </div>
+                                </div>
+                                <div class="min-w-0 md:pr-2">
+                                    <h2 class="guide-title">Asset Depreciation Guide</h2>
+                                    <p class="guide-copy mt-4">Need help choosing a depreciation method? Our enterprise guidelines recommend 'Straight Line' for standard office equipment and 'Double Declining' for fleet vehicles to optimize tax incentives.</p>
+                                    <a href="/asset-register" class="mt-5 inline-flex items-center gap-2 text-base font-extrabold text-[#07317f]">
+                                        View Documentation <i class="bx bx-link-external text-xl"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="ai-card flex flex-col justify-between">
+                                <div>
+                                    <div class="ai-title flex items-center gap-3">
+                                        <i class="bx bxs-magic-wand"></i>
+                                        <span>Asetra AI Suggestion</span>
+                                    </div>
+                                    <p class="ai-message mt-6 max-w-[22rem]">Detected {{ .InactiveTypes }} asset types that need review.</p>
+                                </div>
+                                <button type="button" class="ai-cta mt-7 w-full transition" data-open-modal="createModal">Run Auto-Classify</button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="createModal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-types" method="post" class="asset-modal">
+                <div class="asset-modal-header">
+                    <h2 class="asset-modal-title">Create Asset Type</h2>
+                    <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="asset-modal-body space-y-3">
+                    <div class="asset-modal-field"><label class="asset-modal-label">Code</label><input name="code" placeholder="IT" maxlength="50" class="asset-modal-control uppercase" required></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Name</label><input name="name" placeholder="Peralatan IT" maxlength="150" class="asset-modal-control" required></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Description</label><textarea name="description" placeholder="Laptop, komputer, printer, scanner, server" class="asset-modal-control h-24 resize-none"></textarea></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Status</label><select name="is_active" class="asset-modal-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                </div>
+                <div class="asset-modal-actions"><button type="button" class="asset-modal-btn asset-modal-btn-secondary" data-close-modal>Cancel</button><button class="asset-modal-btn asset-modal-btn-primary">Save</button></div>
+            </form>
+        </div>
+
+        <div id="editModal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-types/update" method="post" class="asset-modal">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="asset-modal-header">
+                    <h2 class="asset-modal-title">Edit Asset Type</h2>
+                    <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="asset-modal-body space-y-3">
+                    <div class="asset-modal-field"><label class="asset-modal-label">Code</label><input name="code" id="edit_code" maxlength="50" class="asset-modal-control uppercase" required></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Name</label><input name="name" id="edit_name" maxlength="150" class="asset-modal-control" required></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Description</label><textarea name="description" id="edit_description" class="asset-modal-control h-24 resize-none"></textarea></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Status</label><select name="is_active" id="edit_active" class="asset-modal-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                </div>
+                <div class="asset-modal-actions"><button type="button" class="asset-modal-btn asset-modal-btn-secondary" data-close-modal>Cancel</button><button class="asset-modal-btn asset-modal-btn-primary">Update</button></div>
+            </form>
+        </div>
+
+        <script>
+            function openAssetTypeModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeAssetTypeModals() {
+                document.querySelectorAll('#createModal, #editModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openAssetTypeModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeAssetTypeModals);
+            });
+            document.querySelectorAll('[data-edit]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.getElementById('edit_id').value = btn.dataset.id || '';
+                    document.getElementById('edit_code').value = btn.dataset.code || '';
+                    document.getElementById('edit_name').value = btn.dataset.name || '';
+                    document.getElementById('edit_description').value = btn.dataset.description || '';
+                    document.getElementById('edit_active').value = btn.dataset.active || '1';
+                    openAssetTypeModal('editModal');
+                });
+            });
+            document.querySelectorAll('[data-confirm]').forEach(function (a) {
+                a.addEventListener('click', function (event) {
+                    if (!confirm(a.dataset.confirm)) event.preventDefault();
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeAssetTypeModals();
+            });
+        </script>
+    </body>
+</html>

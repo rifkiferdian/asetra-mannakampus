@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ .Title }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .loc-shell { color: #06143a; background: linear-gradient(180deg, #f2f5ff 0%, #f7f9fe 38%, #f5f7fc 100%); }
+            .loc-panel { border: 1px solid #d4dced; border-radius: 8px; background: #ffffff; box-shadow: 0 18px 38px -30px rgba(15, 23, 42, .58); }
+            .loc-kpi { min-height: 9.25rem; position: relative; overflow: hidden; }
+            .loc-kpi::after { content: ""; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--accent, #07317f); }
+            .loc-kpi-blue { --accent: #07317f; --loc-icon-color: #003b88; --loc-icon-bg: #eef3ff; background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%); }
+            .loc-kpi-green { --accent: #18b981; --loc-icon-color: #047857; --loc-icon-bg: #d1fae5; background: linear-gradient(180deg, #ffffff 0%, #f1fff8 100%); }
+            .loc-kpi-amber { --accent: #f59e0b; --loc-icon-color: #b45309; --loc-icon-bg: #fef3c7; background: linear-gradient(180deg, #ffffff 0%, #fff9ec 100%); }
+            .loc-kpi-red { --accent: #dc2626; --loc-icon-color: #dc2626; --loc-icon-bg: #fee2e2; background: linear-gradient(180deg, #ffffff 0%, #fff6f6 100%); }
+            .loc-kpi-icon { display: inline-flex; height: 38px; width: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--loc-icon-bg, #eef3ff); color: var(--loc-icon-color, #003b88); font-size: 21px; line-height: 1; }
+            .loc-kpi-icon .bx, .loc-avatar .bx { display: inline-flex; align-items: center; justify-content: center; color: currentColor; line-height: 1; }
+            .loc-avatar .bx { font-size: 1.25rem; }
+            .loc-kpi-icon svg, .loc-avatar svg { display: block; height: 1.55rem; width: 1.55rem; color: currentColor; }
+            .loc-avatar svg { height: 1.25rem; width: 1.25rem; }
+            .loc-kpi-value { font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1; font-weight: 900; letter-spacing: 0; }
+            .loc-primary-btn { display: inline-flex; height: 2.85rem; align-items: center; gap: .55rem; border-radius: 6px; background: #07317f; padding: 0 1.15rem; font-size: .88rem; font-weight: 900; color: #fff; box-shadow: 0 18px 28px -20px rgba(7,49,127,.95); }
+            .loc-action-btn { display: inline-flex; height: 2.55rem; align-items: center; gap: .5rem; border-radius: 6px; border: 1px solid #d1d9eb; background: #fff; padding: 0 1rem; font-size: .8rem; font-weight: 800; color: #10204f; box-shadow: 0 10px 24px -20px rgba(15,23,42,.7); }
+            .loc-table th { height: 2.35rem; background: #edf3ff; color: #263760; padding: .5rem .75rem; font-size: .68rem; font-weight: 900; }
+            .loc-table td { height: 2.9rem; border-top: 1px solid #e0e6f2; padding: .42rem .75rem; color: #14213f; font-size: .78rem; }
+            .loc-avatar { display: flex; height: 2.05rem; width: 2.05rem; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 7px; background: #dbe7ff; color: #07317f; }
+            .loc-status { display: inline-flex; align-items: center; border-radius: 999px; padding: .16rem .5rem; font-size: .66rem; font-weight: 800; }
+            .loc-type { display: inline-flex; align-items: center; border-radius: 999px; background: #eef3ff; padding: .16rem .5rem; font-size: .66rem; font-weight: 900; color: #07317f; }
+            .loc-row-sub { font-size: .68rem; line-height: 1.15; }
+            .loc-page-btn { display: inline-flex; height: 2rem; min-width: 2rem; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #d1d9eb; background: #fff; padding: 0 .65rem; color: #10204f; font-size: .72rem; font-weight: 900; }
+            .loc-page-btn:hover { background: #f8fbff; color: #07317f; }
+            .loc-page-btn.is-disabled { pointer-events: none; color: #aab4c5; background: #f8fafc; }
+            .modal-backdrop { background: rgba(10, 18, 38, .55); padding: 1.25rem; }
+            .loc-modal { width: min(100%, 38rem); max-height: min(88vh, 42rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7, 20, 58, .75); }
+            .loc-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .loc-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .loc-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .loc-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .loc-modal-body { max-height: calc(min(88vh, 42rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .loc-modal-grid { display: grid; grid-template-columns: 1fr; gap: .85rem; }
+            .loc-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .loc-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .loc-modal-control:focus { border-color: #07317f; box-shadow: 0 0 0 3px rgba(7,49,127,.08); }
+            .loc-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .loc-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .loc-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .loc-modal-btn-primary { border: 1px solid #07317f; background: #07317f; color: #fff; }
+            @media (min-width: 640px) {
+                .loc-modal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+        </style>
+    </head>
+    <body class="bg-[#f5f7fc] font-display">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="loc-shell flex-1 px-4 py-6 lg:px-8">
+                    <div class="mx-auto w-full max-w-7xl space-y-6">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                                    <span>Settings</span>
+                                    <i class="bx bx-chevron-right text-base"></i>
+                                    <span class="text-[#07317f]">Locations</span>
+                                </div>
+                                <h1 class="mt-2 text-[1.7rem] font-extrabold leading-tight text-[#06143a]">Manage Asset Locations</h1>
+                                <p class="mt-1 max-w-2xl text-sm text-slate-500">Define storage, store, room, and service-center locations for asset tracking.</p>
+                            </div>
+                            {{ if index .Permissions "asset_location_create" }}
+                            <button type="button" class="loc-primary-btn" data-open-modal="createModal">
+                                <i class="bx bx-plus text-lg"></i>
+                                <span>Create New Location</span>
+                            </button>
+                            {{ end }}
+                        </div>
+
+                        {{ if .Error }}
+                        <div class="loc-panel border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ .Error }}</div>
+                        {{ end }}
+
+                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            <div class="loc-panel loc-kpi loc-kpi-blue p-6">
+                                <div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Total Locations</p><span class="loc-kpi-icon"><i class="bx bx-map-pin"></i></span></div>
+                                <p class="loc-kpi-value mt-7 text-[#06143a]">{{ .TotalLocations }}</p>
+                            </div>
+                            <div class="loc-panel loc-kpi loc-kpi-green p-6">
+                                <div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Active Locations</p><span class="loc-kpi-icon"><i class="bx bx-current-location"></i></span></div>
+                                <p class="loc-kpi-value mt-7 text-[#06143a]">{{ .ActiveCount }}</p>
+                            </div>
+                            <div class="loc-panel loc-kpi loc-kpi-amber p-6">
+                                <div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Warehouses</p><span class="loc-kpi-icon"><i class="bx bx-store-alt"></i></span></div>
+                                <p class="loc-kpi-value mt-7 text-[#06143a]">{{ .WarehouseCount }}</p>
+                            </div>
+                            <div class="loc-panel loc-kpi loc-kpi-red p-6">
+                                <div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Inactive</p><span class="loc-kpi-icon"><i class="bx bx-error-alt"></i></span></div>
+                                <p class="loc-kpi-value mt-7 text-[#dc2626]">{{ .InactiveCount }}</p>
+                            </div>
+                        </div>
+
+                        <div class="loc-panel overflow-hidden">
+                            <div class="flex flex-col gap-3 border-b border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <button type="button" class="loc-action-btn"><i class="bx bx-filter-alt"></i><span>Filter</span></button>
+                                    <button type="button" class="loc-action-btn"><i class="bx bx-download"></i><span>Export CSV</span></button>
+                                </div>
+                                <p class="text-xs font-bold text-slate-500">Showing {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} of {{ .Pagination.TotalRows }} locations</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="loc-table w-full min-w-[1040px] text-xs">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-12 px-5 text-left"><input type="checkbox" class="rounded border-slate-300"></th>
+                                            <th class="px-4 text-left">Location Name</th>
+                                            <th class="px-4 text-left">Code</th>
+                                            <th class="px-4 text-left">Type</th>
+                                            <th class="px-4 text-left">Store</th>
+                                            <th class="px-4 text-left">Parent</th>
+                                            <th class="px-4 text-left">Status</th>
+                                            <th class="px-4 text-left">Updated At</th>
+                                            <th class="px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range .Items }}
+                                        <tr class="bg-white hover:bg-[#f8fbff]">
+                                            <td class="px-5"><input type="checkbox" class="rounded border-slate-300"></td>
+                                            <td class="px-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="loc-avatar"><i class="bx bx-map-pin"></i></div>
+                                                    <div>
+                                                        <p class="font-extrabold text-[#06143a]">{{ .LocationName }}</p>
+                                                        <p class="loc-row-sub mt-0.5 font-semibold text-slate-500">Created {{ .CreatedAtDisplay }}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 font-bold text-[#1f3260]">{{ .LocationCode }}</td>
+                                            <td class="px-4"><span class="loc-type">{{ .LocationType }}</span></td>
+                                            <td class="px-4 text-slate-600">{{ if .StoreName }}{{ .StoreName }}{{ else }}-{{ end }}</td>
+                                            <td class="px-4 text-slate-600">{{ if .ParentName }}{{ .ParentName }}{{ else }}-{{ end }}</td>
+                                            <td class="px-4">
+                                                {{ if .IsActive }}
+                                                <span class="loc-status bg-[#dce9ff] text-[#07317f]">Active</span>
+                                                {{ else }}
+                                                <span class="loc-status bg-slate-100 text-slate-500">Inactive</span>
+                                                {{ end }}
+                                            </td>
+                                            <td class="px-4 text-xs font-semibold text-slate-500">{{ .UpdatedAtDisplay }}</td>
+                                            <td class="px-4">
+                                                <div class="flex justify-end gap-3">
+                                                    {{ if index $.Permissions "asset_location_edit" }}
+                                                    <button type="button" class="text-[#06143a] transition hover:text-[#07317f]" title="Edit" data-edit data-id="{{ .ID }}" data-code="{{ .LocationCode }}" data-name="{{ .LocationName }}" data-store="{{ .StoreID }}" data-parent="{{ .ParentID }}" data-type="{{ .LocationType }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}"><i class="bx bx-pencil text-base"></i></button>
+                                                    {{ end }}
+                                                    {{ if index $.Permissions "asset_location_delete" }}
+                                                    <a href="/asset-locations/delete/{{ .ID }}" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus lokasi {{ .LocationCode }}?"><i class="bx bx-trash text-base"></i></a>
+                                                    {{ end }}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {{ else }}
+                                        <tr><td colspan="9" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada lokasi asset</td></tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex flex-col gap-3 border-t border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex items-center gap-3 text-xs font-bold text-slate-600"><span>Rows per page:</span><span class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[#07317f]">{{ .Pagination.PageSize }}</span></div>
+                                <div class="flex items-center gap-2 text-xs font-bold">
+                                    {{ if .Pagination.HasPrev }}
+                                    <a href="/asset-locations?page={{ .Pagination.PrevPage }}" class="loc-page-btn"><i class="bx bx-chevron-left text-base"></i></a>
+                                    {{ else }}
+                                    <span class="loc-page-btn is-disabled"><i class="bx bx-chevron-left text-base"></i></span>
+                                    {{ end }}
+                                    <span class="loc-page-btn bg-[#07317f] text-white hover:bg-[#07317f] hover:text-white">{{ .Pagination.CurrentPage }} / {{ .Pagination.TotalPages }}</span>
+                                    {{ if .Pagination.HasNext }}
+                                    <a href="/asset-locations?page={{ .Pagination.NextPage }}" class="loc-page-btn"><i class="bx bx-chevron-right text-base"></i></a>
+                                    {{ else }}
+                                    <span class="loc-page-btn is-disabled"><i class="bx bx-chevron-right text-base"></i></span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+
+        <div id="createModal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-locations" method="post" class="loc-modal">
+                <div class="loc-modal-header"><h2 class="loc-modal-title">Create Location</h2><button type="button" class="loc-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button></div>
+                <div class="loc-modal-body">
+                    <div class="loc-modal-grid">
+                        <div><label class="loc-modal-label">Code</label><input name="location_code" placeholder="HO-IT" maxlength="50" class="loc-modal-control uppercase" required></div>
+                        <div><label class="loc-modal-label">Name</label><input name="location_name" placeholder="Ruang IT Kantor Pusat" maxlength="150" class="loc-modal-control" required></div>
+                        <div><label class="loc-modal-label">Store</label><select name="store_id" class="loc-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
+                        <div><label class="loc-modal-label">Parent Location</label><select name="parent_id" class="loc-modal-control"><option value="">-</option>{{ range .AllLocations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select></div>
+                        <div><label class="loc-modal-label">Type</label><select name="location_type" class="loc-modal-control"><option>STORE</option><option>WAREHOUSE</option><option>ROOM</option><option>SERVICE_CENTER</option><option>OTHER</option></select></div>
+                        <div><label class="loc-modal-label">Status</label><select name="is_active" class="loc-modal-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                    </div>
+                </div>
+                <div class="loc-modal-actions"><button type="button" class="loc-modal-btn loc-modal-btn-secondary" data-close-modal>Cancel</button><button class="loc-modal-btn loc-modal-btn-primary">Save</button></div>
+            </form>
+        </div>
+
+        <div id="editModal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-locations/update" method="post" class="loc-modal">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="loc-modal-header"><h2 class="loc-modal-title">Edit Location</h2><button type="button" class="loc-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button></div>
+                <div class="loc-modal-body">
+                    <div class="loc-modal-grid">
+                        <div><label class="loc-modal-label">Code</label><input name="location_code" id="edit_code" maxlength="50" class="loc-modal-control uppercase" required></div>
+                        <div><label class="loc-modal-label">Name</label><input name="location_name" id="edit_name" maxlength="150" class="loc-modal-control" required></div>
+                        <div><label class="loc-modal-label">Store</label><select name="store_id" id="edit_store" class="loc-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
+                        <div><label class="loc-modal-label">Parent Location</label><select name="parent_id" id="edit_parent" class="loc-modal-control"><option value="">-</option>{{ range .AllLocations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select></div>
+                        <div><label class="loc-modal-label">Type</label><select name="location_type" id="edit_type" class="loc-modal-control"><option>STORE</option><option>WAREHOUSE</option><option>ROOM</option><option>SERVICE_CENTER</option><option>OTHER</option></select></div>
+                        <div><label class="loc-modal-label">Status</label><select name="is_active" id="edit_active" class="loc-modal-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                    </div>
+                </div>
+                <div class="loc-modal-actions"><button type="button" class="loc-modal-btn loc-modal-btn-secondary" data-close-modal>Cancel</button><button class="loc-modal-btn loc-modal-btn-primary">Update</button></div>
+            </form>
+        </div>
+
+        <script>
+            function openLocationModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeLocationModals() {
+                document.querySelectorAll('#createModal, #editModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openLocationModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeLocationModals);
+            });
+            document.querySelectorAll('[data-edit]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.getElementById('edit_id').value = btn.dataset.id || '';
+                    document.getElementById('edit_code').value = btn.dataset.code || '';
+                    document.getElementById('edit_name').value = btn.dataset.name || '';
+                    document.getElementById('edit_store').value = btn.dataset.store || '';
+                    document.getElementById('edit_parent').value = btn.dataset.parent || '';
+                    document.getElementById('edit_type').value = btn.dataset.type || 'STORE';
+                    document.getElementById('edit_active').value = btn.dataset.active || '1';
+                    openLocationModal('editModal');
+                });
+            });
+            document.querySelectorAll('[data-confirm]').forEach(function (a) {
+                a.addEventListener('click', function (event) {
+                    if (!confirm(a.dataset.confirm)) event.preventDefault();
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeLocationModals();
+            });
+        </script>
+    </body>
+</html>

@@ -33,12 +33,56 @@
                 </a>
             </li>
             {{ end }}
+            {{ if index .Permissions "purchase_order_management_access" }}
+            <li>
+                <a href="{{ baseURL "/purchase-orders" }}" class="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[14px] font-semibold transition sm:gap-3 sm:px-4 sm:py-3 {{ if eq .Page "purchase_order" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "purchase_order" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <i class="bx bx-package text-xl"></i>
+                    <span>Purchase Orders</span>
+                </a>
+            </li>
+            {{ end }}
             {{ if index .Permissions "approval_task_management_access" }}
             <li>
                 <a href="{{ baseURL "/approval-tasks" }}" class="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[14px] font-semibold transition sm:gap-3 sm:px-4 sm:py-3 {{ if eq .Page "approval_task_inbox" }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" {{ if eq .Page "approval_task_inbox" }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
                     <i class="bx bx-task text-xl"></i>
                     <span>Approval Inbox</span>
                 </a>
+            </li>
+            {{ end }}
+            {{ $assetActive := or (eq .Page "asset_type") (eq .Page "component_type") (eq .Page "asset_location") (eq .Page "asset") (eq .Page "asset_component") (eq .Page "asset_movement") (eq .Page "asset_component_movement") }}
+            {{ $hasAssetAccess := or (index .Permissions "asset_type_management_access") (index .Permissions "component_type_management_access") (index .Permissions "asset_location_management_access") (index .Permissions "asset_management_access") (index .Permissions "asset_component_management_access") (index .Permissions "asset_movement_management_access") (index .Permissions "asset_component_movement_management_access") }}
+            {{ if $hasAssetAccess }}
+            <li class="space-y-1">
+                <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-[14px] font-semibold transition sm:px-4 sm:py-3 {{ if $assetActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="asset-submenu" aria-expanded="{{ if $assetActive }}true{{ else }}false{{ end }}" aria-controls="asset-submenu" {{ if $assetActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <span class="flex items-center gap-3 sm:gap-4">
+                        <i class="bx bx-chip text-xl"></i>
+                        <span>Asset Management</span>
+                    </span>
+                    <i class="bx {{ if $assetActive }}bx-chevron-up text-white/80{{ else }}bx-chevron-down text-slate-400{{ end }} text-xl" data-submenu-icon></i>
+                </button>
+                <ul id="asset-submenu" class="mt-1 {{ if not $assetActive }}hidden {{ end }}space-y-1 border-l border-slate-200 pl-4" style="margin-left: 1rem;">
+                    {{ if index .Permissions "asset_type_management_access" }}
+                    <li><a href="{{ baseURL "/asset-types" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_type" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-category text-base"></i><span>Asset Types</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "component_type_management_access" }}
+                    <li><a href="{{ baseURL "/component-types" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "component_type" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-extension text-base"></i><span>Component Types</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_location_management_access" }}
+                    <li><a href="{{ baseURL "/asset-locations" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_location" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-map-pin text-base"></i><span>Locations</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_management_access" }}
+                    <li><a href="{{ baseURL "/asset-register" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-desktop text-base"></i><span>Assets</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_component_management_access" }}
+                    <li><a href="{{ baseURL "/asset-components" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_component" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-memory-card text-base"></i><span>Components</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_movement_management_access" }}
+                    <li><a href="{{ baseURL "/asset-movements" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_movement" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-transfer text-base"></i><span>Asset Movements</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_component_movement_management_access" }}
+                    <li><a href="{{ baseURL "/asset-component-movements" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_component_movement" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-git-compare text-base"></i><span>Component Movements</span></a></li>
+                    {{ end }}
+                </ul>
             </li>
             {{ end }}
             <!-- <li>

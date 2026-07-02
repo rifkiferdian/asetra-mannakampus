@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Purchase Orders{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .po-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .po-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .po-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .po-title { margin-top: 16px; color: #003b88; font-size: 20px; line-height: 1.2; font-weight: 900; }
+            .po-subtitle { margin-top: 4px; color: #475569; font-size: 12px; }
+            .po-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .po-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .po-btn-primary:hover { background: #002f6d; color: #ffffff; }
+            .po-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .po-btn-secondary:hover { background: #f8fafc; }
+            .po-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
+            .po-alert-success { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
+            .po-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
+            .po-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+            .po-stat { position: relative; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 9px; background: #ffffff; padding: 16px; box-shadow: 0 14px 30px -26px rgba(15,23,42,.9); }
+            .po-stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--po-stat-color, #003b88); }
+            .po-stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+            .po-stat-label { color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+            .po-stat-value { margin-top: 10px; color: var(--po-stat-color, #003b88); font-size: 29px; line-height: 1; font-weight: 900; }
+            .po-stat-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--po-stat-bg, #eef3ff); color: var(--po-stat-color, #003b88); font-size: 21px; }
+            .po-stat-note { margin-top: 8px; color: #64748b; font-size: 11px; font-weight: 700; }
+            .po-stat-total { --po-stat-color: #003b88; --po-stat-bg: #eef3ff; }
+            .po-stat-ready { --po-stat-color: #7c3aed; --po-stat-bg: #f3e8ff; }
+            .po-stat-approved { --po-stat-color: #047857; --po-stat-bg: #d1fae5; }
+            .po-stat-receiving { --po-stat-color: #0369a1; --po-stat-bg: #e0f2fe; }
+            .po-stat-closed { --po-stat-color: #475569; --po-stat-bg: #f1f5f9; }
+            .po-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .po-tabs { display: flex; gap: 4px; border-bottom: 1px solid #e2e8f0; padding: 10px 10px 0; }
+            .po-tab { min-height: 38px; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 0 14px; color: #475569; font-size: 12px; font-weight: 900; cursor: pointer; }
+            .po-tab.active { border-color: #003b88; color: #003b88; }
+            .po-panel { display: none; }
+            .po-panel.active { display: block; }
+            .po-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
+            .po-search { width: min(100%, 360px); height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 0 12px; color: #334155; font-size: 12px; outline: none; }
+            .po-search:focus { border-color: #003b88; background: #ffffff; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .po-table-wrap { overflow-x: auto; }
+            .po-table { width: 100%; min-width: 980px; border-collapse: collapse; font-size: 12px; }
+            .po-table thead { background: #eef3ff; color: #0f172a; }
+            .po-table th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+            .po-table td { padding: 12px 14px; border-top: 1px solid #e2e8f0; color: #334155; white-space: nowrap; }
+            .po-table tbody tr:hover { background: #f8fafc; }
+            .po-link { color: #003b88; font-weight: 900; }
+            .po-pill { display: inline-flex; border-radius: 999px; padding: 3px 9px; font-size: 10px; line-height: 14px; font-weight: 900; }
+            .po-status-approved { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
+            .po-status-receiving { border: 1px solid #bfdbfe; background: #dbeafe; color: #003b88; }
+            .po-status-closed { border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; }
+            .po-status-default { border: 1px solid #e2e8f0; background: #f1f5f9; color: #334155; }
+            .po-chip { display: inline-flex; border-radius: 4px; background: #dbeafe; padding: 2px 7px; color: #1d4ed8; font-size: 10px; font-weight: 900; }
+            .po-empty { padding: 36px 16px; text-align: center; color: #64748b; }
+            @media (max-width: 1024px) {
+                .po-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .po-topbar, .po-toolbar { flex-direction: column; align-items: stretch; }
+                .po-stats { grid-template-columns: 1fr; }
+                .po-btn { width: 100%; }
+                .po-search { width: 100%; }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="po-shell space-y-5">
+                        <div class="po-topbar">
+                            <div>
+                                <nav class="po-breadcrumb">
+                                    <span>Procurement</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Purchase Orders</span>
+                                </nav>
+                                <h1 class="po-title">Purchase Orders</h1>
+                                <p class="po-subtitle">Create PO from approved PR and track vendor orders.</p>
+                            </div>
+                            {{ if index .Permissions "purchase_order_create" }}
+                            <a href="#ready-pr" class="po-btn po-btn-primary" data-open-ready>
+                                <i class="bx bx-plus"></i>
+                                Create PO
+                            </a>
+                            {{ end }}
+                        </div>
+
+                        {{ if .Success }}<div class="po-alert po-alert-success">{{ .Success }}</div>{{ end }}
+                        {{ if .Error }}<div class="po-alert po-alert-error">{{ .Error }}</div>{{ end }}
+
+                        <section class="po-stats">
+                            <div class="po-stat po-stat-total">
+                                <div class="po-stat-top">
+                                    <div>
+                                        <div class="po-stat-label">Total PO</div>
+                                        <div class="po-stat-value">{{ index .Stats "total" }}</div>
+                                        <div class="po-stat-note">All purchase orders</div>
+                                    </div>
+                                    <span class="po-stat-icon"><i class="bx bx-package"></i></span>
+                                </div>
+                            </div>
+                            <div class="po-stat po-stat-ready">
+                                <div class="po-stat-top">
+                                    <div>
+                                        <div class="po-stat-label">Ready PR</div>
+                                        <div class="po-stat-value">{{ index .Stats "ready" }}</div>
+                                        <div class="po-stat-note">Approved PR queue</div>
+                                    </div>
+                                    <span class="po-stat-icon"><i class="bx bx-file-find"></i></span>
+                                </div>
+                            </div>
+                            <div class="po-stat po-stat-approved">
+                                <div class="po-stat-top">
+                                    <div>
+                                        <div class="po-stat-label">Approved</div>
+                                        <div class="po-stat-value">{{ index .Stats "approved" }}</div>
+                                        <div class="po-stat-note">Ready for receiving</div>
+                                    </div>
+                                    <span class="po-stat-icon"><i class="bx bx-check-shield"></i></span>
+                                </div>
+                            </div>
+                            <div class="po-stat po-stat-receiving">
+                                <div class="po-stat-top">
+                                    <div>
+                                        <div class="po-stat-label">Receiving</div>
+                                        <div class="po-stat-value">{{ index .Stats "receiving" }}</div>
+                                        <div class="po-stat-note">Goods in progress</div>
+                                    </div>
+                                    <span class="po-stat-icon"><i class="bx bx-transfer-alt"></i></span>
+                                </div>
+                            </div>
+                            <div class="po-stat po-stat-closed">
+                                <div class="po-stat-top">
+                                    <div>
+                                        <div class="po-stat-label">Closed</div>
+                                        <div class="po-stat-value">{{ index .Stats "closed" }}</div>
+                                        <div class="po-stat-note">Completed orders</div>
+                                    </div>
+                                    <span class="po-stat-icon"><i class="bx bx-archive"></i></span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="po-card">
+                            <div class="po-tabs">
+                                <button type="button" class="po-tab active" data-po-tab="orders">PO List</button>
+                                <button type="button" class="po-tab" data-po-tab="ready" id="ready-pr">Approved PR Ready for PO</button>
+                            </div>
+
+                            <div class="po-panel active" data-po-panel="orders">
+                                <div class="po-toolbar">
+                                    <div>
+                                        <strong class="text-sm text-slate-900">PO List</strong>
+                                        <p class="mt-1 text-xs text-slate-500">Daftar purchase order yang sudah dibuat.</p>
+                                    </div>
+                                    <input type="search" class="po-search" data-po-search="orders" placeholder="Search PO, PR, vendor, store...">
+                                </div>
+                                <div class="po-table-wrap">
+                                    <table class="po-table">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>PO Number</th>
+                                                <th>PR Number</th>
+                                                <th>Store</th>
+                                                <th>Vendor</th>
+                                                <th>Total Amount</th>
+                                                <th>Status</th>
+                                                <th>Created Date</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{ range $i, $po := .PurchaseOrders }}
+                                            <tr data-po-row="orders" data-search="{{ $po.PONumber }} {{ $po.PRNumber }} {{ $po.VendorName }} {{ $po.StoreName }}">
+                                                <td>{{ no $i 1 }}</td>
+                                                <td><span class="po-link">{{ $po.PONumber }}</span></td>
+                                                <td>{{ $po.PRNumber }}</td>
+                                                <td>{{ $po.StoreName }}</td>
+                                                <td>{{ $po.VendorName }}</td>
+                                                <td class="font-bold text-slate-800">{{ $po.TotalAmountDisplay }}</td>
+                                                <td>
+                                                    {{ if eq $po.Status "APPROVED" }}
+                                                    <span class="po-pill po-status-approved">{{ $po.StatusLabel }}</span>
+                                                    {{ else if eq $po.Status "RECEIVING" }}
+                                                    <span class="po-pill po-status-receiving">{{ $po.StatusLabel }}</span>
+                                                    {{ else if eq $po.Status "CLOSED" }}
+                                                    <span class="po-pill po-status-closed">{{ $po.StatusLabel }}</span>
+                                                    {{ else }}
+                                                    <span class="po-pill po-status-default">{{ $po.StatusLabel }}</span>
+                                                    {{ end }}
+                                                </td>
+                                                <td>{{ $po.CreatedAtDisplay }}</td>
+                                                <td>
+                                                    {{ if index $.Permissions "purchase_order_view" }}
+                                                    <a href="/purchase-orders/{{ $po.ID }}" class="po-btn po-btn-secondary">
+                                                        <i class="bx bx-show"></i>
+                                                        Detail
+                                                    </a>
+                                                    {{ end }}
+                                                </td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr><td colspan="9" class="po-empty">Belum ada purchase order</td></tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="po-panel" data-po-panel="ready">
+                                <div class="po-toolbar">
+                                    <div>
+                                        <strong class="text-sm text-slate-900">Approved PR Ready for PO</strong>
+                                        <p class="mt-1 text-xs text-slate-500">PR approved yang belum dikonversi menjadi PO.</p>
+                                    </div>
+                                    <input type="search" class="po-search" data-po-search="ready" placeholder="Search PR, requester, store...">
+                                </div>
+                                <div class="po-table-wrap">
+                                    <table class="po-table">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>PR Number</th>
+                                                <th>Requester</th>
+                                                <th>Store</th>
+                                                <th>GL Account</th>
+                                                <th>Type</th>
+                                                <th>Estimate</th>
+                                                <th>Approved Date</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{ range $i, $pr := .ReadyPRs }}
+                                            <tr data-po-row="ready" data-search="{{ $pr.PRNumber }} {{ $pr.RequesterName }} {{ $pr.StoreName }} {{ $pr.GLAccountName }}">
+                                                <td>{{ no $i 1 }}</td>
+                                                <td><span class="po-link">{{ $pr.PRNumber }}</span></td>
+                                                <td>{{ $pr.RequesterName }}</td>
+                                                <td>{{ $pr.StoreName }}</td>
+                                                <td>{{ $pr.GLAccountName }}</td>
+                                                <td><span class="po-chip">{{ $pr.SpendType }}</span></td>
+                                                <td class="font-bold text-slate-800">{{ $pr.TotalAmountDisplay }}</td>
+                                                <td>{{ $pr.ApprovedAtDisplay }}</td>
+                                                <td>
+                                                    {{ if index $.Permissions "purchase_order_create" }}
+                                                    <a href="/purchase-orders/create-from-pr/{{ $pr.ID }}" class="po-btn po-btn-primary">
+                                                        <i class="bx bx-package"></i>
+                                                        Create PO
+                                                    </a>
+                                                    {{ end }}
+                                                </td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr><td colspan="9" class="po-empty">Tidak ada PR approved yang siap dibuat PO</td></tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        var closed = sidebar.classList.contains('-translate-x-full');
+                        sidebar.classList.toggle('-translate-x-full', !closed);
+                        if (overlay) overlay.classList.toggle('hidden', !closed);
+                        document.body.classList.toggle('overflow-hidden', closed);
+                    });
+                });
+                if (overlay) {
+                    overlay.addEventListener('click', function () {
+                        if (sidebar) sidebar.classList.add('-translate-x-full');
+                        overlay.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    });
+                }
+
+                var tabs = document.querySelectorAll('[data-po-tab]');
+                var panels = document.querySelectorAll('[data-po-panel]');
+                function activate(name) {
+                    tabs.forEach(function (tab) { tab.classList.toggle('active', tab.getAttribute('data-po-tab') === name); });
+                    panels.forEach(function (panel) { panel.classList.toggle('active', panel.getAttribute('data-po-panel') === name); });
+                }
+                tabs.forEach(function (tab) {
+                    tab.addEventListener('click', function () { activate(tab.getAttribute('data-po-tab')); });
+                });
+                document.querySelectorAll('[data-open-ready]').forEach(function (button) {
+                    button.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        activate('ready');
+                    });
+                });
+
+                document.querySelectorAll('[data-po-search]').forEach(function (input) {
+                    input.addEventListener('input', function () {
+                        var scope = input.getAttribute('data-po-search');
+                        var term = input.value.trim().toLowerCase();
+                        document.querySelectorAll('[data-po-row="' + scope + '"]').forEach(function (row) {
+                            var haystack = (row.getAttribute('data-search') || '').toLowerCase();
+                            row.style.display = haystack.indexOf(term) === -1 ? 'none' : '';
+                        });
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
