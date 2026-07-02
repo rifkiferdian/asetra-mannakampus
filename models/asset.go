@@ -64,40 +64,45 @@ type AssetLocationInput struct {
 }
 
 type Asset struct {
-	ID               int64
-	AssetCode        string
-	AssetName        string
-	AssetTypeID      int64
-	AssetTypeName    string
-	SerialNumber     string
-	StoreID          int
-	StoreName        string
-	LocationID       int64
-	LocationName     string
-	AssignedUserID   int
-	AssignedUserName string
-	SourceGRItemID   int64
-	AcquisitionDate  string
-	AcquisitionValue float64
-	Status           string
-	Notes            string
-	CreatedAtDisplay string
+	ID                       int64
+	AssetCode                string
+	AssetName                string
+	AssetTypeID              int64
+	AssetTypeName            string
+	SerialNumber             string
+	StoreID                  int
+	StoreName                string
+	LocationID               int64
+	LocationName             string
+	AssignedPersonNIP        string
+	AssignedPersonName       string
+	AssignedPersonDepartment string
+	SourceGRItemID           int64
+	AcquisitionDate          string
+	AcquisitionValue         float64
+	AcquisitionValueDisplay  string
+	Status                   string
+	StatusLabel              string
+	Notes                    string
+	CreatedAtDisplay         string
 }
 
 type AssetInput struct {
-	ID               int64
-	AssetCode        string
-	AssetName        string
-	AssetTypeID      int64
-	SerialNumber     string
-	StoreID          int
-	LocationID       int64
-	AssignedUserID   int
-	SourceGRItemID   int64
-	AcquisitionDate  string
-	AcquisitionValue float64
-	Status           string
-	Notes            string
+	ID                       int64
+	AssetCode                string
+	AssetName                string
+	AssetTypeID              int64
+	SerialNumber             string
+	StoreID                  int
+	LocationID               int64
+	AssignedPersonNIP        string
+	AssignedPersonName       string
+	AssignedPersonDepartment string
+	SourceGRItemID           int64
+	AcquisitionDate          string
+	AcquisitionValue         float64
+	Status                   string
+	Notes                    string
 }
 
 type AssetComponent struct {

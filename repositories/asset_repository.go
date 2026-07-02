@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"gobase-app/models"
+	"math"
+	"strconv"
 	"strings"
 )
 
@@ -190,14 +192,14 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 			a.id, a.asset_code, a.asset_name, a.asset_type_id, COALESCE(at.name, ''),
 			COALESCE(a.serial_number, ''), COALESCE(a.store_id, 0), COALESCE(s.store_name, ''),
 			COALESCE(a.location_id, 0), COALESCE(al.location_name, ''),
-			COALESCE(a.assigned_user_id, 0), COALESCE(u.name, ''),
+			COALESCE(a.assigned_person_nip, ''), COALESCE(a.assigned_person_name, ''),
+			COALESCE(a.assigned_person_department, ''),
 			COALESCE(a.source_gr_item_id, 0), a.acquisition_date, a.acquisition_value,
 			a.status, COALESCE(a.notes, ''), a.created_at
 		FROM assets a
 		JOIN asset_types at ON at.id = a.asset_type_id
 		LEFT JOIN stores s ON s.store_id = a.store_id
 		LEFT JOIN asset_locations al ON al.id = a.location_id
-		LEFT JOIN users u ON u.id = a.assigned_user_id
 		ORDER BY a.id DESC
 	`)
 	if err != nil {
@@ -213,7 +215,8 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 		if err := rows.Scan(
 			&item.ID, &item.AssetCode, &item.AssetName, &item.AssetTypeID, &item.AssetTypeName,
 			&item.SerialNumber, &item.StoreID, &item.StoreName, &item.LocationID, &item.LocationName,
-			&item.AssignedUserID, &item.AssignedUserName, &item.SourceGRItemID, &acquisitionDate,
+			&item.AssignedPersonNIP, &item.AssignedPersonName, &item.AssignedPersonDepartment,
+			&item.SourceGRItemID, &acquisitionDate,
 			&item.AcquisitionValue, &item.Status, &item.Notes, &createdAt,
 		); err != nil {
 			return nil, err
@@ -221,20 +224,62 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 		if acquisitionDate.Valid {
 			item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
 		}
+		item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
+		item.StatusLabel = formatAssetStatusLabel(item.Status)
 		item.CreatedAtDisplay = formatNullTime(createdAt)
 		items = append(items, item)
 	}
 	return items, rows.Err()
 }
 
+func (r *AssetRepository) GetAssetByID(id int64) (*models.Asset, error) {
+	row := r.DB.QueryRow(`
+		SELECT
+			a.id, a.asset_code, a.asset_name, a.asset_type_id, COALESCE(at.name, ''),
+			COALESCE(a.serial_number, ''), COALESCE(a.store_id, 0), COALESCE(s.store_name, ''),
+			COALESCE(a.location_id, 0), COALESCE(al.location_name, ''),
+			COALESCE(a.assigned_person_nip, ''), COALESCE(a.assigned_person_name, ''),
+			COALESCE(a.assigned_person_department, ''),
+			COALESCE(a.source_gr_item_id, 0), a.acquisition_date, a.acquisition_value,
+			a.status, COALESCE(a.notes, ''), a.created_at
+		FROM assets a
+		JOIN asset_types at ON at.id = a.asset_type_id
+		LEFT JOIN stores s ON s.store_id = a.store_id
+		LEFT JOIN asset_locations al ON al.id = a.location_id
+		WHERE a.id = ?
+	`, id)
+
+	var item models.Asset
+	var acquisitionDate sql.NullTime
+	var createdAt sql.NullTime
+	if err := row.Scan(
+		&item.ID, &item.AssetCode, &item.AssetName, &item.AssetTypeID, &item.AssetTypeName,
+		&item.SerialNumber, &item.StoreID, &item.StoreName, &item.LocationID, &item.LocationName,
+		&item.AssignedPersonNIP, &item.AssignedPersonName, &item.AssignedPersonDepartment,
+		&item.SourceGRItemID, &acquisitionDate,
+		&item.AcquisitionValue, &item.Status, &item.Notes, &createdAt,
+	); err != nil {
+		return nil, err
+	}
+	if acquisitionDate.Valid {
+		item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
+	}
+	item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
+	item.StatusLabel = formatAssetStatusLabel(item.Status)
+	item.CreatedAtDisplay = formatNullTime(createdAt)
+	return &item, nil
+}
+
 func (r *AssetRepository) CreateAsset(input models.AssetInput) error {
 	_, err := r.DB.Exec(`
 		INSERT INTO assets (
 			asset_code, asset_name, asset_type_id, serial_number, store_id, location_id,
-			assigned_user_id, source_gr_item_id, acquisition_date, acquisition_value, status, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			assigned_person_nip, assigned_person_name, assigned_person_department,
+			source_gr_item_id, acquisition_date, acquisition_value, status, notes
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, input.AssetCode, input.AssetName, input.AssetTypeID, nullableString(input.SerialNumber),
-		nullableInt(input.StoreID), assetNullableInt64(input.LocationID), nullableInt(input.AssignedUserID),
+		nullableInt(input.StoreID), assetNullableInt64(input.LocationID), nullableString(input.AssignedPersonNIP),
+		nullableString(input.AssignedPersonName), nullableString(input.AssignedPersonDepartment),
 		assetNullableInt64(input.SourceGRItemID), nullableDate(input.AcquisitionDate), input.AcquisitionValue,
 		input.Status, nullableString(input.Notes))
 	return err
@@ -244,11 +289,13 @@ func (r *AssetRepository) UpdateAsset(input models.AssetInput) error {
 	_, err := r.DB.Exec(`
 		UPDATE assets
 		SET asset_code = ?, asset_name = ?, asset_type_id = ?, serial_number = ?, store_id = ?,
-			location_id = ?, assigned_user_id = ?, source_gr_item_id = ?, acquisition_date = ?,
+			location_id = ?, assigned_person_nip = ?, assigned_person_name = ?,
+			assigned_person_department = ?, source_gr_item_id = ?, acquisition_date = ?,
 			acquisition_value = ?, status = ?, notes = ?
 		WHERE id = ?
 	`, input.AssetCode, input.AssetName, input.AssetTypeID, nullableString(input.SerialNumber),
-		nullableInt(input.StoreID), assetNullableInt64(input.LocationID), nullableInt(input.AssignedUserID),
+		nullableInt(input.StoreID), assetNullableInt64(input.LocationID), nullableString(input.AssignedPersonNIP),
+		nullableString(input.AssignedPersonName), nullableString(input.AssignedPersonDepartment),
 		assetNullableInt64(input.SourceGRItemID), nullableDate(input.AcquisitionDate), input.AcquisitionValue,
 		input.Status, nullableString(input.Notes), input.ID)
 	return err
@@ -336,6 +383,49 @@ func (r *AssetRepository) DeleteComponent(id int64) error {
 	return err
 }
 
+func (r *AssetRepository) GetComponentsByAssetID(assetID int64) ([]models.AssetComponent, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			c.id, c.component_code, c.component_name, c.component_type_id, COALESCE(ct.name, ''),
+			COALESCE(c.brand, ''), COALESCE(c.model, ''), COALESCE(c.specification, ''),
+			COALESCE(c.serial_number, ''), COALESCE(c.parent_asset_id, 0), COALESCE(a.asset_code, ''),
+			COALESCE(c.location_id, 0), COALESCE(al.location_name, ''),
+			COALESCE(c.source_gr_item_id, 0), c.acquisition_date, c.acquisition_value,
+			c.status, COALESCE(c.notes, ''), c.created_at
+		FROM asset_components c
+		JOIN component_types ct ON ct.id = c.component_type_id
+		LEFT JOIN assets a ON a.id = c.parent_asset_id
+		LEFT JOIN asset_locations al ON al.id = c.location_id
+		WHERE c.parent_asset_id = ?
+		ORDER BY c.component_name ASC, c.id ASC
+	`, assetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.AssetComponent
+	for rows.Next() {
+		var item models.AssetComponent
+		var acquisitionDate sql.NullTime
+		var createdAt sql.NullTime
+		if err := rows.Scan(
+			&item.ID, &item.ComponentCode, &item.ComponentName, &item.ComponentTypeID, &item.ComponentTypeName,
+			&item.Brand, &item.Model, &item.Specification, &item.SerialNumber, &item.ParentAssetID,
+			&item.ParentAssetCode, &item.LocationID, &item.LocationName, &item.SourceGRItemID,
+			&acquisitionDate, &item.AcquisitionValue, &item.Status, &item.Notes, &createdAt,
+		); err != nil {
+			return nil, err
+		}
+		if acquisitionDate.Valid {
+			item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
+		}
+		item.CreatedAtDisplay = formatNullTime(createdAt)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
 func (r *AssetRepository) GetAssetMovements() ([]models.AssetMovement, error) {
 	rows, err := r.DB.Query(`
 		SELECT
@@ -355,6 +445,53 @@ func (r *AssetRepository) GetAssetMovements() ([]models.AssetMovement, error) {
 		LEFT JOIN users au ON au.id = m.acted_by
 		ORDER BY m.movement_date DESC, m.id DESC
 	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.AssetMovement
+	for rows.Next() {
+		var item models.AssetMovement
+		var movementDate sql.NullTime
+		if err := rows.Scan(
+			&item.ID, &item.AssetID, &item.AssetCode, &item.MovementType,
+			&item.FromStoreName, &item.ToStoreName, &item.FromLocationName, &item.ToLocationName,
+			&item.FromUserName, &item.ToUserName, &item.ActedByName, &movementDate, &item.Notes,
+		); err != nil {
+			return nil, err
+		}
+		item.MovementDate = formatNullTime(movementDate)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *AssetRepository) GetAssetMovementsByAssetID(assetID int64, limit int) ([]models.AssetMovement, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	rows, err := r.DB.Query(`
+		SELECT
+			m.id, m.asset_id, COALESCE(a.asset_code, ''), m.movement_type,
+			COALESCE(fs.store_name, ''), COALESCE(ts.store_name, ''),
+			COALESCE(fl.location_name, ''), COALESCE(tl.location_name, ''),
+			COALESCE(m.from_person_name, fu.name, ''), COALESCE(m.to_person_name, tu.name, ''),
+			COALESCE(au.name, ''),
+			m.movement_date, COALESCE(m.notes, '')
+		FROM asset_movements m
+		JOIN assets a ON a.id = m.asset_id
+		LEFT JOIN stores fs ON fs.store_id = m.from_store_id
+		LEFT JOIN stores ts ON ts.store_id = m.to_store_id
+		LEFT JOIN asset_locations fl ON fl.id = m.from_location_id
+		LEFT JOIN asset_locations tl ON tl.id = m.to_location_id
+		LEFT JOIN users fu ON fu.id = m.from_user_id
+		LEFT JOIN users tu ON tu.id = m.to_user_id
+		LEFT JOIN users au ON au.id = m.acted_by
+		WHERE m.asset_id = ?
+		ORDER BY m.movement_date DESC, m.id DESC
+		LIMIT ?
+	`, assetID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -649,6 +786,37 @@ func formatNullTime(value sql.NullTime) string {
 		return value.Time.Format("02 Jan 2006 15:04")
 	}
 	return "-"
+}
+
+func formatAssetAmountID(value float64) string {
+	rounded := int64(math.Round(value))
+	raw := strconv.FormatInt(rounded, 10)
+	var parts []string
+	for len(raw) > 3 {
+		parts = append([]string{raw[len(raw)-3:]}, parts...)
+		raw = raw[:len(raw)-3]
+	}
+	if raw != "" {
+		parts = append([]string{raw}, parts...)
+	}
+	return "IDR " + strings.Join(parts, ",")
+}
+
+func formatAssetStatusLabel(status string) string {
+	switch status {
+	case "AVAILABLE":
+		return "Available"
+	case "IN_USE":
+		return "In Use"
+	case "MAINTENANCE":
+		return "Maintenance"
+	case "BROKEN":
+		return "Broken"
+	case "DISPOSED":
+		return "Disposed"
+	default:
+		return status
+	}
 }
 
 func nextAssetStatus(movementType string, toUserID int) string {

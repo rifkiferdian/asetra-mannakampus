@@ -96,10 +96,34 @@ func (s *AssetService) GetAssets() ([]models.Asset, error) {
 	return s.Repo.GetAssets()
 }
 
+func (s *AssetService) GetAssetByID(id int64) (*models.Asset, error) {
+	if id <= 0 {
+		return nil, errors.New("asset tidak valid")
+	}
+	return s.Repo.GetAssetByID(id)
+}
+
+func (s *AssetService) GetComponentsByAssetID(assetID int64) ([]models.AssetComponent, error) {
+	if assetID <= 0 {
+		return nil, errors.New("asset tidak valid")
+	}
+	return s.Repo.GetComponentsByAssetID(assetID)
+}
+
+func (s *AssetService) GetAssetMovementsByAssetID(assetID int64, limit int) ([]models.AssetMovement, error) {
+	if assetID <= 0 {
+		return nil, errors.New("asset tidak valid")
+	}
+	return s.Repo.GetAssetMovementsByAssetID(assetID, limit)
+}
+
 func (s *AssetService) SaveAsset(input models.AssetInput) error {
 	input.AssetCode = strings.ToUpper(strings.TrimSpace(input.AssetCode))
 	input.AssetName = strings.TrimSpace(input.AssetName)
 	input.SerialNumber = strings.TrimSpace(input.SerialNumber)
+	input.AssignedPersonNIP = strings.TrimSpace(input.AssignedPersonNIP)
+	input.AssignedPersonName = strings.TrimSpace(input.AssignedPersonName)
+	input.AssignedPersonDepartment = strings.TrimSpace(input.AssignedPersonDepartment)
 	input.Status = strings.ToUpper(strings.TrimSpace(input.Status))
 	input.Notes = strings.TrimSpace(input.Notes)
 	if input.Status == "" {

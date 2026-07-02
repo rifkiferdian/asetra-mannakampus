@@ -160,6 +160,33 @@ func AssetIndex(c *gin.Context) {
 	renderAssetPage(c, assetService(), "")
 }
 
+func AssetDetailIndex(c *gin.Context) {
+	id := parseInt64Param(c, "id")
+	service := assetService()
+	asset, err := service.GetAssetByID(id)
+	if err != nil {
+		c.String(http.StatusNotFound, err.Error())
+		return
+	}
+	components, err := service.GetComponentsByAssetID(id)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	movements, err := service.GetAssetMovementsByAssetID(id, 5)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	Render(c, "asset_detail.html", gin.H{
+		"Title":      "Asset Detail",
+		"Page":       "asset",
+		"Asset":      asset,
+		"Components": components,
+		"Movements":  movements,
+	})
+}
+
 func AssetStore(c *gin.Context) {
 	input := bindAssetInput(c)
 	if err := assetService().SaveAsset(input); err != nil {
@@ -343,14 +370,13 @@ func renderAssetPage(c *gin.Context, service *services.AssetService, message str
 	types, _ := service.GetAssetTypes()
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
-	users, _ := service.GetUserOptions()
 	statusCounts := map[string]int{}
 	for _, item := range items {
 		statusCounts[item.Status]++
 	}
 	Render(c, "asset.html", gin.H{
 		"Title": "Assets", "Page": "asset", "Items": items, "Types": types,
-		"Locations": locations, "Stores": stores, "Users": users, "Error": message,
+		"Locations": locations, "Stores": stores, "Error": message,
 		"TotalAssets":     len(items),
 		"InUseAssets":     statusCounts["IN_USE"],
 		"AvailableAssets": statusCounts["AVAILABLE"],
@@ -406,18 +432,20 @@ func renderComponentMovementPage(c *gin.Context, service *services.AssetService,
 
 func bindAssetInput(c *gin.Context) models.AssetInput {
 	return models.AssetInput{
-		AssetCode:        c.PostForm("asset_code"),
-		AssetName:        c.PostForm("asset_name"),
-		AssetTypeID:      parseInt64Form(c, "asset_type_id"),
-		SerialNumber:     c.PostForm("serial_number"),
-		StoreID:          parseIntForm(c, "store_id"),
-		LocationID:       parseInt64Form(c, "location_id"),
-		AssignedUserID:   parseIntForm(c, "assigned_user_id"),
-		SourceGRItemID:   parseInt64Form(c, "source_gr_item_id"),
-		AcquisitionDate:  c.PostForm("acquisition_date"),
-		AcquisitionValue: parseFloatForm(c, "acquisition_value"),
-		Status:           c.PostForm("status"),
-		Notes:            c.PostForm("notes"),
+		AssetCode:                c.PostForm("asset_code"),
+		AssetName:                c.PostForm("asset_name"),
+		AssetTypeID:              parseInt64Form(c, "asset_type_id"),
+		SerialNumber:             c.PostForm("serial_number"),
+		StoreID:                  parseIntForm(c, "store_id"),
+		LocationID:               parseInt64Form(c, "location_id"),
+		AssignedPersonNIP:        c.PostForm("assigned_person_nip"),
+		AssignedPersonName:       c.PostForm("assigned_person_name"),
+		AssignedPersonDepartment: c.PostForm("assigned_person_department"),
+		SourceGRItemID:           parseInt64Form(c, "source_gr_item_id"),
+		AcquisitionDate:          c.PostForm("acquisition_date"),
+		AcquisitionValue:         parseFloatForm(c, "acquisition_value"),
+		Status:                   c.PostForm("status"),
+		Notes:                    c.PostForm("notes"),
 	}
 }
 

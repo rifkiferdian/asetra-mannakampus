@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Asset Detail{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .detail-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .detail-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .detail-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .detail-title { margin-top: 8px; color: #003b88; font-size: 22px; line-height: 1.2; font-weight: 900; }
+            .detail-code { color: #334155; font-weight: 700; }
+            .detail-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+            .detail-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .detail-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .detail-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .detail-btn-danger { border: 1px solid #ef4444; background: #fff; color: #b91c1c; }
+            .detail-status { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 900; }
+            .detail-status::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+            .detail-status-available { background: #dbeafe; color: #003b88; }
+            .detail-status-in-use { background: #d1fae5; color: #047857; }
+            .detail-status-maintenance { background: #fef3c7; color: #92400e; }
+            .detail-status-broken { background: #fee2e2; color: #b91c1c; }
+            .detail-status-disposed { background: #f3f4f6; color: #374151; }
+            .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(22rem, 31rem); gap: 16px; align-items: start; }
+            .detail-left { display: grid; gap: 14px; }
+            .detail-right { display: grid; gap: 14px; }
+            .detail-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); overflow: hidden; }
+            .detail-card-pad { padding: 16px 18px; }
+            .detail-card-title { color: #003b88; font-size: 12px; font-weight: 900; }
+            .detail-rule { margin-top: 10px; border-top: 1px solid #dbe3f0; }
+            .detail-hero { display: grid; grid-template-columns: 13rem minmax(0, 1fr); min-height: 13rem; }
+            .detail-media { display: flex; align-items: center; justify-content: center; background: #eaf0fb; border-right: 1px solid #dbe3f0; }
+            .detail-media-box { display: flex; width: 8.8rem; height: 5.5rem; align-items: center; justify-content: center; border-radius: 8px; background: linear-gradient(145deg, #dbeafe, #f8fafc); color: #003b88; box-shadow: inset 0 0 0 1px rgba(0,59,136,.12); font-size: 44px; }
+            .detail-specs { padding: 16px 18px; }
+            .detail-spec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 26px; margin-top: 18px; }
+            .detail-label { color: #64748b; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+            .detail-value { margin-top: 4px; color: #0f172a; font-size: 12px; font-weight: 900; }
+            .detail-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+            .detail-money-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; font-size: 12px; }
+            .detail-money-label { color: #334155; }
+            .detail-money-value { color: #0f172a; font-weight: 900; }
+            .detail-money-danger { color: #dc2626; }
+            .detail-progress { height: 7px; overflow: hidden; border-radius: 999px; background: #dbe3f0; }
+            .detail-progress-bar { height: 100%; width: 0%; background: #003b88; }
+            .component-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+            .component-item { display: flex; align-items: center; gap: 10px; border: 1px solid #cbd5e1; border-radius: 7px; background: #eef3ff; padding: 11px; }
+            .component-icon { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 6px; background: #fff; color: #003b88; font-size: 18px; }
+            .component-name { color: #0f172a; font-size: 12px; font-weight: 900; }
+            .component-meta { margin-top: 2px; color: #475569; font-size: 11px; }
+            .assignment { display: flex; gap: 12px; align-items: center; margin-top: 16px; }
+            .avatar { display: inline-flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 999px; background: #1d4ed8; color: #fff; font-size: 13px; font-weight: 900; }
+            .assign-name { color: #0f172a; font-size: 13px; font-weight: 900; }
+            .assign-role { margin-top: 2px; color: #64748b; font-size: 11px; }
+            .assignment-meta { display: grid; gap: 12px; margin-top: 18px; }
+            .meta-row { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 12px; }
+            .meta-row i { color: #003b88; font-size: 16px; }
+            .meta-label { color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+            .meta-value { margin-top: 3px; color: #0f172a; font-weight: 800; }
+            .mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .mini-table thead { background: #eef3ff; }
+            .mini-table th { padding: 10px 12px; color: #334155; font-size: 10px; font-weight: 900; text-align: left; white-space: nowrap; }
+            .mini-table td { padding: 10px 12px; border-top: 1px solid #e2e8f0; color: #334155; vertical-align: top; }
+            .movement-action { color: #003b88; font-weight: 900; }
+            .movement-date { margin-top: 2px; color: #64748b; }
+            .empty { padding: 18px; color: #64748b; font-size: 12px; text-align: center; }
+            .upcoming-item { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 9px; margin-top: 14px; font-size: 12px; }
+            .upcoming-dot { width: 11px; height: 11px; margin-top: 2px; border: 2px solid #003b88; border-radius: 999px; }
+            .upcoming-title { color: #0f172a; font-weight: 900; }
+            .upcoming-date { margin-top: 2px; color: #64748b; font-size: 11px; }
+            @media (max-width: 1100px) {
+                .detail-grid { grid-template-columns: 1fr; }
+            }
+            @media (max-width: 720px) {
+                .detail-topbar { flex-direction: column; }
+                .detail-actions { justify-content: flex-start; }
+                .detail-hero, .detail-two, .component-grid, .detail-spec-grid { grid-template-columns: 1fr; }
+                .detail-media { border-right: 0; border-bottom: 1px solid #dbe3f0; min-height: 9rem; }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="detail-shell space-y-5">
+                        <div class="detail-topbar">
+                            <div>
+                                <nav class="detail-breadcrumb">
+                                    <span>Asset Inventory</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Asset Detail</span>
+                                </nav>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <h1 class="detail-title">{{ .Asset.AssetName }} <span class="detail-code">({{ .Asset.AssetCode }})</span></h1>
+                                    {{ if eq .Asset.Status "AVAILABLE" }}
+                                    <span class="detail-status detail-status-available">{{ .Asset.StatusLabel }}</span>
+                                    {{ else if eq .Asset.Status "IN_USE" }}
+                                    <span class="detail-status detail-status-in-use">{{ .Asset.StatusLabel }}</span>
+                                    {{ else if eq .Asset.Status "MAINTENANCE" }}
+                                    <span class="detail-status detail-status-maintenance">{{ .Asset.StatusLabel }}</span>
+                                    {{ else if eq .Asset.Status "BROKEN" }}
+                                    <span class="detail-status detail-status-broken">{{ .Asset.StatusLabel }}</span>
+                                    {{ else }}
+                                    <span class="detail-status detail-status-disposed">{{ .Asset.StatusLabel }}</span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                            <div class="detail-actions">
+                                <a href="/asset-register" class="detail-btn detail-btn-secondary"><i class="bx bx-arrow-back"></i>Back</a>
+                                <button type="button" class="detail-btn detail-btn-secondary"><i class="bx bx-wrench"></i>Request Maintenance</button>
+                                <button type="button" class="detail-btn detail-btn-danger"><i class="bx bx-archive"></i>Retire Asset</button>
+                                <a href="/asset-register" class="detail-btn detail-btn-primary"><i class="bx bx-pencil"></i>Edit Asset</a>
+                            </div>
+                        </div>
+
+                        <div class="detail-grid">
+                            <div class="detail-left">
+                                <section class="detail-card detail-hero">
+                                    <div class="detail-media">
+                                        <div class="detail-media-box"><i class="bx bx-laptop"></i></div>
+                                    </div>
+                                    <div class="detail-specs">
+                                        <div class="detail-card-title">Technical Specifications</div>
+                                        <div class="detail-rule"></div>
+                                        <div class="detail-spec-grid">
+                                            <div>
+                                                <div class="detail-label">Serial Number</div>
+                                                <div class="detail-value">{{ if .Asset.SerialNumber }}{{ .Asset.SerialNumber }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="detail-label">Model / Type</div>
+                                                <div class="detail-value">{{ .Asset.AssetTypeName }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="detail-label">Purchase Date</div>
+                                                <div class="detail-value">{{ if .Asset.AcquisitionDate }}{{ .Asset.AcquisitionDate }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="detail-label">Warranty End</div>
+                                                <div class="detail-value text-[#047857]">Not configured</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <div class="detail-two">
+                                    <section class="detail-card detail-card-pad">
+                                        <div class="detail-card-title">Cost Details</div>
+                                        <div class="detail-rule"></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Purchase Price</span><span class="detail-money-value">{{ .Asset.AcquisitionValueDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Total Maintenance</span><span class="detail-money-value detail-money-danger">IDR 0</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Current Book Value</span><span class="detail-money-value text-[#003b88]">{{ .Asset.AcquisitionValueDisplay }}</span></div>
+                                    </section>
+
+                                    <section class="detail-card detail-card-pad">
+                                        <div class="detail-card-title">Depreciation Status</div>
+                                        <div class="detail-rule"></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Method / Useful Life</span><span class="detail-money-value">Not configured</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Salvage Value</span><span class="detail-money-value">IDR 0</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Depreciation Progress</span><span class="detail-money-value text-[#003b88]">0%</span></div>
+                                        <div class="detail-progress mt-2"><div class="detail-progress-bar"></div></div>
+                                    </section>
+                                </div>
+
+                                <section class="detail-card detail-card-pad">
+                                    <div class="detail-card-title">Attached Components</div>
+                                    <div class="detail-rule"></div>
+                                    <div class="component-grid">
+                                        {{ range .Components }}
+                                        <div class="component-item">
+                                            <span class="component-icon"><i class="bx bx-chip"></i></span>
+                                            <div>
+                                                <div class="component-name">{{ .ComponentName }}</div>
+                                                <div class="component-meta">SN: {{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                        </div>
+                                        {{ else }}
+                                        <div class="empty">Belum ada komponen yang terpasang pada asset ini.</div>
+                                        {{ end }}
+                                    </div>
+                                </section>
+                            </div>
+
+                            <aside class="detail-right">
+                                <section class="detail-card detail-card-pad">
+                                    <div class="detail-card-title">Current Assignment</div>
+                                    <div class="detail-rule"></div>
+                                    <div class="assignment">
+                                        <div class="avatar">PIC</div>
+                                        <div>
+                                            <div class="assign-name">{{ if .Asset.AssignedPersonName }}{{ .Asset.AssignedPersonName }}{{ else }}Unassigned{{ end }}</div>
+                                            <div class="assign-role">{{ if .Asset.AssignedPersonNIP }}{{ .Asset.AssignedPersonNIP }}{{ else }}No PIC NIP{{ end }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="assignment-meta">
+                                        <div class="meta-row">
+                                            <i class="bx bx-buildings"></i>
+                                            <div><div class="meta-label">Department</div><div class="meta-value">{{ if .Asset.AssignedPersonDepartment }}{{ .Asset.AssignedPersonDepartment }}{{ else }}-{{ end }}</div></div>
+                                        </div>
+                                        <div class="meta-row">
+                                            <i class="bx bx-map-pin"></i>
+                                            <div><div class="meta-label">Location</div><div class="meta-value">{{ if .Asset.LocationName }}{{ .Asset.LocationName }}{{ else }}-{{ end }}</div></div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="detail-btn detail-btn-secondary mt-5 w-full">Initiate Transfer</button>
+                                </section>
+
+                                <section class="detail-card">
+                                    <div class="flex items-center justify-between px-4 py-3">
+                                        <div class="detail-card-title">Movement History</div>
+                                        <a href="/asset-movements" class="text-xs font-bold text-[#003b88]">View All</a>
+                                    </div>
+                                    <table class="mini-table">
+                                        <thead><tr><th>Action / Date</th><th>Route</th><th>Assigned To</th></tr></thead>
+                                        <tbody>
+                                            {{ range .Movements }}
+                                            <tr>
+                                                <td><div class="movement-action">{{ .MovementType }}</div><div class="movement-date">{{ .MovementDate }}</div></td>
+                                                <td>{{ if .FromLocationName }}{{ .FromLocationName }}{{ else }}-{{ end }} -> {{ if .ToLocationName }}{{ .ToLocationName }}{{ else }}-{{ end }}</td>
+                                                <td>{{ if .ToUserName }}{{ .ToUserName }}{{ else }}-{{ end }}</td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr><td colspan="3" class="empty">Belum ada history movement.</td></tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </section>
+
+                                <section class="detail-card detail-card-pad">
+                                    <div class="detail-card-title">Upcoming Actions</div>
+                                    <div class="detail-rule"></div>
+                                    <div class="upcoming-item">
+                                        <span class="upcoming-dot"></span>
+                                        <div><div class="upcoming-title">Annual Inspection</div><div class="upcoming-date">Not scheduled</div></div>
+                                    </div>
+                                    <div class="upcoming-item">
+                                        <span class="upcoming-dot" style="border-color:#94a3b8"></span>
+                                        <div><div class="upcoming-title">Warranty Renewal Window</div><div class="upcoming-date">Not configured</div></div>
+                                    </div>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+    </body>
+</html>

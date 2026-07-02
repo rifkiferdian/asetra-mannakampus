@@ -3,17 +3,86 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{{ .Title }}</title>
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Assets{{ end }}</title>
         <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
         <style>
-            .asset-summary-card { position: relative; overflow: hidden; border: 1px solid #d4dced; border-radius: 10px; background: #fff; padding: 1.35rem; box-shadow: 0 18px 38px -30px rgba(15, 23, 42, .58); }
-            .asset-summary-card::after { content: ""; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--accent, #07317f); }
-            .asset-summary-icon { display: inline-flex; height: 38px; width: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--asset-icon-bg, #eef3ff); color: var(--asset-icon-color, #003b88); font-size: 21px; line-height: 1; }
-            .asset-summary-icon .bx { display: inline-flex; align-items: center; justify-content: center; color: currentColor; line-height: 1; }
-            .asset-summary-icon svg { display: block; height: 1.55rem; width: 1.55rem; color: currentColor; }
-            .asset-summary-value { font-size: clamp(2rem, 3vw, 2.7rem); line-height: 1; font-weight: 900; letter-spacing: 0; color: #06143a; }
+            .asset-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .asset-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .asset-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .asset-title { margin-top: 16px; color: #003b88; font-size: 20px; line-height: 1.2; font-weight: 900; }
+            .asset-subtitle { margin-top: 4px; color: #475569; font-size: 12px; }
+            .asset-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .asset-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .asset-btn-primary:hover { background: #002f6d; color: #ffffff; }
+            .asset-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .asset-btn-secondary:hover { background: #f8fafc; }
+            .asset-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
+            .asset-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
+            .asset-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+            .asset-stat { position: relative; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 9px; background: #ffffff; padding: 16px; box-shadow: 0 14px 30px -26px rgba(15,23,42,.9); }
+            .asset-stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--asset-stat-color, #003b88); }
+            .asset-stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+            .asset-stat-label { color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+            .asset-stat-value { margin-top: 10px; color: var(--asset-stat-color, #003b88); font-size: 29px; line-height: 1; font-weight: 900; }
+            .asset-stat-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--asset-stat-bg, #eef3ff); color: var(--asset-stat-color, #003b88); font-size: 21px; }
+            .asset-stat-note { margin-top: 8px; color: #64748b; font-size: 11px; font-weight: 700; }
+            .asset-stat-total { --asset-stat-color: #003b88; --asset-stat-bg: #eef3ff; }
+            .asset-stat-use { --asset-stat-color: #047857; --asset-stat-bg: #d1fae5; }
+            .asset-stat-available { --asset-stat-color: #0369a1; --asset-stat-bg: #e0f2fe; }
+            .asset-stat-attention { --asset-stat-color: #dc2626; --asset-stat-bg: #fee2e2; }
+            .asset-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .asset-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
+            .asset-search { width: min(100%, 360px); height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 0 12px; color: #334155; font-size: 12px; outline: none; }
+            .asset-search:focus { border-color: #003b88; background: #ffffff; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .asset-table-wrap { overflow-x: auto; }
+            .asset-table { width: 100%; min-width: 1240px; border-collapse: collapse; font-size: 12px; }
+            .asset-table thead { background: #eef3ff; color: #0f172a; }
+            .asset-table th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+            .asset-table td { padding: 11px 14px; border-top: 1px solid #e2e8f0; color: #334155; white-space: nowrap; vertical-align: top; }
+            .asset-table tbody tr:hover { background: #f8fafc; }
+            .asset-link { color: #003b88; font-weight: 900; }
+            .asset-muted { color: #94a3b8; }
+            .asset-person { line-height: 1.25; }
+            .asset-person-name { color: #0f172a; font-weight: 800; }
+            .asset-person-meta { margin-top: 2px; color: #64748b; font-size: 11px; }
+            .asset-pill { display: inline-flex; border-radius: 999px; padding: 3px 9px; font-size: 10px; line-height: 14px; font-weight: 900; }
+            .asset-status-available { border: 1px solid #bfdbfe; background: #dbeafe; color: #003b88; }
+            .asset-status-in-use { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
+            .asset-status-maintenance { border: 1px solid #fde68a; background: #fef3c7; color: #92400e; }
+            .asset-status-broken { border: 1px solid #fecaca; background: #fee2e2; color: #b91c1c; }
+            .asset-status-disposed { border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; }
+            .asset-empty { padding: 36px 16px; text-align: center; color: #64748b; }
+            .asset-modal-backdrop { background: rgba(15,23,42,.5); padding: 1.25rem; }
+            .asset-modal { width: min(100%, 46rem); max-height: min(90vh, 44rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7,20,58,.75); }
+            .asset-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .asset-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .asset-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .asset-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .asset-modal-body { max-height: calc(min(90vh, 44rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .asset-modal-grid { display: grid; grid-template-columns: 1fr; gap: .85rem; }
+            .asset-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .asset-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .asset-modal-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .asset-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .asset-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .asset-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .asset-modal-btn-primary { border: 1px solid #003b88; background: #003b88; color: #fff; }
+            @media (min-width: 720px) {
+                .asset-modal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .asset-modal-span-2 { grid-column: span 2 / span 2; }
+                .asset-modal-span-3 { grid-column: span 3 / span 3; }
+            }
+            @media (max-width: 1024px) {
+                .asset-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .asset-topbar, .asset-toolbar { flex-direction: column; align-items: stretch; }
+                .asset-stats { grid-template-columns: 1fr; }
+                .asset-btn { width: 100%; }
+                .asset-search { width: 100%; }
+            }
         </style>
     </head>
     <body class="bg-slate-100 font-display text-slate-900">
@@ -22,104 +91,276 @@
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
                 {{ template "header" . }}
                 <main class="flex-1 px-4 py-6 lg:px-8">
-                    <div class="mx-auto w-full max-w-7xl space-y-6">
-                        <div><p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Asset Management</p><h1 class="mt-2 text-2xl font-semibold text-slate-900">Assets</h1></div>
-                        {{ if .Error }}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ .Error }}</div>{{ end }}
-                        {{ if index .Permissions "asset_create" }}
-                        <form action="/asset-register" method="post" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <h2 class="text-base font-semibold text-slate-900">New Asset</h2>
-                            <div class="mt-4 grid gap-4 md:grid-cols-4">
-                                <input name="asset_code" placeholder="Asset code" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                                <input name="asset_name" placeholder="Asset name" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                                <select name="asset_type_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required><option value="">Type</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}</select>
-                                <input name="serial_number" placeholder="Serial number" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <select name="store_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Store</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select>
-                                <select name="location_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Location</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select>
-                                <select name="assigned_user_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Assigned user</option>{{ range .Users }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select>
-                                <select name="status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select>
-                                <input type="date" name="acquisition_date" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input type="number" step="0.01" name="acquisition_value" placeholder="Acquisition value" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input type="number" name="source_gr_item_id" placeholder="GR item ID" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input name="notes" placeholder="Notes" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                    <div class="asset-shell space-y-5">
+                        <div class="asset-topbar">
+                            <div>
+                                <nav class="asset-breadcrumb">
+                                    <span>Asset Management</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Assets</span>
+                                </nav>
+                                <h1 class="asset-title">Assets</h1>
+                                <p class="asset-subtitle">Register and track company assets by type, location, PIC, acquisition value, and status.</p>
                             </div>
-                            <div class="mt-4 flex justify-end"><button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Simpan Asset</button></div>
-                        </form>
-                        {{ end }}
-                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <div class="asset-summary-card" style="--accent:#07317f; --asset-icon-color:#003b88; --asset-icon-bg:#eef3ff;">
-                                <div class="flex items-start justify-between">
-                                    <p class="text-sm font-bold text-[#1b2a52]">Total Assets</p>
-                                    <span class="asset-summary-icon"><i class="bx bx-desktop"></i></span>
-                                </div>
-                                <p class="asset-summary-value mt-7">{{ .TotalAssets }}</p>
-                            </div>
-                            <div class="asset-summary-card" style="--accent:#18b981; --asset-icon-color:#047857; --asset-icon-bg:#d1fae5;">
-                                <div class="flex items-start justify-between">
-                                    <p class="text-sm font-bold text-[#1b2a52]">In Use</p>
-                                    <span class="asset-summary-icon"><i class="bx bx-check-shield"></i></span>
-                                </div>
-                                <p class="asset-summary-value mt-7">{{ .InUseAssets }}</p>
-                            </div>
-                            <div class="asset-summary-card" style="--accent:#3556d8; --asset-icon-color:#3556d8; --asset-icon-bg:#eef2ff;">
-                                <div class="flex items-start justify-between">
-                                    <p class="text-sm font-bold text-[#1b2a52]">Available</p>
-                                    <span class="asset-summary-icon"><i class="bx bx-package"></i></span>
-                                </div>
-                                <p class="asset-summary-value mt-7">{{ .AvailableAssets }}</p>
-                            </div>
-                            <div class="asset-summary-card" style="--accent:#dc2626; --asset-icon-color:#dc2626; --asset-icon-bg:#fee2e2;">
-                                <div class="flex items-start justify-between">
-                                    <p class="text-sm font-bold text-[#1b2a52]">Need Attention</p>
-                                    <span class="asset-summary-icon"><i class="bx bx-error-alt"></i></span>
-                                </div>
-                                <p class="asset-summary-value mt-7 text-[#dc2626]">{{ .AttentionAssets }}</p>
-                            </div>
+                            {{ if index .Permissions "asset_create" }}
+                            <button type="button" class="asset-btn asset-btn-primary" data-open-modal="createModal">
+                                <i class="bx bx-plus"></i>
+                                Create Asset
+                            </button>
+                            {{ end }}
                         </div>
-                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div class="border-b border-slate-100 px-4 py-4"><h2 class="text-base font-semibold text-slate-900">Asset Register</h2></div>
-                            <div class="overflow-x-auto p-4">
-                                <table class="w-full min-w-[1180px] text-sm">
-                                    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-2 text-left">Code</th><th class="px-3 py-2 text-left">Name</th><th class="px-3 py-2 text-left">Type</th><th class="px-3 py-2 text-left">Serial</th><th class="px-3 py-2 text-left">Store</th><th class="px-3 py-2 text-left">Location</th><th class="px-3 py-2 text-left">User</th><th class="px-3 py-2 text-left">Status</th><th class="px-3 py-2 text-left">Aksi</th></tr></thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        {{ range .Items }}
+
+                        {{ if .Error }}<div class="asset-alert asset-alert-error">{{ .Error }}</div>{{ end }}
+
+                        <section class="asset-stats">
+                            <div class="asset-stat asset-stat-total">
+                                <div class="asset-stat-top">
+                                    <div>
+                                        <div class="asset-stat-label">Total Assets</div>
+                                        <div class="asset-stat-value">{{ .TotalAssets }}</div>
+                                        <div class="asset-stat-note">All registered assets</div>
+                                    </div>
+                                    <span class="asset-stat-icon"><i class="bx bx-desktop"></i></span>
+                                </div>
+                            </div>
+                            <div class="asset-stat asset-stat-use">
+                                <div class="asset-stat-top">
+                                    <div>
+                                        <div class="asset-stat-label">In Use</div>
+                                        <div class="asset-stat-value">{{ .InUseAssets }}</div>
+                                        <div class="asset-stat-note">Assigned or deployed</div>
+                                    </div>
+                                    <span class="asset-stat-icon"><i class="bx bx-check-shield"></i></span>
+                                </div>
+                            </div>
+                            <div class="asset-stat asset-stat-available">
+                                <div class="asset-stat-top">
+                                    <div>
+                                        <div class="asset-stat-label">Available</div>
+                                        <div class="asset-stat-value">{{ .AvailableAssets }}</div>
+                                        <div class="asset-stat-note">Ready for assignment</div>
+                                    </div>
+                                    <span class="asset-stat-icon"><i class="bx bx-package"></i></span>
+                                </div>
+                            </div>
+                            <div class="asset-stat asset-stat-attention">
+                                <div class="asset-stat-top">
+                                    <div>
+                                        <div class="asset-stat-label">Need Attention</div>
+                                        <div class="asset-stat-value">{{ .AttentionAssets }}</div>
+                                        <div class="asset-stat-note">Maintenance or broken</div>
+                                    </div>
+                                    <span class="asset-stat-icon"><i class="bx bx-error-alt"></i></span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="asset-card">
+                            <div class="asset-toolbar">
+                                <div>
+                                    <strong class="text-sm text-slate-900">Asset Register</strong>
+                                    <p class="mt-1 text-xs text-slate-500">Daftar asset sesuai tabel database assets.</p>
+                                </div>
+                                <input type="search" class="asset-search" data-asset-search placeholder="Search asset, type, serial, location, PIC...">
+                            </div>
+                            <div class="asset-table-wrap">
+                                <table class="asset-table">
+                                    <thead>
                                         <tr>
-                                            <td class="px-3 py-3 font-semibold">{{ .AssetCode }}</td><td class="px-3 py-3">{{ .AssetName }}</td><td class="px-3 py-3">{{ .AssetTypeName }}</td><td class="px-3 py-3">{{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .StoreName }}{{ .StoreName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .LocationName }}{{ .LocationName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .AssignedUserName }}{{ .AssignedUserName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ .Status }}</td>
-                                            <td class="px-3 py-3"><div class="flex gap-2">{{ if index $.Permissions "asset_edit" }}<button class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700" data-edit data-id="{{ .ID }}" data-code="{{ .AssetCode }}" data-name="{{ .AssetName }}" data-type="{{ .AssetTypeID }}" data-serial="{{ .SerialNumber }}" data-store="{{ .StoreID }}" data-location="{{ .LocationID }}" data-user="{{ .AssignedUserID }}" data-status="{{ .Status }}" data-date="{{ .AcquisitionDate }}" data-value="{{ .AcquisitionValue }}" data-gr="{{ .SourceGRItemID }}" data-notes="{{ .Notes }}">Edit</button>{{ end }}{{ if index $.Permissions "asset_delete" }}<a href="/asset-register/delete/{{ .ID }}" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700" data-confirm="Hapus asset {{ .AssetCode }}?">Del</a>{{ end }}</div></td>
+                                            <th>Asset Code</th>
+                                            <th>Asset Name</th>
+                                            <th>Type</th>
+                                            <th>Serial</th>
+                                            <th>Store</th>
+                                            <th>Location</th>
+                                            <th>PIC</th>
+                                            <th>Acquisition</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th>Action</th>
                                         </tr>
-                                        {{ else }}<tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">Belum ada asset</td></tr>{{ end }}
+                                    </thead>
+                                    <tbody>
+                                        {{ range .Items }}
+                                        <tr data-asset-row data-search="{{ .AssetCode }} {{ .AssetName }} {{ .AssetTypeName }} {{ .SerialNumber }} {{ .StoreName }} {{ .LocationName }} {{ .AssignedPersonName }} {{ .AssignedPersonNIP }} {{ .AssignedPersonDepartment }} {{ .Status }}">
+                                            <td><a href="/asset-register/detail/{{ .ID }}" class="asset-link">{{ .AssetCode }}</a></td>
+                                            <td class="font-bold text-slate-800">{{ .AssetName }}</td>
+                                            <td>{{ .AssetTypeName }}</td>
+                                            <td>{{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}<span class="asset-muted">-</span>{{ end }}</td>
+                                            <td>{{ if .StoreName }}{{ .StoreName }}{{ else }}<span class="asset-muted">-</span>{{ end }}</td>
+                                            <td>{{ if .LocationName }}{{ .LocationName }}{{ else }}<span class="asset-muted">-</span>{{ end }}</td>
+                                            <td>
+                                                {{ if .AssignedPersonName }}
+                                                <div class="asset-person">
+                                                    <div class="asset-person-name">{{ .AssignedPersonName }}</div>
+                                                    <div class="asset-person-meta">{{ if .AssignedPersonNIP }}{{ .AssignedPersonNIP }}{{ else }}-{{ end }}{{ if .AssignedPersonDepartment }} / {{ .AssignedPersonDepartment }}{{ end }}</div>
+                                                </div>
+                                                {{ else }}
+                                                <span class="asset-muted">-</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                <div class="font-bold text-slate-800">{{ .AcquisitionValueDisplay }}</div>
+                                                <div class="asset-person-meta">{{ if .AcquisitionDate }}{{ .AcquisitionDate }}{{ else }}-{{ end }}</div>
+                                            </td>
+                                            <td>
+                                                {{ if eq .Status "AVAILABLE" }}
+                                                <span class="asset-pill asset-status-available">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "IN_USE" }}
+                                                <span class="asset-pill asset-status-in-use">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "MAINTENANCE" }}
+                                                <span class="asset-pill asset-status-maintenance">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "BROKEN" }}
+                                                <span class="asset-pill asset-status-broken">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "DISPOSED" }}
+                                                <span class="asset-pill asset-status-disposed">{{ .StatusLabel }}</span>
+                                                {{ else }}
+                                                <span class="asset-pill asset-status-disposed">{{ .Status }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>{{ .CreatedAtDisplay }}</td>
+                                            <td>
+                                                <div class="flex gap-2">
+                                                    <a href="/asset-register/detail/{{ .ID }}" class="asset-btn asset-btn-secondary"><i class="bx bx-show"></i>Detail</a>
+                                                    {{ if index $.Permissions "asset_edit" }}
+                                                    <button type="button" class="asset-btn asset-btn-secondary" data-edit data-id="{{ .ID }}" data-code="{{ .AssetCode }}" data-name="{{ .AssetName }}" data-type="{{ .AssetTypeID }}" data-serial="{{ .SerialNumber }}" data-store="{{ .StoreID }}" data-location="{{ .LocationID }}" data-person-nip="{{ .AssignedPersonNIP }}" data-person-name="{{ .AssignedPersonName }}" data-person-department="{{ .AssignedPersonDepartment }}" data-status="{{ .Status }}" data-date="{{ .AcquisitionDate }}" data-value="{{ .AcquisitionValue }}" data-gr="{{ .SourceGRItemID }}" data-notes="{{ .Notes }}"><i class="bx bx-pencil"></i>Edit</button>
+                                                    {{ end }}
+                                                    {{ if index $.Permissions "asset_delete" }}
+                                                    <a href="/asset-register/delete/{{ .ID }}" class="asset-btn asset-btn-secondary text-rose-700" data-confirm="Hapus asset {{ .AssetCode }}?"><i class="bx bx-trash"></i>Del</a>
+                                                    {{ end }}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {{ else }}
+                                        <tr><td colspan="11" class="asset-empty">Belum ada asset</td></tr>
+                                        {{ end }}
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </main>
                 {{ template "footer" . }}
             </div>
         </div>
-        <div id="editModal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-900/50 p-4">
-            <form action="/asset-register/update" method="post" class="my-8 w-full max-w-4xl rounded-2xl bg-white p-5 shadow-xl">
-                <input type="hidden" name="id" id="edit_id"><h2 class="text-lg font-semibold">Edit Asset</h2>
-                <div class="mt-4 grid gap-4 md:grid-cols-3">
-                    <input name="asset_code" id="edit_code" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                    <input name="asset_name" id="edit_name" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                    <select name="asset_type_id" id="edit_type" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">{{ range .Types }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select>
-                    <input name="serial_number" id="edit_serial" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <select name="store_id" id="edit_store" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Store</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select>
-                    <select name="location_id" id="edit_location" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Location</option>{{ range .Locations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select>
-                    <select name="assigned_user_id" id="edit_user" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Assigned user</option>{{ range .Users }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select>
-                    <select name="status" id="edit_status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select>
-                    <input type="date" name="acquisition_date" id="edit_date" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input type="number" step="0.01" name="acquisition_value" id="edit_value" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input type="number" name="source_gr_item_id" id="edit_gr" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input name="notes" id="edit_notes" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+
+        {{ if index .Permissions "asset_create" }}
+        <div id="createModal" class="asset-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-register" method="post" class="asset-modal">
+                <div class="asset-modal-header">
+                    <h2 class="asset-modal-title">Create Asset</h2>
+                    <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
                 </div>
-                <div class="mt-5 flex justify-end gap-2"><button type="button" class="rounded-xl border px-4 py-2 text-sm font-semibold" data-close>Batal</button><button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Update</button></div>
+                <div class="asset-modal-body">
+                    <div class="asset-modal-grid">
+                        <div><label class="asset-modal-label">Asset Code</label><input name="asset_code" placeholder="IT-LPT-2026-0001" class="asset-modal-control uppercase" required></div>
+                        <div class="asset-modal-span-2"><label class="asset-modal-label">Asset Name</label><input name="asset_name" placeholder="Laptop Lenovo ThinkPad E14" class="asset-modal-control" required></div>
+                        <div><label class="asset-modal-label">Asset Type</label><select name="asset_type_id" class="asset-modal-control" required><option value="">-</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Serial Number</label><input name="serial_number" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Status</label><select name="status" class="asset-modal-control"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="asset-modal-label">Store</label><select name="store_id" class="asset-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Location</label><select name="location_id" class="asset-modal-control"><option value="">-</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">PIC NIP</label><input name="assigned_person_nip" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">PIC Name</label><input name="assigned_person_name" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">PIC Department</label><input name="assigned_person_department" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" class="asset-modal-control"></div>
+                        <div class="asset-modal-span-3"><label class="asset-modal-label">Notes</label><textarea name="notes" class="asset-modal-control h-20 resize-none"></textarea></div>
+                    </div>
+                </div>
+                <div class="asset-modal-actions"><button type="button" class="asset-modal-btn asset-modal-btn-secondary" data-close-modal>Cancel</button><button class="asset-modal-btn asset-modal-btn-primary">Save</button></div>
             </form>
         </div>
+        {{ end }}
+
+        <div id="editModal" class="asset-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-register/update" method="post" class="asset-modal">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="asset-modal-header">
+                    <h2 class="asset-modal-title">Edit Asset</h2>
+                    <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="asset-modal-body">
+                    <div class="asset-modal-grid">
+                        <div><label class="asset-modal-label">Asset Code</label><input name="asset_code" id="edit_code" class="asset-modal-control uppercase" required></div>
+                        <div class="asset-modal-span-2"><label class="asset-modal-label">Asset Name</label><input name="asset_name" id="edit_name" class="asset-modal-control" required></div>
+                        <div><label class="asset-modal-label">Asset Type</label><select name="asset_type_id" id="edit_type" class="asset-modal-control" required>{{ range .Types }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Serial Number</label><input name="serial_number" id="edit_serial" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Status</label><select name="status" id="edit_status" class="asset-modal-control"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="asset-modal-label">Store</label><select name="store_id" id="edit_store" class="asset-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Location</label><select name="location_id" id="edit_location" class="asset-modal-control"><option value="">-</option>{{ range .Locations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" id="edit_gr" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">PIC NIP</label><input name="assigned_person_nip" id="edit_person_nip" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">PIC Name</label><input name="assigned_person_name" id="edit_person_name" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">PIC Department</label><input name="assigned_person_department" id="edit_person_department" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" id="edit_date" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" id="edit_value" class="asset-modal-control"></div>
+                        <div class="asset-modal-span-3"><label class="asset-modal-label">Notes</label><textarea name="notes" id="edit_notes" class="asset-modal-control h-20 resize-none"></textarea></div>
+                    </div>
+                </div>
+                <div class="asset-modal-actions"><button type="button" class="asset-modal-btn asset-modal-btn-secondary" data-close-modal>Cancel</button><button class="asset-modal-btn asset-modal-btn-primary">Update</button></div>
+            </form>
+        </div>
+
         <script>
-            document.querySelectorAll('[data-edit]').forEach(function (btn) { btn.addEventListener('click', function () { edit_id.value = btn.dataset.id; edit_code.value = btn.dataset.code; edit_name.value = btn.dataset.name; edit_type.value = btn.dataset.type; edit_serial.value = btn.dataset.serial; edit_store.value = btn.dataset.store || ''; edit_location.value = btn.dataset.location || ''; edit_user.value = btn.dataset.user || ''; edit_status.value = btn.dataset.status; edit_date.value = btn.dataset.date; edit_value.value = btn.dataset.value; edit_gr.value = btn.dataset.gr || ''; edit_notes.value = btn.dataset.notes; editModal.classList.remove('hidden'); editModal.classList.add('flex'); }); });
-            document.querySelectorAll('[data-close]').forEach(function (btn) { btn.addEventListener('click', function () { editModal.classList.add('hidden'); editModal.classList.remove('flex'); }); });
-            document.querySelectorAll('[data-confirm]').forEach(function (a) { a.addEventListener('click', function (e) { if (!confirm(a.dataset.confirm)) e.preventDefault(); }); });
+            function openAssetModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeAssetModals() {
+                document.querySelectorAll('#createModal, #editModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openAssetModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeAssetModals);
+            });
+            document.querySelectorAll('[data-edit]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.getElementById('edit_id').value = btn.dataset.id || '';
+                    document.getElementById('edit_code').value = btn.dataset.code || '';
+                    document.getElementById('edit_name').value = btn.dataset.name || '';
+                    document.getElementById('edit_type').value = btn.dataset.type || '';
+                    document.getElementById('edit_serial').value = btn.dataset.serial || '';
+                    document.getElementById('edit_store').value = btn.dataset.store || '';
+                    document.getElementById('edit_location').value = btn.dataset.location || '';
+                    document.getElementById('edit_person_nip').value = btn.dataset.personNip || '';
+                    document.getElementById('edit_person_name').value = btn.dataset.personName || '';
+                    document.getElementById('edit_person_department').value = btn.dataset.personDepartment || '';
+                    document.getElementById('edit_status').value = btn.dataset.status || 'AVAILABLE';
+                    document.getElementById('edit_date').value = btn.dataset.date || '';
+                    document.getElementById('edit_value').value = btn.dataset.value || '';
+                    document.getElementById('edit_gr').value = btn.dataset.gr || '';
+                    document.getElementById('edit_notes').value = btn.dataset.notes || '';
+                    openAssetModal('editModal');
+                });
+            });
+            document.querySelectorAll('[data-confirm]').forEach(function (a) {
+                a.addEventListener('click', function (event) {
+                    if (!confirm(a.dataset.confirm)) event.preventDefault();
+                });
+            });
+            document.querySelectorAll('[data-asset-search]').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    var term = input.value.trim().toLowerCase();
+                    document.querySelectorAll('[data-asset-row]').forEach(function (row) {
+                        var haystack = (row.getAttribute('data-search') || '').toLowerCase();
+                        row.style.display = haystack.indexOf(term) === -1 ? 'none' : '';
+                    });
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeAssetModals();
+            });
         </script>
     </body>
 </html>
