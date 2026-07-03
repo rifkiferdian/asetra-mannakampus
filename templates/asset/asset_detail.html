@@ -18,6 +18,21 @@
             .detail-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
             .detail-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
             .detail-btn-danger { border: 1px solid #ef4444; background: #fff; color: #b91c1c; }
+            .detail-modal-backdrop { background: rgba(15,23,42,.5); padding: 1.25rem; }
+            .detail-modal { width: min(100%, 46rem); max-height: min(90vh, 44rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7,20,58,.75); }
+            .detail-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .detail-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .detail-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .detail-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .detail-modal-body { max-height: calc(min(90vh, 44rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .detail-modal-grid { display: grid; grid-template-columns: 1fr; gap: .85rem; }
+            .detail-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .detail-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .detail-modal-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .detail-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .detail-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .detail-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .detail-modal-btn-primary { border: 1px solid #003b88; background: #003b88; color: #fff; }
             .detail-status { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 900; }
             .detail-status::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
             .detail-status-available { background: #dbeafe; color: #003b88; }
@@ -74,6 +89,11 @@
             @media (max-width: 1100px) {
                 .detail-grid { grid-template-columns: 1fr; }
             }
+            @media (min-width: 720px) {
+                .detail-modal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .detail-modal-span-2 { grid-column: span 2 / span 2; }
+                .detail-modal-span-3 { grid-column: span 3 / span 3; }
+            }
             @media (max-width: 720px) {
                 .detail-topbar { flex-direction: column; }
                 .detail-actions { justify-content: flex-start; }
@@ -115,7 +135,12 @@
                                 <a href="/asset-register" class="detail-btn detail-btn-secondary"><i class="bx bx-arrow-back"></i>Back</a>
                                 <button type="button" class="detail-btn detail-btn-secondary"><i class="bx bx-wrench"></i>Request Maintenance</button>
                                 <button type="button" class="detail-btn detail-btn-danger"><i class="bx bx-archive"></i>Retire Asset</button>
-                                <a href="/asset-register" class="detail-btn detail-btn-primary"><i class="bx bx-pencil"></i>Edit Asset</a>
+                                {{ if index .Permissions "asset_delete" }}
+                                <a href="/asset-register/delete/{{ .Asset.ID }}" class="detail-btn detail-btn-danger" data-confirm="Hapus asset {{ .Asset.AssetCode }}?"><i class="bx bx-trash"></i>Delete Asset</a>
+                                {{ end }}
+                                {{ if index .Permissions "asset_edit" }}
+                                <button type="button" class="detail-btn detail-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Edit Asset</button>
+                                {{ end }}
                             </div>
                         </div>
 
@@ -251,5 +276,127 @@
                 {{ template "footer" . }}
             </div>
         </div>
+
+        {{ if index .Permissions "asset_edit" }}
+        <div id="editModal" class="detail-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-register/update" method="post" class="detail-modal">
+                <input type="hidden" name="id" value="{{ .Asset.ID }}">
+                <input type="hidden" name="redirect_to" value="detail">
+                <div class="detail-modal-header">
+                    <h2 class="detail-modal-title">Edit Asset</h2>
+                    <button type="button" class="detail-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="detail-modal-body">
+                    <div class="detail-modal-grid">
+                        <div>
+                            <label class="detail-modal-label">Asset Code</label>
+                            <input name="asset_code" value="{{ .Asset.AssetCode }}" class="detail-modal-control uppercase" required>
+                        </div>
+                        <div class="detail-modal-span-2">
+                            <label class="detail-modal-label">Asset Name</label>
+                            <input name="asset_name" value="{{ .Asset.AssetName }}" class="detail-modal-control" required>
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Asset Type</label>
+                            <select name="asset_type_id" class="detail-modal-control" required>
+                                {{ range .Types }}<option value="{{ .ID }}" {{ if eq .ID $.Asset.AssetTypeID }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Serial Number</label>
+                            <input name="serial_number" value="{{ .Asset.SerialNumber }}" class="detail-modal-control">
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Status</label>
+                            <select name="status" class="detail-modal-control">
+                                <option {{ if eq .Asset.Status "AVAILABLE" }}selected{{ end }}>AVAILABLE</option>
+                                <option {{ if eq .Asset.Status "IN_USE" }}selected{{ end }}>IN_USE</option>
+                                <option {{ if eq .Asset.Status "MAINTENANCE" }}selected{{ end }}>MAINTENANCE</option>
+                                <option {{ if eq .Asset.Status "BROKEN" }}selected{{ end }}>BROKEN</option>
+                                <option {{ if eq .Asset.Status "DISPOSED" }}selected{{ end }}>DISPOSED</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Store</label>
+                            <select name="store_id" class="detail-modal-control">
+                                <option value="" {{ if eq .Asset.StoreID 0 }}selected{{ end }}>-</option>
+                                {{ range .Stores }}<option value="{{ .StoreID }}" {{ if eq .StoreID $.Asset.StoreID }}selected{{ end }}>{{ .StoreName }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Location</label>
+                            <select name="location_id" class="detail-modal-control">
+                                <option value="" {{ if eq .Asset.LocationID 0 }}selected{{ end }}>-</option>
+                                {{ range .Locations }}<option value="{{ .ID }}" {{ if eq .ID $.Asset.LocationID }}selected{{ end }}>{{ .LocationName }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Source GR Item ID</label>
+                            <input type="number" name="source_gr_item_id" value="{{ if .Asset.SourceGRItemID }}{{ .Asset.SourceGRItemID }}{{ end }}" class="detail-modal-control">
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">PIC NIP</label>
+                            <input name="assigned_person_nip" value="{{ .Asset.AssignedPersonNIP }}" class="detail-modal-control">
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">PIC Name</label>
+                            <input name="assigned_person_name" value="{{ .Asset.AssignedPersonName }}" class="detail-modal-control">
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">PIC Department</label>
+                            <input name="assigned_person_department" value="{{ .Asset.AssignedPersonDepartment }}" class="detail-modal-control">
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Acquisition Date</label>
+                            <input type="date" name="acquisition_date" value="{{ .Asset.AcquisitionDate }}" class="detail-modal-control">
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Acquisition Value</label>
+                            <input type="number" step="0.01" name="acquisition_value" value="{{ .Asset.AcquisitionValueInput }}" class="detail-modal-control">
+                        </div>
+                        <div class="detail-modal-span-3">
+                            <label class="detail-modal-label">Notes</label>
+                            <textarea name="notes" class="detail-modal-control h-20 resize-none">{{ .Asset.Notes }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-modal-actions">
+                    <button type="button" class="detail-modal-btn detail-modal-btn-secondary" data-close-modal>Cancel</button>
+                    <button class="detail-modal-btn detail-modal-btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+        {{ end }}
+
+        <script>
+            function openDetailModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeDetailModals() {
+                document.querySelectorAll('#editModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openDetailModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeDetailModals);
+            });
+            document.querySelectorAll('[data-confirm]').forEach(function (a) {
+                a.addEventListener('click', function (event) {
+                    if (!confirm(a.dataset.confirm)) event.preventDefault();
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeDetailModals();
+            });
+        </script>
     </body>
 </html>

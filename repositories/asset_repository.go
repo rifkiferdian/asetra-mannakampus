@@ -236,6 +236,7 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 		if acquisitionDate.Valid {
 			item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
 		}
+		item.AcquisitionValueInput = formatNumberInput(item.AcquisitionValue)
 		item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
 		item.StatusLabel = formatAssetStatusLabel(item.Status)
 		item.CreatedAtDisplay = formatNullTime(createdAt)
@@ -276,6 +277,7 @@ func (r *AssetRepository) GetAssetByID(id int64) (*models.Asset, error) {
 	if acquisitionDate.Valid {
 		item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
 	}
+	item.AcquisitionValueInput = formatNumberInput(item.AcquisitionValue)
 	item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
 	item.StatusLabel = formatAssetStatusLabel(item.Status)
 	item.CreatedAtDisplay = formatNullTime(createdAt)
@@ -354,6 +356,7 @@ func (r *AssetRepository) GetComponents() ([]models.AssetComponent, error) {
 		if acquisitionDate.Valid {
 			item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
 		}
+		item.AcquisitionValueInput = formatNumberInput(item.AcquisitionValue)
 		item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
 		item.StatusLabel = formatComponentStatusLabel(item.Status)
 		item.CreatedAtDisplay = formatNullTime(createdAt)
@@ -434,6 +437,7 @@ func (r *AssetRepository) GetComponentsByAssetID(assetID int64) ([]models.AssetC
 		if acquisitionDate.Valid {
 			item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
 		}
+		item.AcquisitionValueInput = formatNumberInput(item.AcquisitionValue)
 		item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
 		item.StatusLabel = formatComponentStatusLabel(item.Status)
 		item.CreatedAtDisplay = formatNullTime(createdAt)
@@ -851,6 +855,10 @@ func formatAssetAmountID(value float64) string {
 		parts = append([]string{raw}, parts...)
 	}
 	return "IDR " + strings.Join(parts, ",")
+}
+
+func formatNumberInput(value float64) string {
+	return strconv.FormatFloat(value, 'f', -1, 64)
 }
 
 func formatAssetStatusLabel(status string) string {

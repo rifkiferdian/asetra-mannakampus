@@ -178,12 +178,18 @@ func AssetDetailIndex(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	types, _ := service.GetAssetTypes()
+	locations, _ := service.GetLocations()
+	stores, _ := service.GetStoreOptions()
 	Render(c, "asset_detail.html", gin.H{
 		"Title":      "Asset Detail",
 		"Page":       "asset",
 		"Asset":      asset,
 		"Components": components,
 		"Movements":  movements,
+		"Types":      types,
+		"Locations":  locations,
+		"Stores":     stores,
 	})
 }
 
@@ -191,6 +197,10 @@ func AssetStore(c *gin.Context) {
 	input := bindAssetInput(c)
 	if err := assetService().SaveAsset(input); err != nil {
 		renderAssetPage(c, assetService(), err.Error())
+		return
+	}
+	if c.PostForm("redirect_to") == "detail" {
+		c.Redirect(http.StatusSeeOther, "/asset-register/detail/"+strconv.FormatInt(input.ID, 10))
 		return
 	}
 	c.Redirect(http.StatusSeeOther, "/asset-register")

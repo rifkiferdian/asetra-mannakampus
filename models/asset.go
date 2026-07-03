@@ -82,6 +82,7 @@ type Asset struct {
 	SourceGRItemID           int64
 	AcquisitionDate          string
 	AcquisitionValue         float64
+	AcquisitionValueInput    string
 	AcquisitionValueDisplay  string
 	Status                   string
 	StatusLabel              string
@@ -124,6 +125,7 @@ type AssetComponent struct {
 	SourceGRItemID          int64
 	AcquisitionDate         string
 	AcquisitionValue        float64
+	AcquisitionValueInput   string
 	AcquisitionValueDisplay string
 	Status                  string
 	StatusLabel             string

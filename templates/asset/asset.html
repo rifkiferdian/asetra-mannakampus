@@ -222,12 +222,6 @@
                                             <td>
                                                 <div class="flex gap-2">
                                                     <a href="/asset-register/detail/{{ .ID }}" class="asset-btn asset-btn-secondary"><i class="bx bx-show"></i>Detail</a>
-                                                    {{ if index $.Permissions "asset_edit" }}
-                                                    <button type="button" class="asset-btn asset-btn-secondary" data-edit data-id="{{ .ID }}" data-code="{{ .AssetCode }}" data-name="{{ .AssetName }}" data-type="{{ .AssetTypeID }}" data-serial="{{ .SerialNumber }}" data-store="{{ .StoreID }}" data-location="{{ .LocationID }}" data-person-nip="{{ .AssignedPersonNIP }}" data-person-name="{{ .AssignedPersonName }}" data-person-department="{{ .AssignedPersonDepartment }}" data-status="{{ .Status }}" data-date="{{ .AcquisitionDate }}" data-value="{{ .AcquisitionValue }}" data-gr="{{ .SourceGRItemID }}" data-notes="{{ .Notes }}"><i class="bx bx-pencil"></i>Edit</button>
-                                                    {{ end }}
-                                                    {{ if index $.Permissions "asset_delete" }}
-                                                    <a href="/asset-register/delete/{{ .ID }}" class="asset-btn asset-btn-secondary text-rose-700" data-confirm="Hapus asset {{ .AssetCode }}?"><i class="bx bx-trash"></i>Del</a>
-                                                    {{ end }}
                                                 </div>
                                             </td>
                                         </tr>
@@ -274,35 +268,6 @@
         </div>
         {{ end }}
 
-        <div id="editModal" class="asset-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
-            <form action="/asset-register/update" method="post" class="asset-modal">
-                <input type="hidden" name="id" id="edit_id">
-                <div class="asset-modal-header">
-                    <h2 class="asset-modal-title">Edit Asset</h2>
-                    <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
-                </div>
-                <div class="asset-modal-body">
-                    <div class="asset-modal-grid">
-                        <div><label class="asset-modal-label">Asset Code</label><input name="asset_code" id="edit_code" class="asset-modal-control uppercase" required></div>
-                        <div class="asset-modal-span-2"><label class="asset-modal-label">Asset Name</label><input name="asset_name" id="edit_name" class="asset-modal-control" required></div>
-                        <div><label class="asset-modal-label">Asset Type</label><select name="asset_type_id" id="edit_type" class="asset-modal-control" required>{{ range .Types }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select></div>
-                        <div><label class="asset-modal-label">Serial Number</label><input name="serial_number" id="edit_serial" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">Status</label><select name="status" id="edit_status" class="asset-modal-control"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
-                        <div><label class="asset-modal-label">Store</label><select name="store_id" id="edit_store" class="asset-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
-                        <div><label class="asset-modal-label">Location</label><select name="location_id" id="edit_location" class="asset-modal-control"><option value="">-</option>{{ range .Locations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select></div>
-                        <div><label class="asset-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" id="edit_gr" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">PIC NIP</label><input name="assigned_person_nip" id="edit_person_nip" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">PIC Name</label><input name="assigned_person_name" id="edit_person_name" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">PIC Department</label><input name="assigned_person_department" id="edit_person_department" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" id="edit_date" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" id="edit_value" class="asset-modal-control"></div>
-                        <div class="asset-modal-span-3"><label class="asset-modal-label">Notes</label><textarea name="notes" id="edit_notes" class="asset-modal-control h-20 resize-none"></textarea></div>
-                    </div>
-                </div>
-                <div class="asset-modal-actions"><button type="button" class="asset-modal-btn asset-modal-btn-secondary" data-close-modal>Cancel</button><button class="asset-modal-btn asset-modal-btn-primary">Update</button></div>
-            </form>
-        </div>
-
         <script>
             function openAssetModal(id) {
                 var modal = document.getElementById(id);
@@ -312,7 +277,7 @@
                 document.body.classList.add('overflow-hidden');
             }
             function closeAssetModals() {
-                document.querySelectorAll('#createModal, #editModal').forEach(function (modal) {
+                document.querySelectorAll('#createModal').forEach(function (modal) {
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
                 });
@@ -323,26 +288,6 @@
             });
             document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
                 btn.addEventListener('click', closeAssetModals);
-            });
-            document.querySelectorAll('[data-edit]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    document.getElementById('edit_id').value = btn.dataset.id || '';
-                    document.getElementById('edit_code').value = btn.dataset.code || '';
-                    document.getElementById('edit_name').value = btn.dataset.name || '';
-                    document.getElementById('edit_type').value = btn.dataset.type || '';
-                    document.getElementById('edit_serial').value = btn.dataset.serial || '';
-                    document.getElementById('edit_store').value = btn.dataset.store || '';
-                    document.getElementById('edit_location').value = btn.dataset.location || '';
-                    document.getElementById('edit_person_nip').value = btn.dataset.personNip || '';
-                    document.getElementById('edit_person_name').value = btn.dataset.personName || '';
-                    document.getElementById('edit_person_department').value = btn.dataset.personDepartment || '';
-                    document.getElementById('edit_status').value = btn.dataset.status || 'AVAILABLE';
-                    document.getElementById('edit_date').value = btn.dataset.date || '';
-                    document.getElementById('edit_value').value = btn.dataset.value || '';
-                    document.getElementById('edit_gr').value = btn.dataset.gr || '';
-                    document.getElementById('edit_notes').value = btn.dataset.notes || '';
-                    openAssetModal('editModal');
-                });
             });
             document.querySelectorAll('[data-confirm]').forEach(function (a) {
                 a.addEventListener('click', function (event) {
