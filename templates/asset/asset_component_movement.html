@@ -3,10 +3,88 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{{ .Title }}</title>
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Component Movements{{ end }}</title>
         <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .cm-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .cm-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .cm-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .cm-title { margin-top: 16px; color: #003b88; font-size: 20px; line-height: 1.2; font-weight: 900; }
+            .cm-subtitle { margin-top: 4px; color: #475569; font-size: 12px; }
+            .cm-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .cm-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .cm-btn-primary:hover { background: #002f6d; color: #ffffff; }
+            .cm-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
+            .cm-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
+            .cm-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+            .cm-stat { position: relative; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 9px; background: #ffffff; padding: 16px; box-shadow: 0 14px 30px -26px rgba(15,23,42,.9); }
+            .cm-stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--cm-stat-color, #003b88); }
+            .cm-stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+            .cm-stat-label { color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+            .cm-stat-value { margin-top: 10px; color: var(--cm-stat-color, #003b88); font-size: 29px; line-height: 1; font-weight: 900; }
+            .cm-stat-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--cm-stat-bg, #eef3ff); color: var(--cm-stat-color, #003b88); font-size: 21px; }
+            .cm-stat-note { margin-top: 8px; color: #64748b; font-size: 11px; font-weight: 700; }
+            .cm-stat-total { --cm-stat-color: #003b88; --cm-stat-bg: #eef3ff; }
+            .cm-stat-install { --cm-stat-color: #047857; --cm-stat-bg: #d1fae5; }
+            .cm-stat-storage { --cm-stat-color: #0369a1; --cm-stat-bg: #e0f2fe; }
+            .cm-stat-attention { --cm-stat-color: #dc2626; --cm-stat-bg: #fee2e2; }
+            .cm-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .cm-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
+            .cm-search { width: min(100%, 380px); height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 0 12px; color: #334155; font-size: 12px; outline: none; }
+            .cm-search:focus { border-color: #003b88; background: #ffffff; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .cm-table-wrap { overflow-x: auto; }
+            .cm-table { width: 100%; min-width: 1180px; border-collapse: collapse; font-size: 12px; }
+            .cm-table thead { background: #eef3ff; color: #0f172a; }
+            .cm-table th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+            .cm-table td { padding: 12px 14px; border-top: 1px solid #e2e8f0; color: #334155; white-space: nowrap; vertical-align: top; }
+            .cm-table tbody tr:hover { background: #f8fafc; }
+            .cm-link { color: #003b88; font-weight: 900; }
+            .cm-muted { color: #94a3b8; }
+            .cm-route { line-height: 1.35; }
+            .cm-route-label { color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+            .cm-route-value { margin-top: 2px; color: #0f172a; font-weight: 800; }
+            .cm-pill { display: inline-flex; border-radius: 999px; padding: 3px 9px; font-size: 10px; line-height: 14px; font-weight: 900; }
+            .cm-type-install { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
+            .cm-type-transfer { border: 1px solid #bfdbfe; background: #dbeafe; color: #003b88; }
+            .cm-type-return { border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; }
+            .cm-type-attention { border: 1px solid #fecaca; background: #fee2e2; color: #b91c1c; }
+            .cm-type-default { border: 1px solid #e2e8f0; background: #f1f5f9; color: #334155; }
+            .cm-note { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .cm-empty { padding: 36px 16px; text-align: center; color: #64748b; }
+            .cm-page-btn { display: inline-flex; min-width: 2rem; height: 2rem; align-items: center; justify-content: center; border: 1px solid #d8e0ee; border-radius: 7px; background: #ffffff; color: #334155; font-weight: 900; transition: .15s ease; }
+            .cm-page-btn:hover { border-color: #003b88; color: #003b88; }
+            .cm-page-btn.is-disabled { cursor: not-allowed; background: #f8fafc; color: #cbd5e1; }
+            .cm-modal-backdrop { background: rgba(15,23,42,.5); padding: 1.25rem; }
+            .cm-modal { width: min(100%, 42rem); max-height: min(88vh, 40rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7,20,58,.75); }
+            .cm-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .cm-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .cm-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .cm-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .cm-modal-body { max-height: calc(min(88vh, 40rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .cm-modal-grid { display: grid; grid-template-columns: 1fr; gap: .85rem; }
+            .cm-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .cm-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .cm-modal-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .cm-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .cm-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .cm-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .cm-modal-btn-primary { border: 1px solid #003b88; background: #003b88; color: #fff; }
+            @media (min-width: 720px) {
+                .cm-modal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .cm-modal-span-2 { grid-column: span 2 / span 2; }
+            }
+            @media (max-width: 1024px) {
+                .cm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .cm-topbar, .cm-toolbar { flex-direction: column; align-items: stretch; }
+                .cm-stats { grid-template-columns: 1fr; }
+                .cm-btn { width: 100%; }
+                .cm-search { width: 100%; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-display text-slate-900">
         <div class="flex min-h-screen">
@@ -14,41 +92,253 @@
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
                 {{ template "header" . }}
                 <main class="flex-1 px-4 py-6 lg:px-8">
-                    <div class="mx-auto w-full max-w-7xl space-y-6">
-                        <div><p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Asset Management / Movement</p><h1 class="mt-2 text-2xl font-semibold text-slate-900">Component Movements</h1></div>
-                        {{ if .Error }}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ .Error }}</div>{{ end }}
-                        {{ if index .Permissions "asset_component_movement_create" }}
-                        <form action="/asset-component-movements" method="post" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <h2 class="text-base font-semibold text-slate-900">Create Component Movement</h2>
-                            <div class="mt-4 grid gap-4 md:grid-cols-3">
-                                <select name="component_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required><option value="">Component</option>{{ range .Components }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select>
-                                <select name="movement_type" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required><option>RECEIVE</option><option>INSTALL</option><option>UNINSTALL</option><option>TRANSFER</option><option>MAINTENANCE</option><option>RETURN_TO_STORAGE</option><option>BROKEN</option><option>DISPOSE</option></select>
-                                <select name="to_asset_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">To asset</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select>
-                                <select name="to_location_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">To location</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select>
-                                <input name="notes" placeholder="Notes" class="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+                    <div class="cm-shell space-y-5">
+                        <div class="cm-topbar">
+                            <div>
+                                <nav class="cm-breadcrumb">
+                                    <span>Asset Management</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Component Movements</span>
+                                </nav>
+                                <h1 class="cm-title">Component Movements</h1>
+                                <p class="cm-subtitle">Track component installation, transfer, storage return, maintenance, broken, and disposal history.</p>
                             </div>
-                            <div class="mt-4 flex justify-end"><button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Simpan Movement</button></div>
-                        </form>
-                        {{ end }}
-                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div class="border-b border-slate-100 px-4 py-4"><h2 class="text-base font-semibold text-slate-900">History Component Movement</h2></div>
-                            <div class="overflow-x-auto p-4">
-                                <table class="w-full min-w-[980px] text-sm">
-                                    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-2 text-left">Date</th><th class="px-3 py-2 text-left">Component</th><th class="px-3 py-2 text-left">Type</th><th class="px-3 py-2 text-left">From Asset</th><th class="px-3 py-2 text-left">To Asset</th><th class="px-3 py-2 text-left">From Location</th><th class="px-3 py-2 text-left">To Location</th><th class="px-3 py-2 text-left">Acted By</th><th class="px-3 py-2 text-left">Notes</th></tr></thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        {{ range .Items }}
+                            {{ if index .Permissions "asset_component_movement_create" }}
+                            <button type="button" class="cm-btn cm-btn-primary" data-open-modal="createModal">
+                                <i class="bx bx-plus"></i>
+                                Create Movement
+                            </button>
+                            {{ end }}
+                        </div>
+
+                        {{ if .Error }}<div class="cm-alert cm-alert-error">{{ .Error }}</div>{{ end }}
+
+                        <section class="cm-stats">
+                            <div class="cm-stat cm-stat-total">
+                                <div class="cm-stat-top">
+                                    <div>
+                                        <div class="cm-stat-label">Total Movements</div>
+                                        <div class="cm-stat-value">{{ .TotalMovements }}</div>
+                                        <div class="cm-stat-note">All component history</div>
+                                    </div>
+                                    <span class="cm-stat-icon"><i class="bx bx-git-compare"></i></span>
+                                </div>
+                            </div>
+                            <div class="cm-stat cm-stat-install">
+                                <div class="cm-stat-top">
+                                    <div>
+                                        <div class="cm-stat-label">Installed</div>
+                                        <div class="cm-stat-value">{{ .InstallMovements }}</div>
+                                        <div class="cm-stat-note">Mounted to asset</div>
+                                    </div>
+                                    <span class="cm-stat-icon"><i class="bx bx-chip"></i></span>
+                                </div>
+                            </div>
+                            <div class="cm-stat cm-stat-storage">
+                                <div class="cm-stat-top">
+                                    <div>
+                                        <div class="cm-stat-label">Storage Flow</div>
+                                        <div class="cm-stat-value">{{ .StorageMovements }}</div>
+                                        <div class="cm-stat-note">Transfer, uninstall, return</div>
+                                    </div>
+                                    <span class="cm-stat-icon"><i class="bx bx-archive-in"></i></span>
+                                </div>
+                            </div>
+                            <div class="cm-stat cm-stat-attention">
+                                <div class="cm-stat-top">
+                                    <div>
+                                        <div class="cm-stat-label">Attention</div>
+                                        <div class="cm-stat-value">{{ .AttentionMovements }}</div>
+                                        <div class="cm-stat-note">Maintenance, broken, disposed</div>
+                                    </div>
+                                    <span class="cm-stat-icon"><i class="bx bx-error-alt"></i></span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="cm-card">
+                            <div class="cm-toolbar">
+                                <div>
+                                    <strong class="text-sm text-slate-900">History Component Movement</strong>
+                                    <p class="mt-1 text-xs text-slate-500">Riwayat movement dari tabel asset_component_movements.</p>
+                                </div>
+                                <div class="flex flex-col items-stretch gap-2 sm:items-end">
+                                    <p class="text-xs font-bold text-slate-500">Showing {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} of {{ .Pagination.TotalRows }} movements</p>
+                                    <input type="search" class="cm-search" data-cm-search placeholder="Search component, movement, asset, location, notes...">
+                                </div>
+                            </div>
+                            <div class="cm-table-wrap">
+                                <table class="cm-table">
+                                    <thead>
                                         <tr>
-                                            <td class="px-3 py-3">{{ .MovementDate }}</td><td class="px-3 py-3 font-semibold">{{ .ComponentCode }}</td><td class="px-3 py-3">{{ .MovementType }}</td><td class="px-3 py-3">{{ if .FromAssetCode }}{{ .FromAssetCode }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .ToAssetCode }}{{ .ToAssetCode }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .FromLocationName }}{{ .FromLocationName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .ToLocationName }}{{ .ToLocationName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .ActedByName }}{{ .ActedByName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .Notes }}{{ .Notes }}{{ else }}-{{ end }}</td>
+                                            <th>Date</th>
+                                            <th>Component</th>
+                                            <th>Type</th>
+                                            <th>From Asset</th>
+                                            <th>To Asset</th>
+                                            <th>From Location</th>
+                                            <th>To Location</th>
+                                            <th>Acted By</th>
+                                            <th>Notes</th>
                                         </tr>
-                                        {{ else }}<tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">Belum ada history movement komponen</td></tr>{{ end }}
+                                    </thead>
+                                    <tbody>
+                                        {{ range .Items }}
+                                        <tr data-cm-row data-search="{{ .MovementDate }} {{ .ComponentCode }} {{ .MovementType }} {{ .FromAssetCode }} {{ .ToAssetCode }} {{ .FromLocationName }} {{ .ToLocationName }} {{ .ActedByName }} {{ .Notes }}">
+                                            <td>{{ .MovementDate }}</td>
+                                            <td><span class="cm-link">{{ .ComponentCode }}</span></td>
+                                            <td>
+                                                {{ if eq .MovementType "INSTALL" }}
+                                                <span class="cm-pill cm-type-install">{{ .MovementType }}</span>
+                                                {{ else if eq .MovementType "TRANSFER" }}
+                                                <span class="cm-pill cm-type-transfer">{{ .MovementType }}</span>
+                                                {{ else if or (eq .MovementType "UNINSTALL") (eq .MovementType "RETURN_TO_STORAGE") }}
+                                                <span class="cm-pill cm-type-return">{{ .MovementType }}</span>
+                                                {{ else if or (eq .MovementType "MAINTENANCE") (eq .MovementType "BROKEN") (eq .MovementType "DISPOSE") }}
+                                                <span class="cm-pill cm-type-attention">{{ .MovementType }}</span>
+                                                {{ else }}
+                                                <span class="cm-pill cm-type-default">{{ .MovementType }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                <div class="cm-route">
+                                                    <div class="cm-route-label">From Asset</div>
+                                                    <div class="cm-route-value">{{ if .FromAssetCode }}{{ .FromAssetCode }}{{ else }}-{{ end }}</div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="cm-route">
+                                                    <div class="cm-route-label">To Asset</div>
+                                                    <div class="cm-route-value">{{ if .ToAssetCode }}{{ .ToAssetCode }}{{ else }}-{{ end }}</div>
+                                                </div>
+                                            </td>
+                                            <td>{{ if .FromLocationName }}{{ .FromLocationName }}{{ else }}<span class="cm-muted">-</span>{{ end }}</td>
+                                            <td>{{ if .ToLocationName }}{{ .ToLocationName }}{{ else }}<span class="cm-muted">-</span>{{ end }}</td>
+                                            <td>{{ if .ActedByName }}{{ .ActedByName }}{{ else }}<span class="cm-muted">-</span>{{ end }}</td>
+                                            <td><div class="cm-note">{{ if .Notes }}{{ .Notes }}{{ else }}<span class="cm-muted">-</span>{{ end }}</div></td>
+                                        </tr>
+                                        {{ else }}
+                                        <tr><td colspan="9" class="cm-empty">Belum ada history movement komponen</td></tr>
+                                        {{ end }}
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                            <div class="flex flex-col gap-3 border-t border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
+                                    <span>Rows per page:</span>
+                                    <span class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[#07317f]">{{ .Pagination.PageSize }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs font-bold">
+                                    {{ if .Pagination.HasPrev }}
+                                    <a href="/asset-component-movements?page={{ .Pagination.PrevPage }}" class="cm-page-btn"><i class="bx bx-chevron-left text-base"></i></a>
+                                    {{ else }}
+                                    <span class="cm-page-btn is-disabled"><i class="bx bx-chevron-left text-base"></i></span>
+                                    {{ end }}
+                                    <span class="cm-page-btn bg-[#07317f] text-white hover:bg-[#07317f] hover:text-white">{{ .Pagination.CurrentPage }} / {{ .Pagination.TotalPages }}</span>
+                                    {{ if .Pagination.HasNext }}
+                                    <a href="/asset-component-movements?page={{ .Pagination.NextPage }}" class="cm-page-btn"><i class="bx bx-chevron-right text-base"></i></a>
+                                    {{ else }}
+                                    <span class="cm-page-btn is-disabled"><i class="bx bx-chevron-right text-base"></i></span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </main>
                 {{ template "footer" . }}
             </div>
         </div>
+
+        {{ if index .Permissions "asset_component_movement_create" }}
+        <div id="createModal" class="cm-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-component-movements" method="post" class="cm-modal">
+                <div class="cm-modal-header">
+                    <h2 class="cm-modal-title">Create Component Movement</h2>
+                    <button type="button" class="cm-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="cm-modal-body">
+                    <div class="cm-modal-grid">
+                        <div class="cm-modal-span-2">
+                            <label class="cm-modal-label">Component</label>
+                            <select name="component_id" class="cm-modal-control" required>
+                                <option value="">-</option>
+                                {{ range .Components }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="cm-modal-label">Movement Type</label>
+                            <select name="movement_type" class="cm-modal-control" required>
+                                <option>RECEIVE</option>
+                                <option>INSTALL</option>
+                                <option>UNINSTALL</option>
+                                <option>TRANSFER</option>
+                                <option>MAINTENANCE</option>
+                                <option>RETURN_TO_STORAGE</option>
+                                <option>BROKEN</option>
+                                <option>DISPOSE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="cm-modal-label">To Asset</label>
+                            <select name="to_asset_id" class="cm-modal-control">
+                                <option value="">-</option>
+                                {{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="cm-modal-label">To Location</label>
+                            <select name="to_location_id" class="cm-modal-control">
+                                <option value="">-</option>
+                                {{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}
+                            </select>
+                        </div>
+                        <div class="cm-modal-span-2">
+                            <label class="cm-modal-label">Notes</label>
+                            <textarea name="notes" class="cm-modal-control h-20 resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="cm-modal-actions">
+                    <button type="button" class="cm-modal-btn cm-modal-btn-secondary" data-close-modal>Cancel</button>
+                    <button class="cm-modal-btn cm-modal-btn-primary">Save Movement</button>
+                </div>
+            </form>
+        </div>
+        {{ end }}
+
+        <script>
+            function openComponentMovementModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeComponentMovementModals() {
+                document.querySelectorAll('#createModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openComponentMovementModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeComponentMovementModals);
+            });
+            document.querySelectorAll('[data-cm-search]').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    var term = input.value.trim().toLowerCase();
+                    document.querySelectorAll('[data-cm-row]').forEach(function (row) {
+                        var haystack = (row.getAttribute('data-search') || '').toLowerCase();
+                        row.style.display = haystack.indexOf(term) === -1 ? 'none' : '';
+                    });
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeComponentMovementModals();
+            });
+        </script>
     </body>
 </html>

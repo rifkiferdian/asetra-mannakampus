@@ -3,10 +3,86 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{{ .Title }}</title>
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Components{{ end }}</title>
         <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .comp-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .comp-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .comp-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .comp-title { margin-top: 16px; color: #003b88; font-size: 20px; line-height: 1.2; font-weight: 900; }
+            .comp-subtitle { margin-top: 4px; color: #475569; font-size: 12px; }
+            .comp-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .comp-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .comp-btn-primary:hover { background: #002f6d; color: #ffffff; }
+            .comp-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .comp-btn-secondary:hover { background: #f8fafc; }
+            .comp-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
+            .comp-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
+            .comp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+            .comp-stat { position: relative; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 9px; background: #ffffff; padding: 16px; box-shadow: 0 14px 30px -26px rgba(15,23,42,.9); }
+            .comp-stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--comp-stat-color, #003b88); }
+            .comp-stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+            .comp-stat-label { color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+            .comp-stat-value { margin-top: 10px; color: var(--comp-stat-color, #003b88); font-size: 29px; line-height: 1; font-weight: 900; }
+            .comp-stat-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 8px; background: var(--comp-stat-bg, #eef3ff); color: var(--comp-stat-color, #003b88); font-size: 21px; }
+            .comp-stat-note { margin-top: 8px; color: #64748b; font-size: 11px; font-weight: 700; }
+            .comp-stat-total { --comp-stat-color: #003b88; --comp-stat-bg: #eef3ff; }
+            .comp-stat-installed { --comp-stat-color: #047857; --comp-stat-bg: #d1fae5; }
+            .comp-stat-storage { --comp-stat-color: #0369a1; --comp-stat-bg: #e0f2fe; }
+            .comp-stat-attention { --comp-stat-color: #dc2626; --comp-stat-bg: #fee2e2; }
+            .comp-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .comp-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
+            .comp-search { width: min(100%, 380px); height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 0 12px; color: #334155; font-size: 12px; outline: none; }
+            .comp-search:focus { border-color: #003b88; background: #ffffff; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .comp-table-wrap { overflow-x: auto; }
+            .comp-table { width: 100%; min-width: 1220px; border-collapse: collapse; font-size: 12px; }
+            .comp-table thead { background: #eef3ff; color: #0f172a; }
+            .comp-table th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+            .comp-table td { padding: 11px 14px; border-top: 1px solid #e2e8f0; color: #334155; white-space: nowrap; vertical-align: top; }
+            .comp-table tbody tr:hover { background: #f8fafc; }
+            .comp-link { color: #003b88; font-weight: 900; }
+            .comp-muted { color: #94a3b8; }
+            .comp-spec { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .comp-meta { margin-top: 2px; color: #64748b; font-size: 11px; }
+            .comp-pill { display: inline-flex; border-radius: 999px; padding: 3px 9px; font-size: 10px; line-height: 14px; font-weight: 900; }
+            .comp-status-storage { border: 1px solid #bfdbfe; background: #dbeafe; color: #003b88; }
+            .comp-status-installed { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
+            .comp-status-maintenance { border: 1px solid #fde68a; background: #fef3c7; color: #92400e; }
+            .comp-status-broken { border: 1px solid #fecaca; background: #fee2e2; color: #b91c1c; }
+            .comp-status-disposed { border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; }
+            .comp-empty { padding: 36px 16px; text-align: center; color: #64748b; }
+            .comp-modal-backdrop { background: rgba(15,23,42,.5); padding: 1.25rem; }
+            .comp-modal { width: min(100%, 46rem); max-height: min(90vh, 44rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7,20,58,.75); }
+            .comp-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .comp-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .comp-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .comp-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .comp-modal-body { max-height: calc(min(90vh, 44rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .comp-modal-grid { display: grid; grid-template-columns: 1fr; gap: .85rem; }
+            .comp-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .comp-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .comp-modal-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .comp-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .comp-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .comp-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .comp-modal-btn-primary { border: 1px solid #003b88; background: #003b88; color: #fff; }
+            @media (min-width: 720px) {
+                .comp-modal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .comp-modal-span-2 { grid-column: span 2 / span 2; }
+                .comp-modal-span-3 { grid-column: span 3 / span 3; }
+            }
+            @media (max-width: 1024px) {
+                .comp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .comp-topbar, .comp-toolbar { flex-direction: column; align-items: stretch; }
+                .comp-stats { grid-template-columns: 1fr; }
+                .comp-btn { width: 100%; }
+                .comp-search { width: 100%; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-display text-slate-900">
         <div class="flex min-h-screen">
@@ -14,78 +90,267 @@
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
                 {{ template "header" . }}
                 <main class="flex-1 px-4 py-6 lg:px-8">
-                    <div class="mx-auto w-full max-w-7xl space-y-6">
-                        <div><p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Asset Management</p><h1 class="mt-2 text-2xl font-semibold text-slate-900">Components</h1></div>
-                        {{ if .Error }}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ .Error }}</div>{{ end }}
-                        {{ if index .Permissions "asset_component_create" }}
-                        <form action="/asset-components" method="post" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <h2 class="text-base font-semibold text-slate-900">New Component</h2>
-                            <div class="mt-4 grid gap-4 md:grid-cols-4">
-                                <input name="component_code" placeholder="Component code" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                                <input name="component_name" placeholder="Component name" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                                <select name="component_type_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required><option value="">Type</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}</select>
-                                <input name="serial_number" placeholder="Serial number" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input name="brand" placeholder="Brand" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input name="model" placeholder="Model" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input name="specification" placeholder="Specification" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <select name="parent_asset_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Installed in asset</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select>
-                                <select name="location_id" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Location</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select>
-                                <select name="status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select>
-                                <input type="date" name="acquisition_date" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input type="number" step="0.01" name="acquisition_value" placeholder="Acquisition value" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input type="number" name="source_gr_item_id" placeholder="GR item ID" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <input name="notes" placeholder="Notes" class="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-3">
+                    <div class="comp-shell space-y-5">
+                        <div class="comp-topbar">
+                            <div>
+                                <nav class="comp-breadcrumb">
+                                    <span>Asset Management</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Components</span>
+                                </nav>
+                                <h1 class="comp-title">Components</h1>
+                                <p class="comp-subtitle">Track RAM, SSD, PSU, monitor, and other components independently from asset purchase flow.</p>
                             </div>
-                            <div class="mt-4 flex justify-end"><button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Simpan Komponen</button></div>
-                        </form>
-                        {{ end }}
-                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div class="border-b border-slate-100 px-4 py-4"><h2 class="text-base font-semibold text-slate-900">Component Register</h2></div>
-                            <div class="overflow-x-auto p-4">
-                                <table class="w-full min-w-[1180px] text-sm">
-                                    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-2 text-left">Code</th><th class="px-3 py-2 text-left">Name</th><th class="px-3 py-2 text-left">Type</th><th class="px-3 py-2 text-left">Spec</th><th class="px-3 py-2 text-left">Installed In</th><th class="px-3 py-2 text-left">Location</th><th class="px-3 py-2 text-left">Status</th><th class="px-3 py-2 text-left">Aksi</th></tr></thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        {{ range .Items }}
+                            {{ if index .Permissions "asset_component_create" }}
+                            <button type="button" class="comp-btn comp-btn-primary" data-open-modal="createModal">
+                                <i class="bx bx-plus"></i>
+                                Create Component
+                            </button>
+                            {{ end }}
+                        </div>
+
+                        {{ if .Error }}<div class="comp-alert comp-alert-error">{{ .Error }}</div>{{ end }}
+
+                        <section class="comp-stats">
+                            <div class="comp-stat comp-stat-total">
+                                <div class="comp-stat-top">
+                                    <div>
+                                        <div class="comp-stat-label">Total Components</div>
+                                        <div class="comp-stat-value">{{ .TotalComponents }}</div>
+                                        <div class="comp-stat-note">All registered components</div>
+                                    </div>
+                                    <span class="comp-stat-icon"><i class="bx bx-chip"></i></span>
+                                </div>
+                            </div>
+                            <div class="comp-stat comp-stat-installed">
+                                <div class="comp-stat-top">
+                                    <div>
+                                        <div class="comp-stat-label">Installed</div>
+                                        <div class="comp-stat-value">{{ .InstalledComponents }}</div>
+                                        <div class="comp-stat-note">Attached to assets</div>
+                                    </div>
+                                    <span class="comp-stat-icon"><i class="bx bx-desktop"></i></span>
+                                </div>
+                            </div>
+                            <div class="comp-stat comp-stat-storage">
+                                <div class="comp-stat-top">
+                                    <div>
+                                        <div class="comp-stat-label">In Storage</div>
+                                        <div class="comp-stat-value">{{ .StorageComponents }}</div>
+                                        <div class="comp-stat-note">Ready to install</div>
+                                    </div>
+                                    <span class="comp-stat-icon"><i class="bx bx-package"></i></span>
+                                </div>
+                            </div>
+                            <div class="comp-stat comp-stat-attention">
+                                <div class="comp-stat-top">
+                                    <div>
+                                        <div class="comp-stat-label">Need Attention</div>
+                                        <div class="comp-stat-value">{{ .AttentionComponents }}</div>
+                                        <div class="comp-stat-note">Maintenance or broken</div>
+                                    </div>
+                                    <span class="comp-stat-icon"><i class="bx bx-error-alt"></i></span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="comp-card">
+                            <div class="comp-toolbar">
+                                <div>
+                                    <strong class="text-sm text-slate-900">Component Register</strong>
+                                    <p class="mt-1 text-xs text-slate-500">Daftar komponen sesuai tabel asset_components.</p>
+                                </div>
+                                <input type="search" class="comp-search" data-comp-search placeholder="Search component, type, serial, asset, location...">
+                            </div>
+                            <div class="comp-table-wrap">
+                                <table class="comp-table">
+                                    <thead>
                                         <tr>
-                                            <td class="px-3 py-3 font-semibold">{{ .ComponentCode }}</td><td class="px-3 py-3">{{ .ComponentName }}</td><td class="px-3 py-3">{{ .ComponentTypeName }}</td><td class="px-3 py-3">{{ if .Specification }}{{ .Specification }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .ParentAssetCode }}{{ .ParentAssetCode }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ if .LocationName }}{{ .LocationName }}{{ else }}-{{ end }}</td><td class="px-3 py-3">{{ .Status }}</td>
-                                            <td class="px-3 py-3"><div class="flex gap-2">{{ if index $.Permissions "asset_component_edit" }}<button class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700" data-edit data-id="{{ .ID }}" data-code="{{ .ComponentCode }}" data-name="{{ .ComponentName }}" data-type="{{ .ComponentTypeID }}" data-brand="{{ .Brand }}" data-model="{{ .Model }}" data-spec="{{ .Specification }}" data-serial="{{ .SerialNumber }}" data-parent="{{ .ParentAssetID }}" data-location="{{ .LocationID }}" data-status="{{ .Status }}" data-date="{{ .AcquisitionDate }}" data-value="{{ .AcquisitionValue }}" data-gr="{{ .SourceGRItemID }}" data-notes="{{ .Notes }}">Edit</button>{{ end }}{{ if index $.Permissions "asset_component_delete" }}<a href="/asset-components/delete/{{ .ID }}" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700" data-confirm="Hapus komponen {{ .ComponentCode }}?">Del</a>{{ end }}</div></td>
+                                            <th>Code</th>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Brand / Model</th>
+                                            <th>Specification</th>
+                                            <th>Serial</th>
+                                            <th>Installed In</th>
+                                            <th>Location</th>
+                                            <th>Acquisition</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
                                         </tr>
-                                        {{ else }}<tr><td colspan="8" class="px-3 py-8 text-center text-slate-500">Belum ada komponen</td></tr>{{ end }}
+                                    </thead>
+                                    <tbody>
+                                        {{ range .Items }}
+                                        <tr data-comp-row data-search="{{ .ComponentCode }} {{ .ComponentName }} {{ .ComponentTypeName }} {{ .Brand }} {{ .Model }} {{ .Specification }} {{ .SerialNumber }} {{ .ParentAssetCode }} {{ .LocationName }} {{ .Status }}">
+                                            <td><span class="comp-link">{{ .ComponentCode }}</span></td>
+                                            <td class="font-bold text-slate-800">{{ .ComponentName }}</td>
+                                            <td>{{ .ComponentTypeName }}</td>
+                                            <td>
+                                                <div class="font-bold text-slate-800">{{ if .Brand }}{{ .Brand }}{{ else }}-{{ end }}</div>
+                                                <div class="comp-meta">{{ if .Model }}{{ .Model }}{{ else }}-{{ end }}</div>
+                                            </td>
+                                            <td><div class="comp-spec">{{ if .Specification }}{{ .Specification }}{{ else }}<span class="comp-muted">-</span>{{ end }}</div></td>
+                                            <td>{{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}<span class="comp-muted">-</span>{{ end }}</td>
+                                            <td>{{ if .ParentAssetCode }}{{ .ParentAssetCode }}{{ else }}<span class="comp-muted">-</span>{{ end }}</td>
+                                            <td>{{ if .LocationName }}{{ .LocationName }}{{ else }}<span class="comp-muted">-</span>{{ end }}</td>
+                                            <td>
+                                                <div class="font-bold text-slate-800">{{ .AcquisitionValueDisplay }}</div>
+                                                <div class="comp-meta">{{ if .AcquisitionDate }}{{ .AcquisitionDate }}{{ else }}-{{ end }}</div>
+                                            </td>
+                                            <td>
+                                                {{ if eq .Status "IN_STORAGE" }}
+                                                <span class="comp-pill comp-status-storage">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "INSTALLED" }}
+                                                <span class="comp-pill comp-status-installed">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "MAINTENANCE" }}
+                                                <span class="comp-pill comp-status-maintenance">{{ .StatusLabel }}</span>
+                                                {{ else if eq .Status "BROKEN" }}
+                                                <span class="comp-pill comp-status-broken">{{ .StatusLabel }}</span>
+                                                {{ else }}
+                                                <span class="comp-pill comp-status-disposed">{{ .StatusLabel }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                <div class="flex gap-2">
+                                                    {{ if index $.Permissions "asset_component_edit" }}
+                                                    <button type="button" class="comp-btn comp-btn-secondary" data-edit data-id="{{ .ID }}" data-code="{{ .ComponentCode }}" data-name="{{ .ComponentName }}" data-type="{{ .ComponentTypeID }}" data-brand="{{ .Brand }}" data-model="{{ .Model }}" data-spec="{{ .Specification }}" data-serial="{{ .SerialNumber }}" data-parent="{{ .ParentAssetID }}" data-location="{{ .LocationID }}" data-status="{{ .Status }}" data-date="{{ .AcquisitionDate }}" data-value="{{ .AcquisitionValue }}" data-gr="{{ .SourceGRItemID }}" data-notes="{{ .Notes }}"><i class="bx bx-pencil"></i>Edit</button>
+                                                    {{ end }}
+                                                    {{ if index $.Permissions "asset_component_delete" }}
+                                                    <a href="/asset-components/delete/{{ .ID }}" class="comp-btn comp-btn-secondary text-rose-700" data-confirm="Hapus komponen {{ .ComponentCode }}?"><i class="bx bx-trash"></i>Del</a>
+                                                    {{ end }}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {{ else }}
+                                        <tr><td colspan="11" class="comp-empty">Belum ada komponen</td></tr>
+                                        {{ end }}
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </main>
                 {{ template "footer" . }}
             </div>
         </div>
-        <div id="editModal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-900/50 p-4">
-            <form action="/asset-components/update" method="post" class="my-8 w-full max-w-4xl rounded-2xl bg-white p-5 shadow-xl">
-                <input type="hidden" name="id" id="edit_id"><h2 class="text-lg font-semibold">Edit Component</h2>
-                <div class="mt-4 grid gap-4 md:grid-cols-3">
-                    <input name="component_code" id="edit_code" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                    <input name="component_name" id="edit_name" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" required>
-                    <select name="component_type_id" id="edit_type" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">{{ range .Types }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select>
-                    <input name="brand" id="edit_brand" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input name="model" id="edit_model" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input name="specification" id="edit_spec" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input name="serial_number" id="edit_serial" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <select name="parent_asset_id" id="edit_parent" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Installed in asset</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select>
-                    <select name="location_id" id="edit_location" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">Location</option>{{ range .Locations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select>
-                    <select name="status" id="edit_status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select>
-                    <input type="date" name="acquisition_date" id="edit_date" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input type="number" step="0.01" name="acquisition_value" id="edit_value" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input type="number" name="source_gr_item_id" id="edit_gr" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input name="notes" id="edit_notes" class="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+
+        {{ if index .Permissions "asset_component_create" }}
+        <div id="createModal" class="comp-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-components" method="post" class="comp-modal">
+                <div class="comp-modal-header">
+                    <h2 class="comp-modal-title">Create Component</h2>
+                    <button type="button" class="comp-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
                 </div>
-                <div class="mt-5 flex justify-end gap-2"><button type="button" class="rounded-xl border px-4 py-2 text-sm font-semibold" data-close>Batal</button><button class="rounded-xl bg-[#f26419] px-4 py-2 text-sm font-semibold text-white">Update</button></div>
+                <div class="comp-modal-body">
+                    <div class="comp-modal-grid">
+                        <div><label class="comp-modal-label">Component Code</label><input name="component_code" class="comp-modal-control uppercase" required></div>
+                        <div class="comp-modal-span-2"><label class="comp-modal-label">Component Name</label><input name="component_name" class="comp-modal-control" required></div>
+                        <div><label class="comp-modal-label">Type</label><select name="component_type_id" class="comp-modal-control" required><option value="">-</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}</select></div>
+                        <div><label class="comp-modal-label">Brand</label><input name="brand" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Model</label><input name="model" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Specification</label><input name="specification" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Serial Number</label><input name="serial_number" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Status</label><select name="status" class="comp-modal-control"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="comp-modal-label">Installed In Asset</label><select name="parent_asset_id" class="comp-modal-control"><option value="">-</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select></div>
+                        <div><label class="comp-modal-label">Location</label><select name="location_id" class="comp-modal-control"><option value="">-</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select></div>
+                        <div><label class="comp-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" class="comp-modal-control"></div>
+                        <div class="comp-modal-span-3"><label class="comp-modal-label">Notes</label><textarea name="notes" class="comp-modal-control h-20 resize-none"></textarea></div>
+                    </div>
+                </div>
+                <div class="comp-modal-actions"><button type="button" class="comp-modal-btn comp-modal-btn-secondary" data-close-modal>Cancel</button><button class="comp-modal-btn comp-modal-btn-primary">Save</button></div>
             </form>
         </div>
+        {{ end }}
+
+        <div id="editModal" class="comp-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-components/update" method="post" class="comp-modal">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="comp-modal-header">
+                    <h2 class="comp-modal-title">Edit Component</h2>
+                    <button type="button" class="comp-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="comp-modal-body">
+                    <div class="comp-modal-grid">
+                        <div><label class="comp-modal-label">Component Code</label><input name="component_code" id="edit_code" class="comp-modal-control uppercase" required></div>
+                        <div class="comp-modal-span-2"><label class="comp-modal-label">Component Name</label><input name="component_name" id="edit_name" class="comp-modal-control" required></div>
+                        <div><label class="comp-modal-label">Type</label><select name="component_type_id" id="edit_type" class="comp-modal-control" required>{{ range .Types }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select></div>
+                        <div><label class="comp-modal-label">Brand</label><input name="brand" id="edit_brand" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Model</label><input name="model" id="edit_model" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Specification</label><input name="specification" id="edit_spec" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Serial Number</label><input name="serial_number" id="edit_serial" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Status</label><select name="status" id="edit_status" class="comp-modal-control"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="comp-modal-label">Installed In Asset</label><select name="parent_asset_id" id="edit_parent" class="comp-modal-control"><option value="">-</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select></div>
+                        <div><label class="comp-modal-label">Location</label><select name="location_id" id="edit_location" class="comp-modal-control"><option value="">-</option>{{ range .Locations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select></div>
+                        <div><label class="comp-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" id="edit_gr" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" id="edit_date" class="comp-modal-control"></div>
+                        <div><label class="comp-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" id="edit_value" class="comp-modal-control"></div>
+                        <div class="comp-modal-span-3"><label class="comp-modal-label">Notes</label><textarea name="notes" id="edit_notes" class="comp-modal-control h-20 resize-none"></textarea></div>
+                    </div>
+                </div>
+                <div class="comp-modal-actions"><button type="button" class="comp-modal-btn comp-modal-btn-secondary" data-close-modal>Cancel</button><button class="comp-modal-btn comp-modal-btn-primary">Update</button></div>
+            </form>
+        </div>
+
         <script>
-            document.querySelectorAll('[data-edit]').forEach(function (btn) { btn.addEventListener('click', function () { edit_id.value = btn.dataset.id; edit_code.value = btn.dataset.code; edit_name.value = btn.dataset.name; edit_type.value = btn.dataset.type; edit_brand.value = btn.dataset.brand; edit_model.value = btn.dataset.model; edit_spec.value = btn.dataset.spec; edit_serial.value = btn.dataset.serial; edit_parent.value = btn.dataset.parent || ''; edit_location.value = btn.dataset.location || ''; edit_status.value = btn.dataset.status; edit_date.value = btn.dataset.date; edit_value.value = btn.dataset.value; edit_gr.value = btn.dataset.gr || ''; edit_notes.value = btn.dataset.notes; editModal.classList.remove('hidden'); editModal.classList.add('flex'); }); });
-            document.querySelectorAll('[data-close]').forEach(function (btn) { btn.addEventListener('click', function () { editModal.classList.add('hidden'); editModal.classList.remove('flex'); }); });
-            document.querySelectorAll('[data-confirm]').forEach(function (a) { a.addEventListener('click', function (e) { if (!confirm(a.dataset.confirm)) e.preventDefault(); }); });
+            function openComponentModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeComponentModals() {
+                document.querySelectorAll('#createModal, #editModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openComponentModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeComponentModals);
+            });
+            document.querySelectorAll('[data-edit]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.getElementById('edit_id').value = btn.dataset.id || '';
+                    document.getElementById('edit_code').value = btn.dataset.code || '';
+                    document.getElementById('edit_name').value = btn.dataset.name || '';
+                    document.getElementById('edit_type').value = btn.dataset.type || '';
+                    document.getElementById('edit_brand').value = btn.dataset.brand || '';
+                    document.getElementById('edit_model').value = btn.dataset.model || '';
+                    document.getElementById('edit_spec').value = btn.dataset.spec || '';
+                    document.getElementById('edit_serial').value = btn.dataset.serial || '';
+                    document.getElementById('edit_parent').value = btn.dataset.parent || '';
+                    document.getElementById('edit_location').value = btn.dataset.location || '';
+                    document.getElementById('edit_status').value = btn.dataset.status || 'IN_STORAGE';
+                    document.getElementById('edit_date').value = btn.dataset.date || '';
+                    document.getElementById('edit_value').value = btn.dataset.value || '';
+                    document.getElementById('edit_gr').value = btn.dataset.gr || '';
+                    document.getElementById('edit_notes').value = btn.dataset.notes || '';
+                    openComponentModal('editModal');
+                });
+            });
+            document.querySelectorAll('[data-confirm]').forEach(function (a) {
+                a.addEventListener('click', function (event) {
+                    if (!confirm(a.dataset.confirm)) event.preventDefault();
+                });
+            });
+            document.querySelectorAll('[data-comp-search]').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    var term = input.value.trim().toLowerCase();
+                    document.querySelectorAll('[data-comp-row]').forEach(function (row) {
+                        var haystack = (row.getAttribute('data-search') || '').toLowerCase();
+                        row.style.display = haystack.indexOf(term) === -1 ? 'none' : '';
+                    });
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeComponentModals();
+            });
         </script>
     </body>
 </html>

@@ -27,7 +27,9 @@ type ComponentType struct {
 	Description      string
 	IsActive         bool
 	IsActiveLabel    string
+	ComponentCount   int
 	CreatedAtDisplay string
+	UpdatedAtDisplay string
 }
 
 type ComponentTypeInput struct {
@@ -106,25 +108,27 @@ type AssetInput struct {
 }
 
 type AssetComponent struct {
-	ID                int64
-	ComponentCode     string
-	ComponentName     string
-	ComponentTypeID   int64
-	ComponentTypeName string
-	Brand             string
-	Model             string
-	Specification     string
-	SerialNumber      string
-	ParentAssetID     int64
-	ParentAssetCode   string
-	LocationID        int64
-	LocationName      string
-	SourceGRItemID    int64
-	AcquisitionDate   string
-	AcquisitionValue  float64
-	Status            string
-	Notes             string
-	CreatedAtDisplay  string
+	ID                      int64
+	ComponentCode           string
+	ComponentName           string
+	ComponentTypeID         int64
+	ComponentTypeName       string
+	Brand                   string
+	Model                   string
+	Specification           string
+	SerialNumber            string
+	ParentAssetID           int64
+	ParentAssetCode         string
+	LocationID              int64
+	LocationName            string
+	SourceGRItemID          int64
+	AcquisitionDate         string
+	AcquisitionValue        float64
+	AcquisitionValueDisplay string
+	Status                  string
+	StatusLabel             string
+	Notes                   string
+	CreatedAtDisplay        string
 }
 
 type AssetComponentInput struct {

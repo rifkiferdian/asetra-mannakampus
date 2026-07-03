@@ -322,7 +322,24 @@ func renderComponentTypePage(c *gin.Context, service *services.AssetService, mes
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	Render(c, "component_type.html", gin.H{"Title": "Component Types", "Page": "component_type", "Items": items, "Error": message})
+	activeTypes := 0
+	totalComponents := 0
+	for _, item := range items {
+		if item.IsActive {
+			activeTypes++
+		}
+		totalComponents += item.ComponentCount
+	}
+	Render(c, "component_type.html", gin.H{
+		"Title":           "Component Types",
+		"Page":            "component_type",
+		"Items":           items,
+		"Error":           message,
+		"TotalTypes":      len(items),
+		"ActiveTypes":     activeTypes,
+		"InactiveTypes":   len(items) - activeTypes,
+		"TotalComponents": totalComponents,
+	})
 }
 
 func renderAssetLocationPage(c *gin.Context, service *services.AssetService, message string) {
@@ -393,9 +410,17 @@ func renderAssetComponentPage(c *gin.Context, service *services.AssetService, me
 	types, _ := service.GetComponentTypes()
 	locations, _ := service.GetLocations()
 	assets, _ := service.GetAssetOptions()
+	statusCounts := map[string]int{}
+	for _, item := range items {
+		statusCounts[item.Status]++
+	}
 	Render(c, "asset_component.html", gin.H{
 		"Title": "Asset Components", "Page": "asset_component", "Items": items,
 		"Types": types, "Locations": locations, "Assets": assets, "Error": message,
+		"TotalComponents":     len(items),
+		"InstalledComponents": statusCounts["INSTALLED"],
+		"StorageComponents":   statusCounts["IN_STORAGE"],
+		"AttentionComponents": statusCounts["MAINTENANCE"] + statusCounts["BROKEN"],
 	})
 }
 
@@ -409,9 +434,19 @@ func renderAssetMovementPage(c *gin.Context, service *services.AssetService, mes
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
 	users, _ := service.GetUserOptions()
+	typeCounts := map[string]int{}
+	for _, item := range items {
+		typeCounts[item.MovementType]++
+	}
+	pageItems, pagination := paginateAssetSlice(c, items)
 	Render(c, "asset_movement.html", gin.H{
-		"Title": "Asset Movements", "Page": "asset_movement", "Items": items,
+		"Title": "Asset Movements", "Page": "asset_movement", "Items": pageItems,
 		"Assets": assets, "Locations": locations, "Stores": stores, "Users": users, "Error": message,
+		"Pagination":         pagination,
+		"TotalMovements":     len(items),
+		"TransferMovements":  typeCounts["TRANSFER"],
+		"AssignMovements":    typeCounts["ASSIGN"],
+		"AttentionMovements": typeCounts["MAINTENANCE"] + typeCounts["BROKEN"] + typeCounts["DISPOSE"],
 	})
 }
 
@@ -424,9 +459,19 @@ func renderComponentMovementPage(c *gin.Context, service *services.AssetService,
 	components, _ := service.GetComponentOptions()
 	assets, _ := service.GetAssetOptions()
 	locations, _ := service.GetLocations()
+	typeCounts := map[string]int{}
+	for _, item := range items {
+		typeCounts[item.MovementType]++
+	}
+	pageItems, pagination := paginateAssetSlice(c, items)
 	Render(c, "asset_component_movement.html", gin.H{
-		"Title": "Component Movements", "Page": "asset_component_movement", "Items": items,
+		"Title": "Component Movements", "Page": "asset_component_movement", "Items": pageItems,
 		"Components": components, "Assets": assets, "Locations": locations, "Error": message,
+		"Pagination":         pagination,
+		"TotalMovements":     len(items),
+		"InstallMovements":   typeCounts["INSTALL"],
+		"StorageMovements":   typeCounts["UNINSTALL"] + typeCounts["RETURN_TO_STORAGE"] + typeCounts["TRANSFER"],
+		"AttentionMovements": typeCounts["MAINTENANCE"] + typeCounts["BROKEN"] + typeCounts["DISPOSE"],
 	})
 }
 
