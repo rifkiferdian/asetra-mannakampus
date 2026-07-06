@@ -54,6 +54,7 @@ func RegisterWebRoutes(r *gin.Engine) {
 		auth.GET("/asset-register/detail/:id", middleware.RequirePermission("asset_management_access"), controllers.AssetDetailIndex)
 		auth.GET("/asset-register/delete/:id", middleware.RequirePermission("asset_delete"), controllers.AssetDelete)
 		auth.GET("/asset-components", middleware.RequirePermission("asset_component_management_access"), controllers.AssetComponentIndex)
+		auth.GET("/asset-components/detail/:id", middleware.RequirePermission("asset_component_management_access"), controllers.AssetComponentDetailIndex)
 		auth.POST("/asset-components", middleware.RequirePermission("asset_component_create"), controllers.AssetComponentStore)
 		auth.POST("/asset-components/update", middleware.RequirePermission("asset_component_edit"), controllers.AssetComponentUpdate)
 		auth.GET("/asset-components/delete/:id", middleware.RequirePermission("asset_component_delete"), controllers.AssetComponentDelete)

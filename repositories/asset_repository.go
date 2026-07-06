@@ -365,13 +365,50 @@ func (r *AssetRepository) GetComponents() ([]models.AssetComponent, error) {
 	return items, rows.Err()
 }
 
+func (r *AssetRepository) GetComponentByID(id int64) (*models.AssetComponent, error) {
+	row := r.DB.QueryRow(`
+		SELECT
+			c.id, c.component_code, c.component_name, c.component_type_id, COALESCE(ct.name, ''),
+			COALESCE(c.brand, ''), COALESCE(c.model, ''), COALESCE(c.specification, ''),
+			COALESCE(c.serial_number, ''), COALESCE(c.parent_asset_id, 0), COALESCE(a.asset_code, ''),
+			COALESCE(c.location_id, 0), COALESCE(al.location_name, ''),
+			COALESCE(c.source_gr_item_id, 0), c.acquisition_date, c.acquisition_value,
+			c.status, COALESCE(c.notes, ''), c.created_at
+		FROM asset_components c
+		JOIN component_types ct ON ct.id = c.component_type_id
+		LEFT JOIN assets a ON a.id = c.parent_asset_id
+		LEFT JOIN asset_locations al ON al.id = c.location_id
+		WHERE c.id = ?
+	`, id)
+
+	var item models.AssetComponent
+	var acquisitionDate sql.NullTime
+	var createdAt sql.NullTime
+	if err := row.Scan(
+		&item.ID, &item.ComponentCode, &item.ComponentName, &item.ComponentTypeID, &item.ComponentTypeName,
+		&item.Brand, &item.Model, &item.Specification, &item.SerialNumber, &item.ParentAssetID,
+		&item.ParentAssetCode, &item.LocationID, &item.LocationName, &item.SourceGRItemID,
+		&acquisitionDate, &item.AcquisitionValue, &item.Status, &item.Notes, &createdAt,
+	); err != nil {
+		return nil, err
+	}
+	if acquisitionDate.Valid {
+		item.AcquisitionDate = acquisitionDate.Time.Format("2006-01-02")
+	}
+	item.AcquisitionValueInput = formatNumberInput(item.AcquisitionValue)
+	item.AcquisitionValueDisplay = formatAssetAmountID(item.AcquisitionValue)
+	item.StatusLabel = formatComponentStatusLabel(item.Status)
+	item.CreatedAtDisplay = formatNullTime(createdAt)
+	return &item, nil
+}
+
 func (r *AssetRepository) CreateComponent(input models.AssetComponentInput) error {
 	_, err := r.DB.Exec(`
 		INSERT INTO asset_components (
 			component_code, component_name, component_type_id, brand, model, specification,
 			serial_number, parent_asset_id, location_id, source_gr_item_id, acquisition_date,
 			acquisition_value, status, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, input.ComponentCode, input.ComponentName, input.ComponentTypeID, nullableString(input.Brand),
 		nullableString(input.Model), nullableString(input.Specification), nullableString(input.SerialNumber),
 		assetNullableInt64(input.ParentAssetID), assetNullableInt64(input.LocationID),
@@ -620,6 +657,45 @@ func (r *AssetRepository) GetComponentMovements() ([]models.AssetComponentMoveme
 		LEFT JOIN users au ON au.id = m.acted_by
 		ORDER BY m.movement_date DESC, m.id DESC
 	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.AssetComponentMovement
+	for rows.Next() {
+		var item models.AssetComponentMovement
+		var movementDate sql.NullTime
+		if err := rows.Scan(
+			&item.ID, &item.ComponentID, &item.ComponentCode, &item.MovementType,
+			&item.FromAssetCode, &item.ToAssetCode, &item.FromLocationName, &item.ToLocationName,
+			&item.ActedByName, &movementDate, &item.Notes,
+		); err != nil {
+			return nil, err
+		}
+		item.MovementDate = formatNullTime(movementDate)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *AssetRepository) GetComponentMovementsByComponentID(componentID int64) ([]models.AssetComponentMovement, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			m.id, m.component_id, COALESCE(c.component_code, ''), m.movement_type,
+			COALESCE(fa.asset_code, ''), COALESCE(ta.asset_code, ''),
+			COALESCE(fl.location_name, ''), COALESCE(tl.location_name, ''),
+			COALESCE(au.name, ''), m.movement_date, COALESCE(m.notes, '')
+		FROM asset_component_movements m
+		JOIN asset_components c ON c.id = m.component_id
+		LEFT JOIN assets fa ON fa.id = m.from_asset_id
+		LEFT JOIN assets ta ON ta.id = m.to_asset_id
+		LEFT JOIN asset_locations fl ON fl.id = m.from_location_id
+		LEFT JOIN asset_locations tl ON tl.id = m.to_location_id
+		LEFT JOIN users au ON au.id = m.acted_by
+		WHERE m.component_id = ?
+		ORDER BY m.movement_date DESC, m.id DESC
+	`, componentID)
 	if err != nil {
 		return nil, err
 	}

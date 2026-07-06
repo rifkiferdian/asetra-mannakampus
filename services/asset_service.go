@@ -152,6 +152,13 @@ func (s *AssetService) GetComponents() ([]models.AssetComponent, error) {
 	return s.Repo.GetComponents()
 }
 
+func (s *AssetService) GetComponentByID(id int64) (*models.AssetComponent, error) {
+	if id <= 0 {
+		return nil, errors.New("komponen tidak valid")
+	}
+	return s.Repo.GetComponentByID(id)
+}
+
 func (s *AssetService) SaveComponent(input models.AssetComponentInput) error {
 	input.ComponentCode = strings.ToUpper(strings.TrimSpace(input.ComponentCode))
 	input.ComponentName = strings.TrimSpace(input.ComponentName)
@@ -201,6 +208,13 @@ func (s *AssetService) CreateAssetMovement(input models.AssetMovementInput) erro
 
 func (s *AssetService) GetComponentMovements() ([]models.AssetComponentMovement, error) {
 	return s.Repo.GetComponentMovements()
+}
+
+func (s *AssetService) GetComponentMovementsByComponentID(componentID int64) ([]models.AssetComponentMovement, error) {
+	if componentID <= 0 {
+		return nil, errors.New("komponen tidak valid")
+	}
+	return s.Repo.GetComponentMovementsByComponentID(componentID)
 }
 
 func (s *AssetService) CreateComponentMovement(input models.AssetComponentMovementInput) error {

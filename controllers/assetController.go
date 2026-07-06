@@ -229,6 +229,33 @@ func AssetComponentIndex(c *gin.Context) {
 	renderAssetComponentPage(c, assetService(), "")
 }
 
+func AssetComponentDetailIndex(c *gin.Context) {
+	id := parseInt64Param(c, "id")
+	service := assetService()
+	component, err := service.GetComponentByID(id)
+	if err != nil {
+		c.String(http.StatusNotFound, err.Error())
+		return
+	}
+	movements, err := service.GetComponentMovementsByComponentID(id)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	types, _ := service.GetComponentTypes()
+	locations, _ := service.GetLocations()
+	assets, _ := service.GetAssetOptions()
+	Render(c, "asset_component_detail.html", gin.H{
+		"Title":     "Component Detail",
+		"Page":      "asset_component",
+		"Component": component,
+		"Movements": movements,
+		"Types":     types,
+		"Locations": locations,
+		"Assets":    assets,
+	})
+}
+
 func AssetComponentStore(c *gin.Context) {
 	input := bindComponentInput(c)
 	if err := assetService().SaveComponent(input); err != nil {
@@ -243,6 +270,10 @@ func AssetComponentUpdate(c *gin.Context) {
 	input.ID = parseInt64Form(c, "id")
 	if err := assetService().SaveComponent(input); err != nil {
 		renderAssetComponentPage(c, assetService(), err.Error())
+		return
+	}
+	if c.PostForm("redirect_to") == "detail" {
+		c.Redirect(http.StatusSeeOther, "/asset-components/detail/"+strconv.FormatInt(input.ID, 10))
 		return
 	}
 	c.Redirect(http.StatusSeeOther, "/asset-components")

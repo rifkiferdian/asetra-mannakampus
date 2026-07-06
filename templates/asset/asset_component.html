@@ -176,13 +176,12 @@
                                             <th>Location</th>
                                             <th>Acquisition</th>
                                             <th>Status</th>
-                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {{ range .Items }}
                                         <tr data-comp-row data-search="{{ .ComponentCode }} {{ .ComponentName }} {{ .ComponentTypeName }} {{ .Brand }} {{ .Model }} {{ .Specification }} {{ .SerialNumber }} {{ .ParentAssetCode }} {{ .LocationName }} {{ .Status }}">
-                                            <td><span class="comp-link">{{ .ComponentCode }}</span></td>
+                                            <td><a href="/asset-components/detail/{{ .ID }}" class="comp-link">{{ .ComponentCode }}</a></td>
                                             <td class="font-bold text-slate-800">{{ .ComponentName }}</td>
                                             <td>{{ .ComponentTypeName }}</td>
                                             <td>
@@ -210,19 +209,9 @@
                                                 <span class="comp-pill comp-status-disposed">{{ .StatusLabel }}</span>
                                                 {{ end }}
                                             </td>
-                                            <td>
-                                                <div class="flex gap-2">
-                                                    {{ if index $.Permissions "asset_component_edit" }}
-                                                    <button type="button" class="comp-btn comp-btn-secondary" data-edit data-id="{{ .ID }}" data-code="{{ .ComponentCode }}" data-name="{{ .ComponentName }}" data-type="{{ .ComponentTypeID }}" data-brand="{{ .Brand }}" data-model="{{ .Model }}" data-spec="{{ .Specification }}" data-serial="{{ .SerialNumber }}" data-parent="{{ .ParentAssetID }}" data-location="{{ .LocationID }}" data-status="{{ .Status }}" data-date="{{ .AcquisitionDate }}" data-value="{{ .AcquisitionValueInput }}" data-gr="{{ .SourceGRItemID }}" data-notes="{{ .Notes }}"><i class="bx bx-pencil"></i>Edit</button>
-                                                    {{ end }}
-                                                    {{ if index $.Permissions "asset_component_delete" }}
-                                                    <a href="/asset-components/delete/{{ .ID }}" class="comp-btn comp-btn-secondary text-rose-700" data-confirm="Hapus komponen {{ .ComponentCode }}?"><i class="bx bx-trash"></i>Del</a>
-                                                    {{ end }}
-                                                </div>
-                                            </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="11" class="comp-empty">Belum ada komponen</td></tr>
+                                        <tr><td colspan="10" class="comp-empty">Belum ada komponen</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>

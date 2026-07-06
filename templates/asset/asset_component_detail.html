@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Component Detail{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .cd-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .cd-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .cd-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .cd-title { margin-top: 8px; color: #003b88; font-size: 22px; line-height: 1.2; font-weight: 900; }
+            .cd-code { color: #334155; font-weight: 700; }
+            .cd-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+            .cd-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .cd-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .cd-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .cd-btn-danger { border: 1px solid #ef4444; background: #fff; color: #b91c1c; }
+            .cd-status { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 900; }
+            .cd-status::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+            .cd-status-storage { background: #dbeafe; color: #003b88; }
+            .cd-status-installed { background: #d1fae5; color: #047857; }
+            .cd-status-maintenance { background: #fef3c7; color: #92400e; }
+            .cd-status-broken { background: #fee2e2; color: #b91c1c; }
+            .cd-status-disposed { background: #f3f4f6; color: #374151; }
+            .cd-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem); gap: 16px; align-items: start; }
+            .cd-left, .cd-right { display: grid; gap: 14px; }
+            .cd-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); overflow: hidden; }
+            .cd-card-pad { padding: 16px 18px; }
+            .cd-card-title { color: #003b88; font-size: 12px; font-weight: 900; }
+            .cd-rule { margin-top: 10px; border-top: 1px solid #dbe3f0; }
+            .cd-hero { display: grid; grid-template-columns: 13rem minmax(0, 1fr); min-height: 13rem; }
+            .cd-media { display: flex; align-items: center; justify-content: center; background: #eaf0fb; border-right: 1px solid #dbe3f0; }
+            .cd-media-box { display: flex; width: 8.8rem; height: 5.5rem; align-items: center; justify-content: center; border-radius: 8px; background: linear-gradient(145deg, #dbeafe, #f8fafc); color: #003b88; box-shadow: inset 0 0 0 1px rgba(0,59,136,.12); font-size: 44px; }
+            .cd-specs { padding: 16px 18px; }
+            .cd-spec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 26px; margin-top: 18px; }
+            .cd-label { color: #64748b; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+            .cd-value { margin-top: 4px; color: #0f172a; font-size: 12px; font-weight: 900; overflow-wrap: anywhere; }
+            .cd-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+            .cd-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-top: 12px; font-size: 12px; }
+            .cd-row-label { color: #334155; }
+            .cd-row-value { color: #0f172a; font-weight: 900; text-align: right; overflow-wrap: anywhere; }
+            .cd-meta { display: grid; gap: 12px; margin-top: 16px; }
+            .cd-meta-row { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 12px; }
+            .cd-meta-row i { color: #003b88; font-size: 16px; }
+            .cd-meta-label { color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+            .cd-meta-value { margin-top: 3px; color: #0f172a; font-weight: 800; overflow-wrap: anywhere; }
+            .cd-table-wrap { overflow-x: auto; }
+            .cd-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .cd-table thead { background: #eef3ff; }
+            .cd-table th { padding: 10px 12px; color: #334155; font-size: 10px; font-weight: 900; text-align: left; white-space: nowrap; }
+            .cd-table td { padding: 10px 12px; border-top: 1px solid #e2e8f0; color: #334155; vertical-align: top; }
+            .cd-movement-action { color: #003b88; font-weight: 900; }
+            .cd-movement-date { margin-top: 2px; color: #64748b; }
+            .cd-empty { padding: 18px; color: #64748b; font-size: 12px; text-align: center; }
+            .cd-modal-backdrop { background: rgba(15,23,42,.5); padding: 1.25rem; }
+            .cd-modal { width: min(100%, 50rem); max-height: min(90vh, 46rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7,20,58,.75); }
+            .cd-modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e6ebf5; padding: 1rem 1.15rem; }
+            .cd-modal-title { color: #06143a; font-size: 1rem; line-height: 1.2; font-weight: 900; }
+            .cd-modal-close { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .cd-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+            .cd-modal-body { max-height: calc(min(90vh, 46rem) - 8.7rem); overflow-y: auto; padding: 1rem 1.15rem; }
+            .cd-modal-grid { display: grid; grid-template-columns: 1fr; gap: .85rem; }
+            .cd-modal-label { color: #64748b; font-size: .72rem; font-weight: 900; }
+            .cd-modal-control { margin-top: .4rem; width: 100%; border: 1px solid #d8e0ee; border-radius: 7px; padding: .55rem .7rem; color: #14213f; font-size: .82rem; outline: none; }
+            .cd-modal-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .cd-modal-actions { display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid #e6ebf5; padding: .9rem 1.15rem; }
+            .cd-modal-btn { display: inline-flex; height: 2.25rem; align-items: center; justify-content: center; border-radius: 7px; padding: 0 .95rem; font-size: .78rem; font-weight: 900; }
+            .cd-modal-btn-secondary { border: 1px solid #d8e0ee; background: #fff; color: #475569; }
+            .cd-modal-btn-primary { border: 1px solid #003b88; background: #003b88; color: #fff; }
+            @media (min-width: 720px) {
+                .cd-modal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                .cd-modal-span-2 { grid-column: span 2 / span 2; }
+                .cd-modal-span-3 { grid-column: span 3 / span 3; }
+            }
+            @media (max-width: 1100px) {
+                .cd-grid { grid-template-columns: 1fr; }
+            }
+            @media (max-width: 720px) {
+                .cd-topbar { flex-direction: column; }
+                .cd-actions { justify-content: flex-start; }
+                .cd-hero, .cd-two, .cd-spec-grid { grid-template-columns: 1fr; }
+                .cd-media { border-right: 0; border-bottom: 1px solid #dbe3f0; min-height: 9rem; }
+                .cd-row { display: block; }
+                .cd-row-value { margin-top: 4px; text-align: left; }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="cd-shell space-y-5">
+                        <div class="cd-topbar">
+                            <div>
+                                <nav class="cd-breadcrumb">
+                                    <span>Asset Inventory</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span>Components</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Component Detail</span>
+                                </nav>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <h1 class="cd-title">{{ .Component.ComponentName }} <span class="cd-code">({{ .Component.ComponentCode }})</span></h1>
+                                    {{ if eq .Component.Status "IN_STORAGE" }}
+                                    <span class="cd-status cd-status-storage">{{ .Component.StatusLabel }}</span>
+                                    {{ else if eq .Component.Status "INSTALLED" }}
+                                    <span class="cd-status cd-status-installed">{{ .Component.StatusLabel }}</span>
+                                    {{ else if eq .Component.Status "MAINTENANCE" }}
+                                    <span class="cd-status cd-status-maintenance">{{ .Component.StatusLabel }}</span>
+                                    {{ else if eq .Component.Status "BROKEN" }}
+                                    <span class="cd-status cd-status-broken">{{ .Component.StatusLabel }}</span>
+                                    {{ else }}
+                                    <span class="cd-status cd-status-disposed">{{ .Component.StatusLabel }}</span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                            <div class="cd-actions">
+                                <a href="/asset-components" class="cd-btn cd-btn-secondary"><i class="bx bx-arrow-back"></i>Back</a>
+                                <a href="/asset-component-movements" class="cd-btn cd-btn-secondary"><i class="bx bx-git-compare"></i>Movements</a>
+                                {{ if .Component.ParentAssetID }}
+                                <a href="/asset-register/detail/{{ .Component.ParentAssetID }}" class="cd-btn cd-btn-primary"><i class="bx bx-link-external"></i>Parent Asset</a>
+                                {{ end }}
+                                {{ if index .Permissions "asset_component_edit" }}
+                                <button type="button" class="cd-btn cd-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Edit</button>
+                                {{ end }}
+                                {{ if index .Permissions "asset_component_delete" }}
+                                <a href="/asset-components/delete/{{ .Component.ID }}" class="cd-btn cd-btn-danger" data-confirm="Hapus komponen {{ .Component.ComponentCode }}?"><i class="bx bx-trash"></i>Delete</a>
+                                {{ end }}
+                            </div>
+                        </div>
+
+                        <div class="cd-grid">
+                            <div class="cd-left">
+                                <section class="cd-card cd-hero">
+                                    <div class="cd-media">
+                                        <div class="cd-media-box"><i class="bx bx-chip"></i></div>
+                                    </div>
+                                    <div class="cd-specs">
+                                        <div class="cd-card-title">Component Identity</div>
+                                        <div class="cd-rule"></div>
+                                        <div class="cd-spec-grid">
+                                            <div>
+                                                <div class="cd-label">Type</div>
+                                                <div class="cd-value">{{ .Component.ComponentTypeName }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="cd-label">Serial Number</div>
+                                                <div class="cd-value">{{ if .Component.SerialNumber }}{{ .Component.SerialNumber }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="cd-label">Brand</div>
+                                                <div class="cd-value">{{ if .Component.Brand }}{{ .Component.Brand }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="cd-label">Model</div>
+                                                <div class="cd-value">{{ if .Component.Model }}{{ .Component.Model }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <div class="cd-two">
+                                    <section class="cd-card cd-card-pad">
+                                        <div class="cd-card-title">Acquisition</div>
+                                        <div class="cd-rule"></div>
+                                        <div class="cd-row"><span class="cd-row-label">Acquisition Value</span><span class="cd-row-value">{{ .Component.AcquisitionValueDisplay }}</span></div>
+                                        <div class="cd-row"><span class="cd-row-label">Acquisition Date</span><span class="cd-row-value">{{ if .Component.AcquisitionDate }}{{ .Component.AcquisitionDate }}{{ else }}-{{ end }}</span></div>
+                                        <div class="cd-row"><span class="cd-row-label">Source GR Item</span><span class="cd-row-value">{{ if .Component.SourceGRItemID }}#{{ .Component.SourceGRItemID }}{{ else }}-{{ end }}</span></div>
+                                    </section>
+
+                                    <section class="cd-card cd-card-pad">
+                                        <div class="cd-card-title">Specification</div>
+                                        <div class="cd-rule"></div>
+                                        <div class="cd-value mt-3 font-semibold text-slate-700">{{ if .Component.Specification }}{{ .Component.Specification }}{{ else }}-{{ end }}</div>
+                                    </section>
+                                </div>
+
+                                <section class="cd-card">
+                                    <div class="flex items-center justify-between px-4 py-3">
+                                        <div class="cd-card-title">Movement History</div>
+                                        <a href="/asset-component-movements" class="text-xs font-bold text-[#003b88]">View All</a>
+                                    </div>
+                                    <div class="cd-table-wrap">
+                                        <table class="cd-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Action / Date</th>
+                                                    <th>Asset Route</th>
+                                                    <th>Location Route</th>
+                                                    <th>Acted By</th>
+                                                    <th>Notes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {{ range .Movements }}
+                                                <tr>
+                                                    <td><div class="cd-movement-action">{{ .MovementType }}</div><div class="cd-movement-date">{{ .MovementDate }}</div></td>
+                                                    <td>{{ if .FromAssetCode }}{{ .FromAssetCode }}{{ else }}-{{ end }} -> {{ if .ToAssetCode }}{{ .ToAssetCode }}{{ else }}-{{ end }}</td>
+                                                    <td>{{ if .FromLocationName }}{{ .FromLocationName }}{{ else }}-{{ end }} -> {{ if .ToLocationName }}{{ .ToLocationName }}{{ else }}-{{ end }}</td>
+                                                    <td>{{ if .ActedByName }}{{ .ActedByName }}{{ else }}-{{ end }}</td>
+                                                    <td>{{ if .Notes }}{{ .Notes }}{{ else }}-{{ end }}</td>
+                                                </tr>
+                                                {{ else }}
+                                                <tr><td colspan="5" class="cd-empty">Belum ada history movement untuk component ini.</td></tr>
+                                                {{ end }}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <aside class="cd-right">
+                                <section class="cd-card cd-card-pad">
+                                    <div class="cd-card-title">Current Placement</div>
+                                    <div class="cd-rule"></div>
+                                    <div class="cd-meta">
+                                        <div class="cd-meta-row">
+                                            <i class="bx bx-laptop"></i>
+                                            <div>
+                                                <div class="cd-meta-label">Installed In</div>
+                                                <div class="cd-meta-value">{{ if .Component.ParentAssetCode }}{{ .Component.ParentAssetCode }}{{ else }}Not installed{{ end }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="cd-meta-row">
+                                            <i class="bx bx-map-pin"></i>
+                                            <div>
+                                                <div class="cd-meta-label">Location</div>
+                                                <div class="cd-meta-value">{{ if .Component.LocationName }}{{ .Component.LocationName }}{{ else }}-{{ end }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="cd-meta-row">
+                                            <i class="bx bx-calendar"></i>
+                                            <div>
+                                                <div class="cd-meta-label">Registered At</div>
+                                                <div class="cd-meta-value">{{ .Component.CreatedAtDisplay }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="cd-card cd-card-pad">
+                                    <div class="cd-card-title">Notes</div>
+                                    <div class="cd-rule"></div>
+                                    <div class="cd-value mt-3 font-semibold text-slate-700">{{ if .Component.Notes }}{{ .Component.Notes }}{{ else }}-{{ end }}</div>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        {{ if index .Permissions "asset_component_edit" }}
+        <div id="editModal" class="cd-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-components/update" method="post" class="cd-modal">
+                <input type="hidden" name="id" value="{{ .Component.ID }}">
+                <input type="hidden" name="redirect_to" value="detail">
+                <div class="cd-modal-header">
+                    <h2 class="cd-modal-title">Edit Component</h2>
+                    <button type="button" class="cd-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="cd-modal-body">
+                    <div class="cd-modal-grid">
+                        <div><label class="cd-modal-label">Component Code</label><input name="component_code" class="cd-modal-control uppercase" value="{{ .Component.ComponentCode }}" required></div>
+                        <div class="cd-modal-span-2"><label class="cd-modal-label">Component Name</label><input name="component_name" class="cd-modal-control" value="{{ .Component.ComponentName }}" required></div>
+                        <div>
+                            <label class="cd-modal-label">Type</label>
+                            <select name="component_type_id" class="cd-modal-control" required>
+                                {{ range .Types }}<option value="{{ .ID }}" {{ if eq .ID $.Component.ComponentTypeID }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div><label class="cd-modal-label">Brand</label><input name="brand" class="cd-modal-control" value="{{ .Component.Brand }}"></div>
+                        <div><label class="cd-modal-label">Model</label><input name="model" class="cd-modal-control" value="{{ .Component.Model }}"></div>
+                        <div><label class="cd-modal-label">Specification</label><input name="specification" class="cd-modal-control" value="{{ .Component.Specification }}"></div>
+                        <div><label class="cd-modal-label">Serial Number</label><input name="serial_number" class="cd-modal-control" value="{{ .Component.SerialNumber }}"></div>
+                        <div>
+                            <label class="cd-modal-label">Status</label>
+                            <select name="status" class="cd-modal-control">
+                                <option {{ if eq .Component.Status "IN_STORAGE" }}selected{{ end }}>IN_STORAGE</option>
+                                <option {{ if eq .Component.Status "INSTALLED" }}selected{{ end }}>INSTALLED</option>
+                                <option {{ if eq .Component.Status "MAINTENANCE" }}selected{{ end }}>MAINTENANCE</option>
+                                <option {{ if eq .Component.Status "BROKEN" }}selected{{ end }}>BROKEN</option>
+                                <option {{ if eq .Component.Status "DISPOSED" }}selected{{ end }}>DISPOSED</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="cd-modal-label">Installed In Asset</label>
+                            <select name="parent_asset_id" class="cd-modal-control">
+                                <option value="">-</option>
+                                {{ range .Assets }}<option value="{{ .ID }}" {{ if eq .ID $.Component.ParentAssetID }}selected{{ end }}>{{ .Label }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="cd-modal-label">Location</label>
+                            <select name="location_id" class="cd-modal-control">
+                                <option value="">-</option>
+                                {{ range .Locations }}<option value="{{ .ID }}" {{ if eq .ID $.Component.LocationID }}selected{{ end }}>{{ .LocationName }}</option>{{ end }}
+                            </select>
+                        </div>
+                        <div><label class="cd-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" class="cd-modal-control" value="{{ if .Component.SourceGRItemID }}{{ .Component.SourceGRItemID }}{{ end }}"></div>
+                        <div><label class="cd-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" class="cd-modal-control" value="{{ .Component.AcquisitionDate }}"></div>
+                        <div><label class="cd-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" class="cd-modal-control" value="{{ .Component.AcquisitionValueInput }}"></div>
+                        <div class="cd-modal-span-3"><label class="cd-modal-label">Notes</label><textarea name="notes" class="cd-modal-control h-20 resize-none">{{ .Component.Notes }}</textarea></div>
+                    </div>
+                </div>
+                <div class="cd-modal-actions">
+                    <button type="button" class="cd-modal-btn cd-modal-btn-secondary" data-close-modal>Cancel</button>
+                    <button class="cd-modal-btn cd-modal-btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+        {{ end }}
+        <script src="/assets/vendor/jquery/jquery-4.0.0.js"></script>
+        <script src="/assets/js/app.js"></script>
+        <script>
+            function openComponentDetailModal(id) {
+                var modal = document.getElementById(id);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeComponentDetailModals() {
+                document.querySelectorAll('#editModal').forEach(function (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openComponentDetailModal(btn.getAttribute('data-open-modal')); });
+            });
+            document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+                btn.addEventListener('click', closeComponentDetailModals);
+            });
+            document.querySelectorAll('[data-confirm]').forEach(function (a) {
+                a.addEventListener('click', function (event) {
+                    if (!confirm(a.dataset.confirm)) event.preventDefault();
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeComponentDetailModals();
+            });
+        </script>
+    </body>
+</html>
