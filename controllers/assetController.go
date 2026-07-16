@@ -178,18 +178,30 @@ func AssetDetailIndex(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	depreciation, err := assetDepreciationService().GetAssetDepreciationDetail(id)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	depreciationPostings, err := assetDepreciationService().GetPostedDepreciationByAssetID(id, 12)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
 	types, _ := service.GetAssetTypes()
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
 	Render(c, "asset_detail.html", gin.H{
-		"Title":      "Asset Detail",
-		"Page":       "asset",
-		"Asset":      asset,
-		"Components": components,
-		"Movements":  movements,
-		"Types":      types,
-		"Locations":  locations,
-		"Stores":     stores,
+		"Title":                "Asset Detail",
+		"Page":                 "asset",
+		"Asset":                asset,
+		"Components":           components,
+		"Movements":            movements,
+		"Depreciation":         depreciation,
+		"DepreciationPostings": depreciationPostings,
+		"Types":                types,
+		"Locations":            locations,
+		"Stores":               stores,
 	})
 }
 

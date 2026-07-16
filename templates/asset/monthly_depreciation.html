@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Monthly Depreciation{{ end }}</title>
+        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+        <link rel="stylesheet" href="/assets/css/tailwind.css">
+        <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+        <style>
+            .dep-shell { max-width: 1220px; margin: 0 auto; color: #0f172a; }
+            .dep-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+            .dep-breadcrumb { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; }
+            .dep-title { margin-top: 16px; color: #003b88; font-size: 20px; line-height: 1.2; font-weight: 900; }
+            .dep-subtitle { margin-top: 4px; color: #475569; font-size: 12px; }
+            .dep-actions { display: flex; align-items: center; gap: 8px; }
+            .dep-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border-radius: 6px; padding: 0 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .dep-btn-primary { border: 1px solid #003b88; background: #003b88; color: #ffffff; }
+            .dep-btn-primary:hover { background: #002f6d; color: #ffffff; }
+            .dep-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
+            .dep-btn-secondary:hover { background: #f8fafc; }
+            .dep-btn:disabled { cursor: not-allowed; opacity: .45; }
+            .dep-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
+            .dep-alert-success { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
+            .dep-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
+            .dep-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+            .dep-stat { position: relative; min-height: 132px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 9px; background: #ffffff; padding: 16px; box-shadow: 0 14px 30px -26px rgba(15,23,42,.9); }
+            .dep-stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--dep-stat-color, #003b88); }
+            .dep-stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+            .dep-stat-label { color: #64748b; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+            .dep-stat-value { margin-top: 10px; color: var(--dep-stat-color, #003b88); font-size: 24px; line-height: 1.1; font-weight: 900; }
+            .dep-stat-icon { display: inline-flex; width: 38px; height: 38px; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 8px; background: var(--dep-stat-bg, #eef3ff); color: var(--dep-stat-color, #003b88); font-size: 21px; }
+            .dep-stat-note { margin-top: 8px; color: #64748b; font-size: 11px; font-weight: 700; }
+            .dep-stat-assets { --dep-stat-color: #003b88; --dep-stat-bg: #eef3ff; }
+            .dep-stat-total { --dep-stat-color: #7c3aed; --dep-stat-bg: #f3e8ff; }
+            .dep-stat-draft { --dep-stat-color: #b45309; --dep-stat-bg: #fef3c7; }
+            .dep-stat-posted { --dep-stat-color: #047857; --dep-stat-bg: #d1fae5; }
+            .dep-card { border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+            .dep-filter { display: grid; grid-template-columns: 1fr 1fr 1fr minmax(210px, 1.7fr) auto; align-items: end; gap: 10px; padding: 14px; border-bottom: 1px solid #e2e8f0; }
+            .dep-label { display: block; margin-bottom: 5px; color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+            .dep-control { width: 100%; height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 0 10px; color: #334155; font-size: 12px; outline: none; }
+            .dep-control:focus { border-color: #003b88; background: #ffffff; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .dep-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
+            .dep-table-wrap { overflow-x: auto; }
+            .dep-table { width: 100%; min-width: 1260px; border-collapse: collapse; font-size: 11px; }
+            .dep-table thead { background: #eef3ff; color: #0f172a; }
+            .dep-table th { padding: 10px 11px; text-align: left; font-size: 10px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+            .dep-table td { padding: 10px 11px; border-top: 1px solid #e2e8f0; color: #334155; white-space: nowrap; vertical-align: middle; }
+            .dep-table tbody tr:hover { background: #f8fafc; }
+            .dep-check { width: 15px; height: 15px; accent-color: #003b88; }
+            .dep-asset-code { color: #003b88; font-weight: 900; }
+            .dep-asset-name { margin-top: 2px; max-width: 220px; overflow: hidden; color: #475569; text-overflow: ellipsis; }
+            .dep-amount { color: #0f172a; font-weight: 800; text-align: right; }
+            .dep-pill { display: inline-flex; border-radius: 999px; padding: 3px 9px; font-size: 10px; line-height: 14px; font-weight: 900; }
+            .dep-status-draft { border: 1px solid #fde68a; background: #fef3c7; color: #92400e; }
+            .dep-status-posted { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
+            .dep-status-skipped { border: 1px solid #d1d5db; background: #f3f4f6; color: #475569; }
+            .dep-empty { padding: 38px 16px !important; text-align: center; color: #64748b !important; }
+            .dep-pagination { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #e2e8f0; padding: 14px; }
+            .dep-page-btn { display: inline-flex; min-width: 2rem; height: 2rem; align-items: center; justify-content: center; border: 1px solid #d8e0ee; border-radius: 7px; background: #ffffff; color: #334155; font-weight: 900; }
+            .dep-page-btn:hover { border-color: #003b88; color: #003b88; }
+            .dep-page-btn.is-current { border-color: #003b88; background: #003b88; color: #ffffff; }
+            .dep-page-btn.is-disabled { cursor: not-allowed; background: #f8fafc; color: #cbd5e1; }
+            @media (min-width: 640px) { .dep-pagination { flex-direction: row; align-items: center; justify-content: space-between; } }
+            @media (max-width: 1024px) {
+                .dep-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .dep-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 640px) {
+                .dep-topbar, .dep-toolbar { flex-direction: column; align-items: stretch; }
+                .dep-actions { align-items: stretch; flex-direction: column; }
+                .dep-stats, .dep-filter { grid-template-columns: 1fr; }
+                .dep-btn { width: 100%; }
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 font-display text-slate-900">
+        <div class="flex min-h-screen">
+            {{ template "sidebar" . }}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+                {{ template "header" . }}
+                <main class="flex-1 px-4 py-6 lg:px-8">
+                    <div class="dep-shell space-y-5">
+                        <div class="dep-topbar">
+                            <div>
+                                <nav class="dep-breadcrumb">
+                                    <span>Asset Depreciation</span>
+                                    <i class="bx bx-chevron-right"></i>
+                                    <span class="font-bold text-[#003b88]">Monthly Depreciation</span>
+                                </nav>
+                                <h1 class="dep-title">Monthly Depreciation</h1>
+                                <p class="dep-subtitle">Review and post monthly depreciation for registered assets.</p>
+                            </div>
+                            {{ if index .Permissions "asset_depreciation_generate" }}
+                            <form action="/asset-depreciation/monthly/generate" method="post" data-generate-form>
+                                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                                <input type="hidden" name="status" value="{{ .Filter.Status }}">
+                                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                                <button type="submit" class="dep-btn dep-btn-secondary"><i class="bx bx-refresh"></i>Generate Schedule</button>
+                            </form>
+                            {{ end }}
+                        </div>
+
+                        {{ if .Success }}<div class="dep-alert dep-alert-success">{{ .Success }}</div>{{ end }}
+                        {{ if .Error }}<div class="dep-alert dep-alert-error">{{ .Error }}</div>{{ end }}
+
+                        <section class="dep-stats">
+                            <div class="dep-stat dep-stat-assets">
+                                <div class="dep-stat-top"><div><div class="dep-stat-label">Assets This Period</div><div class="dep-stat-value">{{ .Stats.TotalAssets }}</div><div class="dep-stat-note">{{ .PeriodLabel }}</div></div><span class="dep-stat-icon"><i class="bx bx-desktop"></i></span></div>
+                            </div>
+                            <div class="dep-stat dep-stat-total">
+                                <div class="dep-stat-top"><div><div class="dep-stat-label">Monthly Expense</div><div class="dep-stat-value">{{ .Stats.TotalDepreciationDisplay }}</div><div class="dep-stat-note">Total depreciation amount</div></div><span class="dep-stat-icon"><i class="bx bx-trending-down"></i></span></div>
+                            </div>
+                            <div class="dep-stat dep-stat-draft">
+                                <div class="dep-stat-top"><div><div class="dep-stat-label">Draft</div><div class="dep-stat-value">{{ .Stats.DraftCount }}</div><div class="dep-stat-note">{{ .Stats.DraftDepreciationDisplay }} pending</div></div><span class="dep-stat-icon"><i class="bx bx-time-five"></i></span></div>
+                            </div>
+                            <div class="dep-stat dep-stat-posted">
+                                <div class="dep-stat-top"><div><div class="dep-stat-label">Posted</div><div class="dep-stat-value">{{ .Stats.PostedCount }}</div><div class="dep-stat-note">{{ .Stats.PostedDepreciationDisplay }} posted</div></div><span class="dep-stat-icon"><i class="bx bx-check-shield"></i></span></div>
+                            </div>
+                        </section>
+
+                        <section class="dep-card">
+                            <form action="/asset-depreciation/monthly" method="get" class="dep-filter">
+                                <div><label class="dep-label" for="dep-month">Month</label><select id="dep-month" name="month" class="dep-control">{{ range .Months }}<option value="{{ .Value }}" {{ if eq $.Filter.Month .Value }}selected{{ end }}>{{ .Label }}</option>{{ end }}</select></div>
+                                <div><label class="dep-label" for="dep-year">Year</label><select id="dep-year" name="year" class="dep-control">{{ range .Years }}<option value="{{ . }}" {{ if eq $.Filter.Year . }}selected{{ end }}>{{ . }}</option>{{ end }}</select></div>
+                                <div><label class="dep-label" for="dep-status">Status</label><select id="dep-status" name="status" class="dep-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>All Status</option><option value="DRAFT" {{ if eq .Filter.Status "DRAFT" }}selected{{ end }}>Draft</option><option value="POSTED" {{ if eq .Filter.Status "POSTED" }}selected{{ end }}>Posted</option><option value="SKIPPED" {{ if eq .Filter.Status "SKIPPED" }}selected{{ end }}>Skipped</option></select></div>
+                                <div><label class="dep-label" for="dep-search">Search Asset</label><input id="dep-search" name="search" class="dep-control" value="{{ .Filter.Search }}" placeholder="Asset code, name, or type"></div>
+                                <button type="submit" class="dep-btn dep-btn-primary"><i class="bx bx-filter-alt"></i>Apply Filter</button>
+                            </form>
+
+                            <form action="/asset-depreciation/monthly/post" method="post" data-post-form>
+                                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                                <input type="hidden" name="status" value="{{ .Filter.Status }}">
+                                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                                <div class="dep-toolbar">
+                                    <div><strong class="text-sm text-slate-900">Depreciation Schedule - {{ .PeriodLabel }}</strong><p class="mt-1 text-xs text-slate-500">Showing {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} of {{ .Pagination.TotalRows }} schedules</p></div>
+                                    {{ if index .Permissions "asset_depreciation_post" }}
+                                    <button type="submit" class="dep-btn dep-btn-primary" data-post-button disabled><i class="bx bx-check-double"></i><span>Post Selected</span></button>
+                                    {{ end }}
+                                </div>
+                                <div class="dep-table-wrap">
+                                    <table class="dep-table">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ if index .Permissions "asset_depreciation_post" }}<input type="checkbox" class="dep-check" data-check-all aria-label="Select all draft depreciation">{{ end }}</th>
+                                                <th>Asset</th><th>Asset Type</th><th>Method / Life</th><th>Acquisition Value</th><th>Opening Value</th><th>Monthly Dep.</th><th>Accumulated</th><th>Closing Value</th><th>Status</th><th>Posted At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{ range .Items }}
+                                            <tr>
+                                                <td>{{ if and (eq .Status "DRAFT") (index $.Permissions "asset_depreciation_post") }}<input type="checkbox" name="schedule_ids" value="{{ .ID }}" class="dep-check" data-row-check aria-label="Select {{ .AssetCode }}">{{ else }}<span class="text-slate-300">-</span>{{ end }}</td>
+                                                <td><a href="/asset-register/detail/{{ .AssetID }}" class="dep-asset-code">{{ .AssetCode }}</a><div class="dep-asset-name" title="{{ .AssetName }}">{{ .AssetName }}</div></td>
+                                                <td>{{ .AssetTypeName }}</td>
+                                                <td><span class="font-bold text-slate-800">{{ .MethodName }}</span><div class="mt-1 text-[10px] text-slate-500">{{ .UsefulLifeMonths }} months</div></td>
+                                                <td class="dep-amount">{{ .AcquisitionValueDisplay }}</td>
+                                                <td class="dep-amount">{{ .OpeningBookValueDisplay }}</td>
+                                                <td class="dep-amount text-[#003b88]">{{ .DepreciationAmountDisplay }}</td>
+                                                <td class="dep-amount">{{ .AccumulatedDepreciationDisplay }}</td>
+                                                <td class="dep-amount">{{ .ClosingBookValueDisplay }}</td>
+                                                <td>{{ if eq .Status "DRAFT" }}<span class="dep-pill dep-status-draft">DRAFT</span>{{ else if eq .Status "POSTED" }}<span class="dep-pill dep-status-posted">POSTED</span>{{ else }}<span class="dep-pill dep-status-skipped">{{ .Status }}</span>{{ end }}</td>
+                                                <td>{{ if .PostedAtDisplay }}{{ .PostedAtDisplay }}{{ else }}<span class="text-slate-400">-</span>{{ end }}</td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr><td colspan="11" class="dep-empty">No depreciation schedule found for this period</td></tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </form>
+
+                            <div class="dep-pagination">
+                                <div class="flex items-center gap-3 text-xs font-bold text-slate-600"><span>Rows per page:</span><span class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[#003b88]">{{ .Pagination.PageSize }}</span></div>
+                                <div class="flex items-center gap-2 text-xs font-bold">
+                                    {{ if .Pagination.HasPrev }}<a href="{{ .Pagination.PrevURL }}" class="dep-page-btn" aria-label="Previous page"><i class="bx bx-chevron-left text-base"></i></a>{{ else }}<span class="dep-page-btn is-disabled"><i class="bx bx-chevron-left text-base"></i></span>{{ end }}
+                                    <span class="dep-page-btn is-current">{{ .Pagination.CurrentPage }} / {{ .Pagination.TotalPages }}</span>
+                                    {{ if .Pagination.HasNext }}<a href="{{ .Pagination.NextURL }}" class="dep-page-btn" aria-label="Next page"><i class="bx bx-chevron-right text-base"></i></a>{{ else }}<span class="dep-page-btn is-disabled"><i class="bx bx-chevron-right text-base"></i></span>{{ end }}
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </main>
+                {{ template "footer" . }}
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
+        <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = document.getElementById('app-sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!sidebar) return;
+                        var closed = sidebar.classList.contains('-translate-x-full');
+                        sidebar.classList.toggle('-translate-x-full', !closed);
+                        if (overlay) overlay.classList.toggle('hidden', !closed);
+                        document.body.classList.toggle('overflow-hidden', closed);
+                    });
+                });
+                if (overlay) {
+                    overlay.addEventListener('click', function () {
+                        if (sidebar) sidebar.classList.add('-translate-x-full');
+                        overlay.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    });
+                }
+
+                var checks = Array.prototype.slice.call(document.querySelectorAll('[data-row-check]'));
+                var checkAll = document.querySelector('[data-check-all]');
+                var postButton = document.querySelector('[data-post-button]');
+                var postForm = document.querySelector('[data-post-form]');
+
+                function refreshSelection() {
+                    var selected = checks.filter(function (check) { return check.checked; }).length;
+                    if (postButton) {
+                        postButton.disabled = selected === 0;
+                        var label = postButton.querySelector('span');
+                        if (label) label.textContent = selected > 0 ? 'Post Selected (' + selected + ')' : 'Post Selected';
+                    }
+                    if (checkAll) {
+                        checkAll.checked = checks.length > 0 && selected === checks.length;
+                        checkAll.indeterminate = selected > 0 && selected < checks.length;
+                    }
+                }
+                checks.forEach(function (check) { check.addEventListener('change', refreshSelection); });
+                if (checkAll) {
+                    checkAll.addEventListener('change', function () {
+                        checks.forEach(function (check) { check.checked = checkAll.checked; });
+                        refreshSelection();
+                    });
+                }
+                if (postForm) {
+                    postForm.addEventListener('submit', function (event) {
+                        var selected = checks.filter(function (check) { return check.checked; }).length;
+                        if (selected === 0) {
+                            event.preventDefault();
+                            return;
+                        }
+                        if (postForm.dataset.confirmed === 'true') return;
+                        event.preventDefault();
+                        Swal.fire({
+                            title: 'Post monthly depreciation?',
+                            text: selected + ' selected schedule(s) will be locked as POSTED.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#003b88',
+                            cancelButtonColor: '#64748b',
+                            confirmButtonText: 'Yes, post now'
+                        }).then(function (result) {
+                            if (result.isConfirmed) {
+                                postForm.dataset.confirmed = 'true';
+                                postForm.submit();
+                            }
+                        });
+                    });
+                }
+                var generateForm = document.querySelector('[data-generate-form]');
+                if (generateForm) {
+                    generateForm.addEventListener('submit', function (event) {
+                        if (generateForm.dataset.confirmed === 'true') return;
+                        event.preventDefault();
+                        Swal.fire({
+                            title: 'Generate depreciation schedule?',
+                            text: 'Draft schedules will be generated or refreshed. Posted rows remain unchanged.',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#003b88',
+                            cancelButtonColor: '#64748b',
+                            confirmButtonText: 'Generate'
+                        }).then(function (result) {
+                            if (result.isConfirmed) {
+                                generateForm.dataset.confirmed = 'true';
+                                generateForm.submit();
+                            }
+                        });
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>

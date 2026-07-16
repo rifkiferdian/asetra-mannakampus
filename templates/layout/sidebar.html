@@ -85,6 +85,21 @@
                 </ul>
             </li>
             {{ end }}
+            {{ $depreciationActive := eq .Page "monthly_depreciation" }}
+            {{ if index .Permissions "asset_depreciation_management_access" }}
+            <li class="space-y-1">
+                <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-[14px] font-semibold transition sm:px-4 sm:py-3 {{ if $depreciationActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="depreciation-submenu" aria-expanded="{{ if $depreciationActive }}true{{ else }}false{{ end }}" aria-controls="depreciation-submenu" {{ if $depreciationActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <span class="flex min-w-0 items-center gap-3 sm:gap-4">
+                        <i class="bx bx-line-chart text-xl"></i>
+                        <span class="whitespace-nowrap">Asset Depreciation</span>
+                    </span>
+                    <i class="bx {{ if $depreciationActive }}bx-chevron-up text-white/80{{ else }}bx-chevron-down text-slate-400{{ end }} text-xl" data-submenu-icon></i>
+                </button>
+                <ul id="depreciation-submenu" class="mt-1 {{ if not $depreciationActive }}hidden {{ end }}space-y-1 border-l border-slate-200 pl-4" style="margin-left: 1rem;">
+                    <li><a href="{{ baseURL "/asset-depreciation/monthly" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if $depreciationActive }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-calendar-check text-base"></i><span class="whitespace-nowrap">Monthly Depreciation</span></a></li>
+                </ul>
+            </li>
+            {{ end }}
             <!-- <li>
                 <a href="#" class="flex items-center gap-4 rounded-2xl px-4 py-3 text-[15px] font-semibold text-slate-600 transition hover:bg-slate-100/70 hover:text-slate-800">
                     <i class="bx bx-sitemap text-xl"></i>

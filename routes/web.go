@@ -62,6 +62,9 @@ func RegisterWebRoutes(r *gin.Engine) {
 		auth.POST("/asset-movements", middleware.RequirePermission("asset_movement_create"), controllers.AssetMovementStore)
 		auth.GET("/asset-component-movements", middleware.RequirePermission("asset_component_movement_management_access"), controllers.AssetComponentMovementIndex)
 		auth.POST("/asset-component-movements", middleware.RequirePermission("asset_component_movement_create"), controllers.AssetComponentMovementStore)
+		auth.GET("/asset-depreciation/monthly", middleware.RequirePermission("asset_depreciation_management_access"), controllers.MonthlyDepreciationIndex)
+		auth.POST("/asset-depreciation/monthly/generate", middleware.RequirePermission("asset_depreciation_generate"), controllers.MonthlyDepreciationGenerate)
+		auth.POST("/asset-depreciation/monthly/post", middleware.RequirePermission("asset_depreciation_post"), controllers.MonthlyDepreciationPost)
 
 		auth.POST("/register", middleware.RequirePermission("user_create"), controllers.CreateUser)
 		auth.GET("/stores", middleware.RequirePermission("store_management_access"), controllers.StoreIndex)

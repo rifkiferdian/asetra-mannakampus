@@ -106,6 +106,10 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "asset_component_movement_management_access", Group: "asset_component_movement", GuardName: "web"},
 		{Name: "asset_component_movement_view", Group: "asset_component_movement", GuardName: "web"},
 		{Name: "asset_component_movement_create", Group: "asset_component_movement", GuardName: "web"},
+		{Name: "asset_depreciation_management_access", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_view", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_generate", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_post", Group: "asset_depreciation", GuardName: "web"},
 	}
 
 	if err := s.Repo.EnsurePermissions(defs); err != nil {
@@ -140,6 +144,14 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 	if err := s.Repo.GrantPermissionsToRoles(
 		[]string{"purchase_order_management_access", "purchase_order_view", "purchase_order_create", "purchase_order_edit"},
 		[]string{"procurement"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	if err := s.Repo.GrantPermissionsToRoles(
+		[]string{"asset_depreciation_management_access", "asset_depreciation_view", "asset_depreciation_generate", "asset_depreciation_post"},
+		[]string{"finance-manager"},
 		"web",
 	); err != nil {
 		return err
