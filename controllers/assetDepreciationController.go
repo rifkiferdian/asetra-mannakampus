@@ -18,11 +18,11 @@ const monthlyDepreciationPageSize = 50
 
 func MonthlyDepreciationIndex(c *gin.Context) {
 	filter := monthlyDepreciationFilter(c)
-	periodLabel := time.Date(filter.Year, time.Month(filter.Month), 1, 0, 0, 0, 0, time.Local).Format("January 2006")
+	periodLabel := depreciationPeriodLabel(filter.Year, filter.Month)
 	result, err := assetDepreciationService().GetMonthlyDepreciation(filter)
 	if err != nil {
 		Render(c, "monthly_depreciation.html", gin.H{
-			"Title": "Monthly Depreciation", "Page": "monthly_depreciation",
+			"Title": "Depresiasi Bulanan", "Page": "monthly_depreciation",
 			"Filter": filter, "Error": depreciationErrorMessage(err),
 			"Months": depreciationMonthOptions(), "Years": depreciationYearOptions(filter.Year),
 			"PeriodLabel": periodLabel,
@@ -35,7 +35,7 @@ func MonthlyDepreciationIndex(c *gin.Context) {
 	}
 
 	Render(c, "monthly_depreciation.html", gin.H{
-		"Title":       "Monthly Depreciation",
+		"Title":       "Depresiasi Bulanan",
 		"Page":        "monthly_depreciation",
 		"Items":       result.Items,
 		"Stats":       result.Stats,
@@ -51,11 +51,17 @@ func MonthlyDepreciationIndex(c *gin.Context) {
 
 func MonthlyDepreciationGenerate(c *gin.Context) {
 	filter := monthlyDepreciationFilter(c)
-	if err := assetDepreciationService().GenerateSchedules(); err != nil {
+	count, err := assetDepreciationService().GenerateMonthlySchedules(filter.Year, filter.Month)
+	if err != nil {
 		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
 		return
 	}
-	redirectMonthlyDepreciation(c, filter, "Jadwal depresiasi berhasil diperbarui", "")
+	periodLabel := depreciationPeriodLabel(filter.Year, filter.Month)
+	message := strconv.Itoa(count) + " jadwal depresiasi tersedia untuk periode " + periodLabel
+	if count == 0 {
+		message = "Tidak ada jadwal yang dapat dibuat untuk periode " + periodLabel + ". Pastikan profil aktif dan periode sebelumnya sudah DIPOSTING atau DILEWATI."
+	}
+	redirectMonthlyDepreciation(c, filter, message, "")
 }
 
 func MonthlyDepreciationPost(c *gin.Context) {
@@ -74,6 +80,77 @@ func MonthlyDepreciationPost(c *gin.Context) {
 		return
 	}
 	redirectMonthlyDepreciation(c, filter, strconv.FormatInt(count, 10)+" depresiasi berhasil diposting", "")
+}
+
+func DepreciationProfileIndex(c *gin.Context) {
+	filter := depreciationProfileFilter(c)
+	service := assetDepreciationService()
+	result, err := service.GetDepreciationProfiles(filter)
+	if err != nil {
+		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
+		return
+	}
+	methods, err := service.GetDepreciationMethods()
+	if err != nil {
+		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
+		return
+	}
+	assets, err := service.GetDepreciationAssetOptions()
+	if err != nil {
+		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
+		return
+	}
+	Render(c, "depreciation_profiles.html", gin.H{
+		"Title":      "Profil Depresiasi",
+		"Page":       "depreciation_profiles",
+		"Items":      result.Items,
+		"Stats":      result.Stats,
+		"Methods":    methods,
+		"Assets":     assets,
+		"Filter":     filter,
+		"Pagination": depreciationProfilePagination(filter, result),
+		"Success":    strings.TrimSpace(c.Query("success")),
+		"Error":      strings.TrimSpace(c.Query("error")),
+	})
+}
+
+func DepreciationProfileSave(c *gin.Context) {
+	input := models.DepreciationProfileInput{
+		ID:               parseInt64Form(c, "id"),
+		AssetID:          parseInt64Form(c, "asset_id"),
+		MethodID:         parseInt64Form(c, "depreciation_method_id"),
+		UsefulLifeMonths: parseIntForm(c, "useful_life_months"),
+		SalvageValue:     parseFloatForm(c, "salvage_value"),
+		DepreciableBasis: parseFloatForm(c, "depreciable_basis"),
+		StartDate:        c.PostForm("start_date"),
+		Status:           c.PostForm("status"),
+		Notes:            c.PostForm("notes"),
+	}
+	if err := assetDepreciationService().SaveDepreciationProfile(input); err != nil {
+		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(depreciationErrorMessage(err)))
+		return
+	}
+	message := "Profil depresiasi berhasil disimpan"
+	c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?success="+url.QueryEscape(message))
+}
+
+func DepreciationPostingHistoryIndex(c *gin.Context) {
+	filter := depreciationPostingHistoryFilter(c)
+	result, err := assetDepreciationService().GetPostingHistory(filter)
+	if err != nil {
+		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
+		return
+	}
+	Render(c, "depreciation_posting_history.html", gin.H{
+		"Title":      "Riwayat Posting Depresiasi",
+		"Page":       "depreciation_posting_history",
+		"Items":      result.Items,
+		"Stats":      result.Stats,
+		"Filter":     filter,
+		"Months":     depreciationMonthOptions(),
+		"Years":      depreciationYearOptions(filter.Year),
+		"Pagination": depreciationPostingHistoryPagination(filter, result),
+	})
 }
 
 func assetDepreciationService() *services.AssetDepreciationService {
@@ -105,6 +182,35 @@ func monthlyDepreciationFilter(c *gin.Context) models.MonthlyDepreciationFilter 
 	}
 }
 
+func depreciationProfileFilter(c *gin.Context) models.DepreciationProfileFilter {
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+	status := strings.ToUpper(strings.TrimSpace(c.Query("status")))
+	if status == "" {
+		status = "ALL"
+	}
+	return models.DepreciationProfileFilter{
+		Status: status, Search: strings.TrimSpace(c.Query("search")), Page: page, PerPage: monthlyDepreciationPageSize,
+	}
+}
+
+func depreciationPostingHistoryFilter(c *gin.Context) models.DepreciationPostingHistoryFilter {
+	year, _ := strconv.Atoi(c.Query("year"))
+	month, _ := strconv.Atoi(c.Query("month"))
+	page, _ := strconv.Atoi(c.Query("page"))
+	if year == 0 {
+		year = time.Now().Year()
+	}
+	if page < 1 {
+		page = 1
+	}
+	return models.DepreciationPostingHistoryFilter{
+		Year: year, Month: month, Search: strings.TrimSpace(c.Query("search")), Page: page, PerPage: monthlyDepreciationPageSize,
+	}
+}
+
 func monthlyDepreciationPagination(filter models.MonthlyDepreciationFilter, result models.MonthlyDepreciationResult) models.DepreciationPagination {
 	page := filter.Page
 	if page > result.TotalPages {
@@ -122,6 +228,40 @@ func monthlyDepreciationPagination(filter models.MonthlyDepreciationFilter, resu
 	}
 }
 
+func depreciationProfilePagination(filter models.DepreciationProfileFilter, result models.DepreciationProfileResult) models.DepreciationPagination {
+	page := filter.Page
+	if page > result.TotalPages {
+		page = result.TotalPages
+	}
+	start, end := paginationBounds(page, filter.PerPage, result.TotalRows, len(result.Items))
+	return models.DepreciationPagination{
+		CurrentPage: page, TotalPages: result.TotalPages, PageStart: start, PageEnd: end,
+		TotalRows: result.TotalRows, PageSize: filter.PerPage, HasPrev: page > 1, HasNext: page < result.TotalPages,
+		PrevURL: depreciationProfileURL(filter, page-1), NextURL: depreciationProfileURL(filter, page+1),
+	}
+}
+
+func depreciationPostingHistoryPagination(filter models.DepreciationPostingHistoryFilter, result models.DepreciationPostingHistoryResult) models.DepreciationPagination {
+	page := filter.Page
+	if page > result.TotalPages {
+		page = result.TotalPages
+	}
+	start, end := paginationBounds(page, filter.PerPage, result.TotalRows, len(result.Items))
+	return models.DepreciationPagination{
+		CurrentPage: page, TotalPages: result.TotalPages, PageStart: start, PageEnd: end,
+		TotalRows: result.TotalRows, PageSize: filter.PerPage, HasPrev: page > 1, HasNext: page < result.TotalPages,
+		PrevURL: depreciationPostingHistoryURL(filter, page-1), NextURL: depreciationPostingHistoryURL(filter, page+1),
+	}
+}
+
+func paginationBounds(page, pageSize, totalRows, itemCount int) (int, int) {
+	if totalRows == 0 {
+		return 0, 0
+	}
+	start := (page-1)*pageSize + 1
+	return start, start + itemCount - 1
+}
+
 func monthlyDepreciationURL(filter models.MonthlyDepreciationFilter, page int) string {
 	values := url.Values{}
 	values.Set("year", strconv.Itoa(filter.Year))
@@ -132,6 +272,27 @@ func monthlyDepreciationURL(filter models.MonthlyDepreciationFilter, page int) s
 	}
 	values.Set("page", strconv.Itoa(page))
 	return "/asset-depreciation/monthly?" + values.Encode()
+}
+
+func depreciationProfileURL(filter models.DepreciationProfileFilter, page int) string {
+	values := url.Values{}
+	values.Set("status", filter.Status)
+	values.Set("page", strconv.Itoa(page))
+	if filter.Search != "" {
+		values.Set("search", filter.Search)
+	}
+	return "/asset-depreciation/profiles?" + values.Encode()
+}
+
+func depreciationPostingHistoryURL(filter models.DepreciationPostingHistoryFilter, page int) string {
+	values := url.Values{}
+	values.Set("year", strconv.Itoa(filter.Year))
+	values.Set("month", strconv.Itoa(filter.Month))
+	values.Set("page", strconv.Itoa(page))
+	if filter.Search != "" {
+		values.Set("search", filter.Search)
+	}
+	return "/asset-depreciation/posting-history?" + values.Encode()
 }
 
 func redirectMonthlyDepreciation(c *gin.Context, filter models.MonthlyDepreciationFilter, success, errorMessage string) {
@@ -152,11 +313,20 @@ func redirectMonthlyDepreciation(c *gin.Context, filter models.MonthlyDepreciati
 }
 
 func depreciationMonthOptions() []models.DepreciationMonthOption {
+	labels := []string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
 	months := make([]models.DepreciationMonthOption, 0, 12)
 	for month := 1; month <= 12; month++ {
-		months = append(months, models.DepreciationMonthOption{Value: month, Label: time.Month(month).String()})
+		months = append(months, models.DepreciationMonthOption{Value: month, Label: labels[month-1]})
 	}
 	return months
+}
+
+func depreciationPeriodLabel(year, month int) string {
+	labels := []string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+	if month < 1 || month > len(labels) {
+		return strconv.Itoa(year)
+	}
+	return labels[month-1] + " " + strconv.Itoa(year)
 }
 
 func depreciationYearOptions(selected int) []int {
@@ -188,7 +358,7 @@ func depreciationErrorMessage(err error) string {
 	message := err.Error()
 	lower := strings.ToLower(message)
 	if strings.Contains(lower, "doesn't exist") && strings.Contains(lower, "asset_depreciation") {
-		return "Tabel depresiasi belum tersedia. Jalankan SQL asset depreciation terlebih dahulu."
+		return "Tabel depresiasi belum tersedia. Jalankan SQL depresiasi aset terlebih dahulu."
 	}
 	if strings.Contains(lower, "procedure") && strings.Contains(lower, "does not exist") {
 		return "Stored procedure generator depresiasi belum tersedia. Jalankan SQL procedure depresiasi terlebih dahulu."

@@ -192,7 +192,7 @@ func AssetDetailIndex(c *gin.Context) {
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
 	Render(c, "asset_detail.html", gin.H{
-		"Title":                "Asset Detail",
+		"Title":                "Detail Aset",
 		"Page":                 "asset",
 		"Asset":                asset,
 		"Components":           components,

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{{ if .Title }}{{ .Title }}{{ else }}Asset Detail{{ end }}</title>
+        <title>{{ if .Title }}{{ .Title }}{{ else }}Detail Aset{{ end }}</title>
         <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
@@ -125,34 +125,34 @@
                         <div class="detail-topbar">
                             <div>
                                 <nav class="detail-breadcrumb">
-                                    <span>Asset Inventory</span>
+                                    <span>Inventaris Aset</span>
                                     <i class="bx bx-chevron-right"></i>
-                                    <span class="font-bold text-[#003b88]">Asset Detail</span>
+                                    <span class="font-bold text-[#003b88]">Detail Aset</span>
                                 </nav>
                                 <div class="flex flex-wrap items-center gap-3">
                                     <h1 class="detail-title">{{ .Asset.AssetName }} <span class="detail-code">({{ .Asset.AssetCode }})</span></h1>
                                     {{ if eq .Asset.Status "AVAILABLE" }}
-                                    <span class="detail-status detail-status-available">{{ .Asset.StatusLabel }}</span>
+                                    <span class="detail-status detail-status-available">Tersedia</span>
                                     {{ else if eq .Asset.Status "IN_USE" }}
-                                    <span class="detail-status detail-status-in-use">{{ .Asset.StatusLabel }}</span>
+                                    <span class="detail-status detail-status-in-use">Digunakan</span>
                                     {{ else if eq .Asset.Status "MAINTENANCE" }}
-                                    <span class="detail-status detail-status-maintenance">{{ .Asset.StatusLabel }}</span>
+                                    <span class="detail-status detail-status-maintenance">Perawatan</span>
                                     {{ else if eq .Asset.Status "BROKEN" }}
-                                    <span class="detail-status detail-status-broken">{{ .Asset.StatusLabel }}</span>
+                                    <span class="detail-status detail-status-broken">Rusak</span>
                                     {{ else }}
-                                    <span class="detail-status detail-status-disposed">{{ .Asset.StatusLabel }}</span>
+                                    <span class="detail-status detail-status-disposed">Dihapuskan</span>
                                     {{ end }}
                                 </div>
                             </div>
                             <div class="detail-actions">
-                                <a href="/asset-register" class="detail-btn detail-btn-secondary"><i class="bx bx-arrow-back"></i>Back</a>
-                                <button type="button" class="detail-btn detail-btn-secondary"><i class="bx bx-wrench"></i>Request Maintenance</button>
-                                <button type="button" class="detail-btn detail-btn-danger"><i class="bx bx-archive"></i>Retire Asset</button>
+                                <a href="/asset-register" class="detail-btn detail-btn-secondary"><i class="bx bx-arrow-back"></i>Kembali</a>
+                                <button type="button" class="detail-btn detail-btn-secondary"><i class="bx bx-wrench"></i>Ajukan Perawatan</button>
+                                <button type="button" class="detail-btn detail-btn-danger"><i class="bx bx-archive"></i>Nonaktifkan Aset</button>
                                 {{ if index .Permissions "asset_delete" }}
-                                <a href="/asset-register/delete/{{ .Asset.ID }}" class="detail-btn detail-btn-danger" data-confirm="Hapus asset {{ .Asset.AssetCode }}?"><i class="bx bx-trash"></i>Delete Asset</a>
+                                <a href="/asset-register/delete/{{ .Asset.ID }}" class="detail-btn detail-btn-danger" data-confirm="Hapus aset {{ .Asset.AssetCode }}?"><i class="bx bx-trash"></i>Hapus Aset</a>
                                 {{ end }}
                                 {{ if index .Permissions "asset_edit" }}
-                                <button type="button" class="detail-btn detail-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Edit Asset</button>
+                                <button type="button" class="detail-btn detail-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Ubah Aset</button>
                                 {{ end }}
                             </div>
                         </div>
@@ -164,24 +164,24 @@
                                         <div class="detail-media-box"><i class="bx bx-laptop"></i></div>
                                     </div>
                                     <div class="detail-specs">
-                                        <div class="detail-card-title">Technical Specifications</div>
+                                        <div class="detail-card-title">Spesifikasi Teknis</div>
                                         <div class="detail-rule"></div>
                                         <div class="detail-spec-grid">
                                             <div>
-                                                <div class="detail-label">Serial Number</div>
+                                                <div class="detail-label">Nomor Seri</div>
                                                 <div class="detail-value">{{ if .Asset.SerialNumber }}{{ .Asset.SerialNumber }}{{ else }}-{{ end }}</div>
                                             </div>
                                             <div>
-                                                <div class="detail-label">Model / Type</div>
+                                                <div class="detail-label">Model / Tipe</div>
                                                 <div class="detail-value">{{ .Asset.AssetTypeName }}</div>
                                             </div>
                                             <div>
-                                                <div class="detail-label">Purchase Date</div>
+                                                <div class="detail-label">Tanggal Perolehan</div>
                                                 <div class="detail-value">{{ if .Asset.AcquisitionDate }}{{ .Asset.AcquisitionDate }}{{ else }}-{{ end }}</div>
                                             </div>
                                             <div>
-                                                <div class="detail-label">Warranty End</div>
-                                                <div class="detail-value text-[#047857]">Not configured</div>
+                                                <div class="detail-label">Garansi Berakhir</div>
+                                                <div class="detail-value text-[#047857]">Belum dikonfigurasi</div>
                                             </div>
                                         </div>
                                     </div>
@@ -189,41 +189,41 @@
 
                                 <div class="detail-two">
                                     <section class="detail-card detail-card-pad">
-                                        <div class="detail-card-title">Cost Details</div>
+                                        <div class="detail-card-title">Detail Nilai Aset</div>
                                         <div class="detail-rule"></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Purchase Price</span><span class="detail-money-value">{{ .Asset.AcquisitionValueDisplay }}</span></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Total Maintenance</span><span class="detail-money-value detail-money-danger">IDR 0</span></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Current Book Value</span><span class="detail-money-value text-[#003b88]">{{ .Depreciation.CurrentBookValueDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Nilai Perolehan</span><span class="detail-money-value">{{ .Asset.AcquisitionValueDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Total Perawatan</span><span class="detail-money-value detail-money-danger">IDR 0</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Nilai Buku Saat Ini</span><span class="detail-money-value text-[#003b88]">{{ .Depreciation.CurrentBookValueDisplay }}</span></div>
                                     </section>
 
                                     <section class="detail-card detail-card-pad">
                                         <div class="detail-dep-head">
-                                            <div class="detail-card-title">Depreciation Status</div>
+                                            <div class="detail-card-title">Status Depresiasi</div>
                                             {{ if index .Permissions "asset_depreciation_management_access" }}
-                                            <a href="/asset-depreciation/monthly?search={{ .Asset.AssetCode }}" class="detail-dep-link">View Monthly <i class="bx bx-right-arrow-alt text-sm"></i></a>
+                                            <a href="/asset-depreciation/monthly?search={{ .Asset.AssetCode }}" class="detail-dep-link">Lihat Bulanan <i class="bx bx-right-arrow-alt text-sm"></i></a>
                                             {{ end }}
                                         </div>
                                         <div class="detail-rule"></div>
                                         {{ if .Depreciation.Configured }}
-                                        <div class="detail-money-row"><span class="detail-money-label">Method / Useful Life</span><span class="detail-money-value">{{ .Depreciation.MethodName }} / {{ .Depreciation.UsefulLifeMonths }} mo</span></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Monthly Depreciation</span><span class="detail-money-value">{{ .Depreciation.MonthlyDepreciationDisplay }}</span></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Salvage Value</span><span class="detail-money-value">{{ .Depreciation.SalvageValueDisplay }}</span></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Posted Accumulated</span><span class="detail-money-value">{{ .Depreciation.PostedDepreciationDisplay }}</span></div>
-                                        <div class="detail-money-row"><span class="detail-money-label">Depreciation Progress</span><span class="detail-money-value text-[#003b88]">{{ .Depreciation.ProgressPercentDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Metode / Umur Manfaat</span><span class="detail-money-value">{{ if eq .Depreciation.MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .Depreciation.MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .Depreciation.MethodName }}{{ end }} / {{ .Depreciation.UsefulLifeMonths }} bulan</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Depresiasi Bulanan</span><span class="detail-money-value">{{ .Depreciation.MonthlyDepreciationDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Nilai Residu</span><span class="detail-money-value">{{ .Depreciation.SalvageValueDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Akumulasi Diposting</span><span class="detail-money-value">{{ .Depreciation.PostedDepreciationDisplay }}</span></div>
+                                        <div class="detail-money-row"><span class="detail-money-label">Progres Depresiasi</span><span class="detail-money-value text-[#003b88]">{{ .Depreciation.ProgressPercentDisplay }}</span></div>
                                         <div class="detail-progress mt-2"><div class="detail-progress-bar" style="width: {{ .Depreciation.ProgressPercent }}%;"></div></div>
                                         <div class="detail-dep-meta">
-                                            <span>Start: {{ .Depreciation.StartDateDisplay }}</span>
-                                            <span>Last posted: {{ if .Depreciation.LastPostedPeriodDisplay }}{{ .Depreciation.LastPostedPeriodDisplay }}{{ else }}-{{ end }}</span>
-                                            <span>Next draft: {{ if .Depreciation.NextDraftPeriodDisplay }}{{ .Depreciation.NextDraftPeriodDisplay }}{{ else }}-{{ end }}</span>
+                                            <span>Mulai: {{ .Depreciation.StartDateDisplay }}</span>
+                                            <span>Posting terakhir: {{ if .Depreciation.LastPostedPeriodDisplay }}{{ .Depreciation.LastPostedPeriodDisplay }}{{ else }}-{{ end }}</span>
+                                            <span>Draft berikutnya: {{ if .Depreciation.NextDraftPeriodDisplay }}{{ .Depreciation.NextDraftPeriodDisplay }}{{ else }}-{{ end }}</span>
                                         </div>
                                         {{ else }}
-                                        <div class="detail-dep-empty">Depreciation profile has not been configured for this asset.</div>
+                                        <div class="detail-dep-empty">Profil depresiasi belum dikonfigurasi untuk aset ini.</div>
                                         {{ end }}
                                     </section>
                                 </div>
 
                                 <section class="detail-card detail-card-pad">
-                                    <div class="detail-card-title">Attached Components</div>
+                                    <div class="detail-card-title">Komponen Terpasang</div>
                                     <div class="detail-rule"></div>
                                     <div class="component-grid">
                                         {{ range .Components }}
@@ -231,11 +231,11 @@
                                             <span class="component-icon"><i class="bx bx-chip"></i></span>
                                             <div>
                                                 <div class="component-name">{{ .ComponentName }}</div>
-                                                <div class="component-meta">SN: {{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}-{{ end }}</div>
+                                                <div class="component-meta">Nomor Seri: {{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}-{{ end }}</div>
                                             </div>
                                         </div>
                                         {{ else }}
-                                        <div class="empty">Belum ada komponen yang terpasang pada asset ini.</div>
+                                        <div class="empty">Belum ada komponen yang terpasang pada aset ini.</div>
                                         {{ end }}
                                     </div>
                                 </section>
@@ -243,17 +243,17 @@
                                 <section class="detail-card">
                                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                                         <div>
-                                            <div class="detail-card-title">Depreciation Posting History</div>
-                                            <p class="mt-1 text-[10px] font-bold text-slate-500">Latest 12 posted periods</p>
+                                            <div class="detail-card-title">Riwayat Posting Depresiasi</div>
+                                            <p class="mt-1 text-[10px] font-bold text-slate-500">12 periode posting terbaru</p>
                                         </div>
-                                        {{ if index .Permissions "asset_depreciation_management_access" }}
-                                        <a href="/asset-depreciation/monthly?status=POSTED&search={{ .Asset.AssetCode }}" class="detail-dep-link">View All <i class="bx bx-right-arrow-alt text-sm"></i></a>
+                                        {{ if index .Permissions "asset_depreciation_posting_history_access" }}
+                                            <a href="/asset-depreciation/posting-history?search={{ .Asset.AssetCode }}" class="detail-dep-link">Lihat Semua <i class="bx bx-right-arrow-alt text-sm"></i></a>
                                         {{ end }}
                                     </div>
                                     <div class="overflow-x-auto border-t border-slate-200">
                                         <table class="dep-history-table">
                                             <thead>
-                                                <tr><th>Period</th><th class="text-right">Opening Value</th><th class="text-right">Depreciation</th><th class="text-right">Accumulated</th><th class="text-right">Closing Value</th><th>Posted At</th></tr>
+                                                <tr><th>Periode</th><th class="text-right">Nilai Awal</th><th class="text-right">Depresiasi</th><th class="text-right">Akumulasi</th><th class="text-right">Nilai Akhir</th><th>Waktu Posting</th></tr>
                                             </thead>
                                             <tbody>
                                                 {{ range .DepreciationPostings }}
@@ -266,7 +266,7 @@
                                                     <td>{{ if .PostedAtDisplay }}{{ .PostedAtDisplay }}{{ else }}-{{ end }}</td>
                                                 </tr>
                                                 {{ else }}
-                                                <tr><td colspan="6" class="empty">Belum ada depresiasi yang diposting untuk asset ini.</td></tr>
+                                                <tr><td colspan="6" class="empty">Belum ada depresiasi yang diposting untuk aset ini.</td></tr>
                                                 {{ end }}
                                             </tbody>
                                         </table>
@@ -276,59 +276,59 @@
 
                             <aside class="detail-right">
                                 <section class="detail-card detail-card-pad">
-                                    <div class="detail-card-title">Current Assignment</div>
+                                    <div class="detail-card-title">Penempatan Saat Ini</div>
                                     <div class="detail-rule"></div>
                                     <div class="assignment">
                                         <div class="avatar">PIC</div>
                                         <div>
-                                            <div class="assign-name">{{ if .Asset.AssignedPersonName }}{{ .Asset.AssignedPersonName }}{{ else }}Unassigned{{ end }}</div>
-                                            <div class="assign-role">{{ if .Asset.AssignedPersonNIP }}{{ .Asset.AssignedPersonNIP }}{{ else }}No PIC NIP{{ end }}</div>
+                                            <div class="assign-name">{{ if .Asset.AssignedPersonName }}{{ .Asset.AssignedPersonName }}{{ else }}Belum ditugaskan{{ end }}</div>
+                                            <div class="assign-role">{{ if .Asset.AssignedPersonNIP }}{{ .Asset.AssignedPersonNIP }}{{ else }}NIP PIC belum tersedia{{ end }}</div>
                                         </div>
                                     </div>
                                     <div class="assignment-meta">
                                         <div class="meta-row">
                                             <i class="bx bx-buildings"></i>
-                                            <div><div class="meta-label">Department</div><div class="meta-value">{{ if .Asset.AssignedPersonDepartment }}{{ .Asset.AssignedPersonDepartment }}{{ else }}-{{ end }}</div></div>
+                                            <div><div class="meta-label">Departemen</div><div class="meta-value">{{ if .Asset.AssignedPersonDepartment }}{{ .Asset.AssignedPersonDepartment }}{{ else }}-{{ end }}</div></div>
                                         </div>
                                         <div class="meta-row">
                                             <i class="bx bx-map-pin"></i>
-                                            <div><div class="meta-label">Location</div><div class="meta-value">{{ if .Asset.LocationName }}{{ .Asset.LocationName }}{{ else }}-{{ end }}</div></div>
+                                            <div><div class="meta-label">Lokasi</div><div class="meta-value">{{ if .Asset.LocationName }}{{ .Asset.LocationName }}{{ else }}-{{ end }}</div></div>
                                         </div>
                                     </div>
-                                    <button type="button" class="detail-btn detail-btn-secondary mt-5 w-full">Initiate Transfer</button>
+                                    <button type="button" class="detail-btn detail-btn-secondary mt-5 w-full">Mulai Pemindahan</button>
                                 </section>
 
                                 <section class="detail-card">
                                     <div class="flex items-center justify-between px-4 py-3">
-                                        <div class="detail-card-title">Movement History</div>
-                                        <a href="/asset-movements" class="text-xs font-bold text-[#003b88]">View All</a>
+                                        <div class="detail-card-title">Riwayat Pemindahan</div>
+                                        <a href="/asset-movements" class="text-xs font-bold text-[#003b88]">Lihat Semua</a>
                                     </div>
                                     <table class="mini-table">
-                                        <thead><tr><th>Action / Date</th><th>Route</th><th>Assigned To</th></tr></thead>
+                                        <thead><tr><th>Aksi / Tanggal</th><th>Rute</th><th>Ditugaskan Kepada</th></tr></thead>
                                         <tbody>
                                             {{ range .Movements }}
                                             <tr>
-                                                <td><div class="movement-action">{{ .MovementType }}</div><div class="movement-date">{{ .MovementDate }}</div></td>
+                                                <td><div class="movement-action">{{ if eq .MovementType "RECEIVE" }}Penerimaan{{ else if eq .MovementType "TRANSFER" }}Pemindahan{{ else if eq .MovementType "ASSIGN" }}Penugasan{{ else if eq .MovementType "RETURN" }}Pengembalian{{ else if eq .MovementType "MAINTENANCE" }}Perawatan{{ else if eq .MovementType "BROKEN" }}Rusak{{ else if eq .MovementType "DISPOSE" }}Penghapusan{{ else }}{{ .MovementType }}{{ end }}</div><div class="movement-date">{{ .MovementDate }}</div></td>
                                                 <td>{{ if .FromLocationName }}{{ .FromLocationName }}{{ else }}-{{ end }} -> {{ if .ToLocationName }}{{ .ToLocationName }}{{ else }}-{{ end }}</td>
                                                 <td>{{ if .ToUserName }}{{ .ToUserName }}{{ else }}-{{ end }}</td>
                                             </tr>
                                             {{ else }}
-                                            <tr><td colspan="3" class="empty">Belum ada history movement.</td></tr>
+                                            <tr><td colspan="3" class="empty">Belum ada riwayat pemindahan.</td></tr>
                                             {{ end }}
                                         </tbody>
                                     </table>
                                 </section>
 
                                 <section class="detail-card detail-card-pad">
-                                    <div class="detail-card-title">Upcoming Actions</div>
+                                    <div class="detail-card-title">Tindakan Mendatang</div>
                                     <div class="detail-rule"></div>
                                     <div class="upcoming-item">
                                         <span class="upcoming-dot"></span>
-                                        <div><div class="upcoming-title">Annual Inspection</div><div class="upcoming-date">Not scheduled</div></div>
+                                        <div><div class="upcoming-title">Pemeriksaan Tahunan</div><div class="upcoming-date">Belum dijadwalkan</div></div>
                                     </div>
                                     <div class="upcoming-item">
                                         <span class="upcoming-dot" style="border-color:#94a3b8"></span>
-                                        <div><div class="upcoming-title">Warranty Renewal Window</div><div class="upcoming-date">Not configured</div></div>
+                                        <div><div class="upcoming-title">Periode Perpanjangan Garansi</div><div class="upcoming-date">Belum dikonfigurasi</div></div>
                                     </div>
                                 </section>
                             </aside>
@@ -345,86 +345,86 @@
                 <input type="hidden" name="id" value="{{ .Asset.ID }}">
                 <input type="hidden" name="redirect_to" value="detail">
                 <div class="detail-modal-header">
-                    <h2 class="detail-modal-title">Edit Asset</h2>
+                    <h2 class="detail-modal-title">Ubah Aset</h2>
                     <button type="button" class="detail-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
                 </div>
                 <div class="detail-modal-body">
                     <div class="detail-modal-grid">
                         <div>
-                            <label class="detail-modal-label">Asset Code</label>
+                            <label class="detail-modal-label">Kode Aset</label>
                             <input name="asset_code" value="{{ .Asset.AssetCode }}" class="detail-modal-control uppercase" required>
                         </div>
                         <div class="detail-modal-span-2">
-                            <label class="detail-modal-label">Asset Name</label>
+                            <label class="detail-modal-label">Nama Aset</label>
                             <input name="asset_name" value="{{ .Asset.AssetName }}" class="detail-modal-control" required>
                         </div>
                         <div>
-                            <label class="detail-modal-label">Asset Type</label>
+                            <label class="detail-modal-label">Tipe Aset</label>
                             <select name="asset_type_id" class="detail-modal-control" required>
                                 {{ range .Types }}<option value="{{ .ID }}" {{ if eq .ID $.Asset.AssetTypeID }}selected{{ end }}>{{ .Name }}</option>{{ end }}
                             </select>
                         </div>
                         <div>
-                            <label class="detail-modal-label">Serial Number</label>
+                            <label class="detail-modal-label">Nomor Seri</label>
                             <input name="serial_number" value="{{ .Asset.SerialNumber }}" class="detail-modal-control">
                         </div>
                         <div>
                             <label class="detail-modal-label">Status</label>
                             <select name="status" class="detail-modal-control">
-                                <option {{ if eq .Asset.Status "AVAILABLE" }}selected{{ end }}>AVAILABLE</option>
-                                <option {{ if eq .Asset.Status "IN_USE" }}selected{{ end }}>IN_USE</option>
-                                <option {{ if eq .Asset.Status "MAINTENANCE" }}selected{{ end }}>MAINTENANCE</option>
-                                <option {{ if eq .Asset.Status "BROKEN" }}selected{{ end }}>BROKEN</option>
-                                <option {{ if eq .Asset.Status "DISPOSED" }}selected{{ end }}>DISPOSED</option>
+                                <option value="AVAILABLE" {{ if eq .Asset.Status "AVAILABLE" }}selected{{ end }}>Tersedia</option>
+                                <option value="IN_USE" {{ if eq .Asset.Status "IN_USE" }}selected{{ end }}>Digunakan</option>
+                                <option value="MAINTENANCE" {{ if eq .Asset.Status "MAINTENANCE" }}selected{{ end }}>Perawatan</option>
+                                <option value="BROKEN" {{ if eq .Asset.Status "BROKEN" }}selected{{ end }}>Rusak</option>
+                                <option value="DISPOSED" {{ if eq .Asset.Status "DISPOSED" }}selected{{ end }}>Dihapuskan</option>
                             </select>
                         </div>
                         <div>
-                            <label class="detail-modal-label">Store</label>
+                            <label class="detail-modal-label">Toko</label>
                             <select name="store_id" class="detail-modal-control">
                                 <option value="" {{ if eq .Asset.StoreID 0 }}selected{{ end }}>-</option>
                                 {{ range .Stores }}<option value="{{ .StoreID }}" {{ if eq .StoreID $.Asset.StoreID }}selected{{ end }}>{{ .StoreName }}</option>{{ end }}
                             </select>
                         </div>
                         <div>
-                            <label class="detail-modal-label">Location</label>
+                            <label class="detail-modal-label">Lokasi</label>
                             <select name="location_id" class="detail-modal-control">
                                 <option value="" {{ if eq .Asset.LocationID 0 }}selected{{ end }}>-</option>
                                 {{ range .Locations }}<option value="{{ .ID }}" {{ if eq .ID $.Asset.LocationID }}selected{{ end }}>{{ .LocationName }}</option>{{ end }}
                             </select>
                         </div>
                         <div>
-                            <label class="detail-modal-label">Source GR Item ID</label>
+                            <label class="detail-modal-label">ID Item Penerimaan (GR)</label>
                             <input type="number" name="source_gr_item_id" value="{{ if .Asset.SourceGRItemID }}{{ .Asset.SourceGRItemID }}{{ end }}" class="detail-modal-control">
                         </div>
                         <div>
-                            <label class="detail-modal-label">PIC NIP</label>
+                            <label class="detail-modal-label">NIP PIC</label>
                             <input name="assigned_person_nip" value="{{ .Asset.AssignedPersonNIP }}" class="detail-modal-control">
                         </div>
                         <div>
-                            <label class="detail-modal-label">PIC Name</label>
+                            <label class="detail-modal-label">Nama PIC</label>
                             <input name="assigned_person_name" value="{{ .Asset.AssignedPersonName }}" class="detail-modal-control">
                         </div>
                         <div>
-                            <label class="detail-modal-label">PIC Department</label>
+                            <label class="detail-modal-label">Departemen PIC</label>
                             <input name="assigned_person_department" value="{{ .Asset.AssignedPersonDepartment }}" class="detail-modal-control">
                         </div>
                         <div>
-                            <label class="detail-modal-label">Acquisition Date</label>
+                            <label class="detail-modal-label">Tanggal Perolehan</label>
                             <input type="date" name="acquisition_date" value="{{ .Asset.AcquisitionDate }}" class="detail-modal-control">
                         </div>
                         <div>
-                            <label class="detail-modal-label">Acquisition Value</label>
+                            <label class="detail-modal-label">Nilai Perolehan</label>
                             <input type="number" step="0.01" name="acquisition_value" value="{{ .Asset.AcquisitionValueInput }}" class="detail-modal-control">
                         </div>
                         <div class="detail-modal-span-3">
-                            <label class="detail-modal-label">Notes</label>
+                            <label class="detail-modal-label">Catatan</label>
                             <textarea name="notes" class="detail-modal-control h-20 resize-none">{{ .Asset.Notes }}</textarea>
                         </div>
                     </div>
                 </div>
                 <div class="detail-modal-actions">
-                    <button type="button" class="detail-modal-btn detail-modal-btn-secondary" data-close-modal>Cancel</button>
-                    <button class="detail-modal-btn detail-modal-btn-primary">Update</button>
+                    <button type="button" class="detail-modal-btn detail-modal-btn-secondary" data-close-modal>Batal</button>
+                    <button class="detail-modal-btn detail-modal-btn-primary">Perbarui</button>
                 </div>
             </form>
         </div>
