@@ -51,7 +51,7 @@ func MonthlyDepreciationIndex(c *gin.Context) {
 
 func MonthlyDepreciationGenerate(c *gin.Context) {
 	filter := monthlyDepreciationFilter(c)
-	count, err := assetDepreciationService().GenerateMonthlySchedules(filter.Year, filter.Month)
+	count, err := assetDepreciationService().GenerateMonthlySchedules(filter.Year, filter.Month, depreciationAuditContext(c))
 	if err != nil {
 		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
 		return
@@ -66,20 +66,26 @@ func MonthlyDepreciationGenerate(c *gin.Context) {
 
 func MonthlyDepreciationPost(c *gin.Context) {
 	filter := monthlyDepreciationFilter(c)
-	ids := make([]int64, 0)
-	for _, value := range c.PostFormArray("schedule_ids") {
-		id, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
-		if err == nil && id > 0 {
-			ids = append(ids, id)
-		}
-	}
-
-	count, err := assetDepreciationService().PostSchedules(ids)
+	count, err := assetDepreciationService().PostSchedules(depreciationScheduleIDs(c), depreciationAuditContext(c))
 	if err != nil {
 		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
 		return
 	}
 	redirectMonthlyDepreciation(c, filter, strconv.FormatInt(count, 10)+" depresiasi berhasil diposting", "")
+}
+
+func MonthlyDepreciationSkip(c *gin.Context) {
+	filter := monthlyDepreciationFilter(c)
+	count, err := assetDepreciationService().SkipSchedules(
+		depreciationScheduleIDs(c),
+		c.PostForm("skip_reason"),
+		depreciationAuditContext(c),
+	)
+	if err != nil {
+		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
+		return
+	}
+	redirectMonthlyDepreciation(c, filter, strconv.FormatInt(count, 10)+" depresiasi berhasil dilewati", "")
 }
 
 func DepreciationProfileIndex(c *gin.Context) {
@@ -125,6 +131,7 @@ func DepreciationProfileSave(c *gin.Context) {
 		StartDate:        c.PostForm("start_date"),
 		Status:           c.PostForm("status"),
 		Notes:            c.PostForm("notes"),
+		AuditContext:     depreciationAuditContext(c),
 	}
 	if err := assetDepreciationService().SaveDepreciationProfile(input); err != nil {
 		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(depreciationErrorMessage(err)))
@@ -352,6 +359,25 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func depreciationScheduleIDs(c *gin.Context) []int64 {
+	ids := make([]int64, 0)
+	for _, value := range c.PostFormArray("schedule_ids") {
+		id, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+		if err == nil && id > 0 {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+func depreciationAuditContext(c *gin.Context) models.AuditContext {
+	return models.AuditContext{
+		ActorUserID: currentSessionUserID(c),
+		IPAddress:   c.ClientIP(),
+		UserAgent:   c.Request.UserAgent(),
+	}
 }
 
 func depreciationErrorMessage(err error) string {

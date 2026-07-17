@@ -65,6 +65,7 @@ func RegisterWebRoutes(r *gin.Engine) {
 		auth.GET("/asset-depreciation/monthly", middleware.RequirePermission("asset_depreciation_management_access"), controllers.MonthlyDepreciationIndex)
 		auth.POST("/asset-depreciation/monthly/generate", middleware.RequirePermission("asset_depreciation_generate"), controllers.MonthlyDepreciationGenerate)
 		auth.POST("/asset-depreciation/monthly/post", middleware.RequirePermission("asset_depreciation_post"), controllers.MonthlyDepreciationPost)
+		auth.POST("/asset-depreciation/monthly/skip", middleware.RequirePermission("asset_depreciation_skip"), controllers.MonthlyDepreciationSkip)
 		auth.GET("/asset-depreciation/profiles", middleware.RequirePermission("asset_depreciation_profile_management_access"), controllers.DepreciationProfileIndex)
 		auth.POST("/asset-depreciation/profiles/save", middleware.RequirePermission("asset_depreciation_profile_edit"), controllers.DepreciationProfileSave)
 		auth.GET("/asset-depreciation/posting-history", middleware.RequirePermission("asset_depreciation_posting_history_access"), controllers.DepreciationPostingHistoryIndex)

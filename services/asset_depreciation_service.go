@@ -59,6 +59,9 @@ func (s *AssetDepreciationService) SaveDepreciationProfile(input models.Deprecia
 	if input.AssetID <= 0 || input.MethodID <= 0 {
 		return errors.New("aset dan metode depresiasi wajib dipilih")
 	}
+	if input.AuditContext.ActorUserID <= 0 {
+		return errors.New("pengguna tidak valid")
+	}
 	if input.DepreciableBasis < 0 || input.SalvageValue < 0 {
 		return errors.New("nilai basis dan nilai residu tidak boleh negatif")
 	}
@@ -115,17 +118,41 @@ func (s *AssetDepreciationService) GetMonthlyDepreciation(filter models.MonthlyD
 	return s.Repo.GetMonthlyDepreciation(filter)
 }
 
-func (s *AssetDepreciationService) GenerateMonthlySchedules(year, month int) (int, error) {
+func (s *AssetDepreciationService) GenerateMonthlySchedules(year, month int, auditCtx models.AuditContext) (int, error) {
 	if year < 2000 || year > 2200 {
 		return 0, errors.New("tahun depresiasi tidak valid")
 	}
 	if month < 1 || month > 12 {
 		return 0, errors.New("bulan depresiasi tidak valid")
 	}
-	return s.Repo.GenerateMonthlySchedules(year, month)
+	if auditCtx.ActorUserID <= 0 {
+		return 0, errors.New("pengguna tidak valid")
+	}
+	return s.Repo.GenerateMonthlySchedules(year, month, auditCtx)
 }
 
-func (s *AssetDepreciationService) PostSchedules(ids []int64) (int64, error) {
+func (s *AssetDepreciationService) PostSchedules(ids []int64, auditCtx models.AuditContext) (int64, error) {
+	if auditCtx.ActorUserID <= 0 {
+		return 0, errors.New("pengguna tidak valid")
+	}
+	return s.Repo.PostSchedules(uniqueDepreciationIDs(ids), auditCtx)
+}
+
+func (s *AssetDepreciationService) SkipSchedules(ids []int64, reason string, auditCtx models.AuditContext) (int64, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return 0, errors.New("alasan melewati depresiasi wajib diisi")
+	}
+	if len(reason) > 1000 {
+		return 0, errors.New("alasan melewati depresiasi maksimal 1000 karakter")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return 0, errors.New("pengguna tidak valid")
+	}
+	return s.Repo.SkipSchedules(uniqueDepreciationIDs(ids), reason, auditCtx)
+}
+
+func uniqueDepreciationIDs(ids []int64) []int64 {
 	unique := make([]int64, 0, len(ids))
 	seen := make(map[int64]bool, len(ids))
 	for _, id := range ids {
@@ -135,5 +162,5 @@ func (s *AssetDepreciationService) PostSchedules(ids []int64) (int64, error) {
 		seen[id] = true
 		unique = append(unique, id)
 	}
-	return s.Repo.PostSchedules(unique)
+	return unique
 }

@@ -20,6 +20,8 @@
             .dep-btn-primary:hover { background: #002f6d; color: #ffffff; }
             .dep-btn-secondary { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; }
             .dep-btn-secondary:hover { background: #f8fafc; }
+            .dep-btn-warning { border: 1px solid #d97706; background: #fff7ed; color: #b45309; }
+            .dep-btn-warning:hover { background: #ffedd5; }
             .dep-btn:disabled { cursor: not-allowed; opacity: .45; }
             .dep-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
             .dep-alert-success { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
@@ -74,6 +76,7 @@
             .dep-modal-label { display: block; margin-bottom: 6px; color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
             .dep-modal-control { width: 100%; height: 38px; border: 1px solid #cbd5e1; border-radius: 7px; background: #ffffff; padding: 0 11px; color: #0f172a; font-size: 12px; font-weight: 700; outline: none; }
             .dep-modal-control:focus { border-color: #003b88; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
+            .dep-modal-textarea { min-height: 104px; height: auto; padding-top: 10px; padding-bottom: 10px; resize: vertical; }
             .dep-modal-value { display: flex; min-height: 38px; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #dbe3f0; border-radius: 7px; background: #f8fafc; padding: 0 11px; color: #334155; font-size: 12px; font-weight: 800; }
             .dep-modal-status { display: inline-flex; border-radius: 999px; background: #fef3c7; padding: 3px 9px; color: #92400e; font-size: 10px; font-weight: 900; }
             .dep-modal-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2e8f0; padding: 14px 18px; }
@@ -133,6 +136,7 @@
                             </div>
                         </section>
 
+                        {{ $canProcessDepreciation := or (index .Permissions "asset_depreciation_post") (index .Permissions "asset_depreciation_skip") }}
                         <section class="dep-card">
                             <form action="/asset-depreciation/monthly" method="get" class="dep-filter">
                                 <div><label class="dep-label" for="dep-month">Bulan</label><select id="dep-month" name="month" class="dep-control">{{ range .Months }}<option value="{{ .Value }}" {{ if eq $.Filter.Month .Value }}selected{{ end }}>{{ .Label }}</option>{{ end }}</select></div>
@@ -149,22 +153,23 @@
                                 <input type="hidden" name="search" value="{{ .Filter.Search }}">
                                 <div class="dep-toolbar">
                                     <div><strong class="text-sm text-slate-900">Jadwal Depresiasi - {{ .PeriodLabel }}</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} jadwal</p></div>
-                                    {{ if index .Permissions "asset_depreciation_post" }}
-                                    <button type="submit" class="dep-btn dep-btn-primary" data-post-button disabled><i class="bx bx-check-double"></i><span>Posting Terpilih</span></button>
-                                    {{ end }}
+                                    <div class="dep-actions">
+                                        {{ if index .Permissions "asset_depreciation_skip" }}<button type="button" class="dep-btn dep-btn-warning" data-skip-button disabled><i class="bx bx-skip-next"></i><span>Lewati Terpilih</span></button>{{ end }}
+                                        {{ if index .Permissions "asset_depreciation_post" }}<button type="submit" class="dep-btn dep-btn-primary" data-post-button disabled><i class="bx bx-check-double"></i><span>Posting Terpilih</span></button>{{ end }}
+                                    </div>
                                 </div>
                                 <div class="dep-table-wrap">
                                     <table class="dep-table">
                                         <thead>
                                             <tr>
-                                                <th>{{ if index .Permissions "asset_depreciation_post" }}<input type="checkbox" class="dep-check" data-check-all aria-label="Pilih semua depresiasi draft">{{ end }}</th>
-                                                <th>Aset</th><th>Tipe Aset</th><th>Metode / Umur</th><th>Nilai Perolehan</th><th>Nilai Awal</th><th>Depresiasi Bulanan</th><th>Akumulasi</th><th>Nilai Akhir</th><th>Status</th><th>Waktu Posting</th>
+                                                <th>{{ if $canProcessDepreciation }}<input type="checkbox" class="dep-check" data-check-all aria-label="Pilih semua depresiasi draft">{{ end }}</th>
+                                                <th>Aset</th><th>Tipe Aset</th><th>Metode / Umur</th><th>Nilai Perolehan</th><th>Nilai Awal</th><th>Depresiasi Bulanan</th><th>Akumulasi</th><th>Nilai Akhir</th><th>Status</th><th>Waktu Tindakan</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {{ range .Items }}
                                             <tr>
-                                                <td>{{ if and (eq .Status "DRAFT") (index $.Permissions "asset_depreciation_post") }}<input type="checkbox" name="schedule_ids" value="{{ .ID }}" class="dep-check" data-row-check aria-label="Pilih {{ .AssetCode }}">{{ else }}<span class="text-slate-300">-</span>{{ end }}</td>
+                                                <td>{{ if and (eq .Status "DRAFT") $canProcessDepreciation }}<input type="checkbox" name="schedule_ids" value="{{ .ID }}" class="dep-check" data-row-check aria-label="Pilih {{ .AssetCode }}">{{ else }}<span class="text-slate-300">-</span>{{ end }}</td>
                                                 <td><a href="/asset-register/detail/{{ .AssetID }}" class="dep-asset-code">{{ .AssetCode }}</a><div class="dep-asset-name" title="{{ .AssetName }}">{{ .AssetName }}</div></td>
                                                 <td>{{ .AssetTypeName }}</td>
                                                 <td><span class="font-bold text-slate-800">{{ if eq .MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .MethodName }}{{ end }}</span><div class="mt-1 text-[10px] text-slate-500">{{ .UsefulLifeMonths }} bulan</div></td>
@@ -173,8 +178,8 @@
                                                 <td class="dep-amount text-[#003b88]">{{ .DepreciationAmountDisplay }}</td>
                                                 <td class="dep-amount">{{ .AccumulatedDepreciationDisplay }}</td>
                                                 <td class="dep-amount">{{ .ClosingBookValueDisplay }}</td>
-                                                <td>{{ if eq .Status "DRAFT" }}<span class="dep-pill dep-status-draft">DRAFT</span>{{ else if eq .Status "POSTED" }}<span class="dep-pill dep-status-posted">DIPOSTING</span>{{ else }}<span class="dep-pill dep-status-skipped">DILEWATI</span>{{ end }}</td>
-                                                <td>{{ if .PostedAtDisplay }}{{ .PostedAtDisplay }}{{ else }}<span class="text-slate-400">-</span>{{ end }}</td>
+                                                <td>{{ if eq .Status "DRAFT" }}<span class="dep-pill dep-status-draft">DRAFT</span>{{ else if eq .Status "POSTED" }}<span class="dep-pill dep-status-posted">DIPOSTING</span>{{ else }}<span class="dep-pill dep-status-skipped">DILEWATI</span>{{ if .SkipReason }}<div class="mt-1 max-w-[180px] truncate text-[10px] text-slate-500" title="{{ .SkipReason }}">{{ .SkipReason }}</div>{{ end }}{{ end }}</td>
+                                                <td>{{ if .ActionAtDisplay }}<span class="font-semibold text-slate-700">{{ .ActionAtDisplay }}</span>{{ if .ActionByName }}<div class="mt-1 text-[10px] text-slate-500">oleh {{ .ActionByName }}</div>{{ end }}{{ else }}<span class="text-slate-400">-</span>{{ end }}</td>
                                             </tr>
                                             {{ else }}
                                             <tr><td colspan="11" class="dep-empty">Tidak ada jadwal depresiasi untuk periode ini</td></tr>
@@ -243,6 +248,34 @@
         </div>
         {{ end }}
 
+        {{ if index .Permissions "asset_depreciation_skip" }}
+        <div id="skipDepreciationModal" class="dep-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-skip-modal>
+            <form action="/asset-depreciation/monthly/skip" method="post" class="dep-modal" data-skip-form>
+                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                <input type="hidden" name="status" value="{{ .Filter.Status }}">
+                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                <div data-skip-ids></div>
+                <div class="dep-modal-header">
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#fff7ed] text-xl text-[#b45309]"><i class="bx bx-skip-next"></i></span>
+                        <div><h2 class="dep-modal-title">Lewati Depresiasi</h2><p class="mt-1 text-[11px] text-slate-500"><span data-skip-count>0</span> jadwal dipilih</p></div>
+                    </div>
+                    <button type="button" class="dep-modal-close" data-close-skip-modal aria-label="Tutup"><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="dep-modal-body">
+                    <label class="dep-modal-label" for="skip-reason">Alasan</label>
+                    <textarea id="skip-reason" name="skip_reason" maxlength="1000" class="dep-modal-control dep-modal-textarea" placeholder="Jelaskan alasan depresiasi periode ini dilewati" data-skip-reason required></textarea>
+                    <p class="mt-2 text-[11px] leading-5 text-slate-500">Nilai depresiasi periode yang dilewati menjadi nol dan nilai buku aset tidak berkurang.</p>
+                </div>
+                <div class="dep-modal-actions">
+                    <button type="button" class="dep-btn dep-btn-secondary" data-close-skip-modal>Batal</button>
+                    <button type="submit" class="dep-btn dep-btn-warning"><i class="bx bx-skip-next"></i>Lewati Depresiasi</button>
+                </div>
+            </form>
+        </div>
+        {{ end }}
+
         <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
         <script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
         <script>
@@ -270,6 +303,9 @@
                 var checkAll = document.querySelector('[data-check-all]');
                 var postButton = document.querySelector('[data-post-button]');
                 var postForm = document.querySelector('[data-post-form]');
+                var skipButton = document.querySelector('[data-skip-button]');
+                var skipModal = document.querySelector('[data-skip-modal]');
+                var skipForm = document.querySelector('[data-skip-form]');
 
                 function refreshSelection() {
                     var selected = checks.filter(function (check) { return check.checked; }).length;
@@ -277,6 +313,11 @@
                         postButton.disabled = selected === 0;
                         var label = postButton.querySelector('span');
                         if (label) label.textContent = selected > 0 ? 'Posting Terpilih (' + selected + ')' : 'Posting Terpilih';
+                    }
+                    if (skipButton) {
+                        skipButton.disabled = selected === 0;
+                        var skipLabel = skipButton.querySelector('span');
+                        if (skipLabel) skipLabel.textContent = selected > 0 ? 'Lewati Terpilih (' + selected + ')' : 'Lewati Terpilih';
                     }
                     if (checkAll) {
                         checkAll.checked = checks.length > 0 && selected === checks.length;
@@ -316,6 +357,53 @@
                         });
                     });
                 }
+
+                function closeSkipModal() {
+                    if (!skipModal) return;
+                    skipModal.classList.add('hidden');
+                    skipModal.classList.remove('flex');
+                    document.body.classList.remove('overflow-hidden');
+                }
+                if (skipButton && skipModal) {
+                    skipButton.addEventListener('click', function () {
+                        var selectedChecks = checks.filter(function (check) { return check.checked; });
+                        if (selectedChecks.length === 0) return;
+                        var idsContainer = skipModal.querySelector('[data-skip-ids]');
+                        if (idsContainer) {
+                            idsContainer.innerHTML = '';
+                            selectedChecks.forEach(function (check) {
+                                var input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'schedule_ids';
+                                input.value = check.value;
+                                idsContainer.appendChild(input);
+                            });
+                        }
+                        var count = skipModal.querySelector('[data-skip-count]');
+                        if (count) count.textContent = selectedChecks.length;
+                        var reason = skipModal.querySelector('[data-skip-reason]');
+                        if (reason) reason.value = '';
+                        skipModal.classList.remove('hidden');
+                        skipModal.classList.add('flex');
+                        document.body.classList.add('overflow-hidden');
+                        if (reason) reason.focus();
+                    });
+                    skipModal.addEventListener('click', function (event) {
+                        if (event.target === skipModal) closeSkipModal();
+                    });
+                }
+                document.querySelectorAll('[data-close-skip-modal]').forEach(function (button) {
+                    button.addEventListener('click', closeSkipModal);
+                });
+                if (skipForm) {
+                    skipForm.addEventListener('submit', function (event) {
+                        var reason = skipForm.querySelector('[data-skip-reason]');
+                        if (!reason || !reason.value.trim()) {
+                            event.preventDefault();
+                            if (reason) reason.focus();
+                        }
+                    });
+                }
                 var generateModal = document.querySelector('[data-generate-modal]');
                 function openGenerateModal() {
                     if (!generateModal) return;
@@ -341,7 +429,10 @@
                     });
                 }
                 document.addEventListener('keydown', function (event) {
-                    if (event.key === 'Escape') closeGenerateModal();
+                    if (event.key === 'Escape') {
+                        closeGenerateModal();
+                        closeSkipModal();
+                    }
                 });
             });
         </script>

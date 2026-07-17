@@ -83,7 +83,7 @@
                             <div class="dph-toolbar"><div><strong class="text-sm text-slate-900">Daftar Depresiasi Diposting</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} posting</p></div></div>
                             <div class="dph-table-wrap">
                                 <table class="dph-table">
-                                    <thead><tr><th>Aset</th><th>Tipe / Metode</th><th>Periode</th><th class="text-right">Nilai Awal</th><th class="text-right">Depresiasi</th><th class="text-right">Akumulasi</th><th class="text-right">Nilai Akhir</th><th>Status / Waktu Posting</th></tr></thead>
+                                    <thead><tr><th>Aset</th><th>Tipe / Metode</th><th>Periode</th><th class="text-right">Nilai Awal</th><th class="text-right">Depresiasi</th><th class="text-right">Akumulasi</th><th class="text-right">Nilai Akhir</th><th>Status / Pelaku</th></tr></thead>
                                     <tbody>
                                         {{ range .Items }}
                                         <tr>
@@ -91,7 +91,7 @@
                                             <td><span class="font-bold text-slate-800">{{ .AssetTypeName }}</span><div class="dph-subtext">{{ if eq .MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .MethodName }}{{ end }}</div></td>
                                             <td><span class="dph-period">{{ .PeriodDisplay }}</span></td>
                                             <td class="dph-amount">{{ .OpeningBookValueDisplay }}</td><td class="dph-amount dph-expense">{{ .DepreciationAmountDisplay }}</td><td class="dph-amount">{{ .AccumulatedDepreciationDisplay }}</td><td class="dph-amount dph-closing">{{ .ClosingBookValueDisplay }}</td>
-                                            <td><span class="dph-posted"><i class="bx bx-check"></i>DIPOSTING</span><div class="dph-subtext">{{ .PostedAtDisplay }}</div></td>
+                                            <td><span class="dph-posted"><i class="bx bx-check"></i>DIPOSTING</span><div class="dph-subtext">{{ .PostedAtDisplay }}{{ if .PostedByName }} · {{ .PostedByName }}{{ end }}</div></td>
                                         </tr>
                                         {{ else }}<tr><td colspan="8" class="dph-empty">Tidak ada depresiasi yang diposting pada periode terpilih</td></tr>{{ end }}
                                     </tbody>

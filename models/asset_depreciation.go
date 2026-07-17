@@ -25,7 +25,9 @@ type MonthlyDepreciationItem struct {
 	AccumulatedDepreciationDisplay string
 	ClosingBookValueDisplay        string
 	Status                         string
-	PostedAtDisplay                string
+	ActionAtDisplay                string
+	ActionByName                   string
+	SkipReason                     string
 }
 
 type MonthlyDepreciationStats struct {
@@ -168,6 +170,7 @@ type DepreciationProfileInput struct {
 	StartDate        string
 	Status           string
 	Notes            string
+	AuditContext     AuditContext
 }
 
 type DepreciationPostingHistoryFilter struct {
@@ -192,6 +195,7 @@ type DepreciationPostingHistoryItem struct {
 	AccumulatedDepreciationDisplay string
 	ClosingBookValueDisplay        string
 	PostedAtDisplay                string
+	PostedByName                   string
 }
 
 type DepreciationPostingHistoryStats struct {

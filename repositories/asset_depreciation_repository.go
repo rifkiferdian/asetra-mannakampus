@@ -15,6 +15,11 @@ type AssetDepreciationRepository struct {
 	DB *sql.DB
 }
 
+type depreciationScheduleActionRecord struct {
+	ID         int64
+	PeriodDate time.Time
+}
+
 func (r *AssetDepreciationRepository) GetAssetDepreciationDetail(assetID int64) (models.AssetDepreciationDetail, error) {
 	var detail models.AssetDepreciationDetail
 	var acquisitionValue float64
@@ -403,13 +408,22 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
-		if _, err := tx.Exec(`
+		result, err := tx.Exec(`
 			INSERT INTO asset_depreciation_profiles (
 				asset_id, depreciation_method_id, useful_life_months, salvage_value,
 				depreciable_basis, start_date, status, notes
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		`, input.AssetID, input.MethodID, nullableUsefulLife(input.UsefulLifeMonths), input.SalvageValue,
-			input.DepreciableBasis, input.StartDate, input.Status, nullableString(input.Notes)); err != nil {
+			input.DepreciableBasis, input.StartDate, input.Status, nullableString(input.Notes))
+		if err != nil {
+			return err
+		}
+		profileID, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+		if err := insertAuditLogTx(tx, "DEPRECIATION_PROFILE", profileID, "CREATE_PROFILE",
+			fmt.Sprintf("Profil depresiasi dibuat untuk aset ID %d dengan status %s", input.AssetID, input.Status), input.AuditContext); err != nil {
 			return err
 		}
 		return tx.Commit()
@@ -456,6 +470,10 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 			return err
 		}
 	}
+	if err := insertAuditLogTx(tx, "DEPRECIATION_PROFILE", input.ID, "UPDATE_PROFILE",
+		fmt.Sprintf("Profil depresiasi aset ID %d diperbarui dengan status %s", input.AssetID, input.Status), input.AuditContext); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
@@ -495,12 +513,14 @@ func (r *AssetDepreciationRepository) GetPostingHistory(filter models.Depreciati
 			ads.depreciation_amount,
 			ads.accumulated_depreciation,
 			ads.closing_book_value,
-			ads.posted_at
+			ads.posted_at,
+			COALESCE(posted_user.name, '')
 		FROM asset_depreciation_schedules ads
 		JOIN assets a ON a.id = ads.asset_id
 		LEFT JOIN asset_types at ON at.id = a.asset_type_id
 		LEFT JOIN asset_depreciation_profiles adp ON adp.id = ads.profile_id
 		LEFT JOIN asset_depreciation_methods adm ON adm.id = adp.depreciation_method_id
+		LEFT JOIN users posted_user ON posted_user.id = ads.posted_by
 		WHERE ` + where + `
 		ORDER BY ads.period_date DESC, ads.posted_at DESC, ads.id DESC
 		LIMIT ? OFFSET ?`
@@ -517,7 +537,7 @@ func (r *AssetDepreciationRepository) GetPostingHistory(filter models.Depreciati
 		var openingValue, depreciationAmount, accumulatedValue, closingValue float64
 		if err := rows.Scan(
 			&item.ID, &item.AssetID, &item.AssetCode, &item.AssetName, &item.AssetTypeName, &item.MethodCode, &item.MethodName,
-			&periodDate, &openingValue, &depreciationAmount, &accumulatedValue, &closingValue, &postedAt,
+			&periodDate, &openingValue, &depreciationAmount, &accumulatedValue, &closingValue, &postedAt, &item.PostedByName,
 		); err != nil {
 			return result, err
 		}
@@ -647,12 +667,17 @@ func (r *AssetDepreciationRepository) GetMonthlyDepreciation(filter models.Month
 			ads.accumulated_depreciation,
 			ads.closing_book_value,
 			ads.status,
-			ads.posted_at
+			ads.posted_at,
+			ads.skipped_at,
+			COALESCE(posted_user.name, skipped_user.name, ''),
+			COALESCE(ads.skip_reason, '')
 		FROM asset_depreciation_schedules ads
 		JOIN assets a ON a.id = ads.asset_id
 		LEFT JOIN asset_types at ON at.id = a.asset_type_id
 		LEFT JOIN asset_depreciation_profiles adp ON adp.id = ads.profile_id
 		LEFT JOIN asset_depreciation_methods adm ON adm.id = adp.depreciation_method_id
+		LEFT JOIN users posted_user ON posted_user.id = ads.posted_by
+		LEFT JOIN users skipped_user ON skipped_user.id = ads.skipped_by
 		WHERE ` + where + `
 		ORDER BY a.asset_code ASC, ads.id ASC
 		LIMIT ? OFFSET ?`
@@ -666,7 +691,7 @@ func (r *AssetDepreciationRepository) GetMonthlyDepreciation(filter models.Month
 	for rows.Next() {
 		var item models.MonthlyDepreciationItem
 		var periodDate time.Time
-		var postedAt sql.NullTime
+		var postedAt, skippedAt sql.NullTime
 		var acquisitionValue, openingValue, depreciationAmount, accumulatedValue, closingValue float64
 		if err := rows.Scan(
 			&item.ID,
@@ -685,6 +710,9 @@ func (r *AssetDepreciationRepository) GetMonthlyDepreciation(filter models.Month
 			&closingValue,
 			&item.Status,
 			&postedAt,
+			&skippedAt,
+			&item.ActionByName,
+			&item.SkipReason,
 		); err != nil {
 			return result, err
 		}
@@ -696,7 +724,9 @@ func (r *AssetDepreciationRepository) GetMonthlyDepreciation(filter models.Month
 		item.AccumulatedDepreciationDisplay = formatAssetAmountID(accumulatedValue)
 		item.ClosingBookValueDisplay = formatAssetAmountID(closingValue)
 		if postedAt.Valid {
-			item.PostedAtDisplay = formatDepreciationDateID(postedAt.Time, true)
+			item.ActionAtDisplay = formatDepreciationDateID(postedAt.Time, true)
+		} else if skippedAt.Valid {
+			item.ActionAtDisplay = formatDepreciationDateID(skippedAt.Time, true)
 		}
 		result.Items = append(result.Items, item)
 	}
@@ -735,10 +765,15 @@ func (r *AssetDepreciationRepository) loadMonthlyStats(year, month int, stats *m
 	return nil
 }
 
-func (r *AssetDepreciationRepository) GenerateMonthlySchedules(year, month int) (int, error) {
+func (r *AssetDepreciationRepository) GenerateMonthlySchedules(year, month int, auditCtx models.AuditContext) (int, error) {
 	periodDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 
-	_, err := r.DB.Exec(`
+	_, err = tx.Exec(`
 		INSERT INTO asset_depreciation_schedules (
 			profile_id,
 			asset_id,
@@ -834,17 +869,51 @@ func (r *AssetDepreciationRepository) GenerateMonthlySchedules(year, month int) 
 	}
 
 	var scheduleCount int
-	if err := r.DB.QueryRow(`
+	if err := tx.QueryRow(`
 		SELECT COUNT(*)
 		FROM asset_depreciation_schedules
 		WHERE period_year = ? AND period_month = ?
 	`, year, month).Scan(&scheduleCount); err != nil {
 		return 0, err
 	}
+
+	rows, err := tx.Query(`
+		SELECT id
+		FROM asset_depreciation_schedules
+		WHERE period_year = ? AND period_month = ? AND status = 'DRAFT'
+		ORDER BY id
+	`, year, month)
+	if err != nil {
+		return 0, err
+	}
+	scheduleIDs := make([]int64, 0)
+	for rows.Next() {
+		var scheduleID int64
+		if err := rows.Scan(&scheduleID); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		scheduleIDs = append(scheduleIDs, scheduleID)
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	message := fmt.Sprintf("Jadwal depresiasi periode %s dibuat atau diperbarui sebagai DRAFT", formatDepreciationMonthYearID(periodDate))
+	for _, scheduleID := range scheduleIDs {
+		if err := insertAuditLogTx(tx, "ASSET_DEPRECIATION", scheduleID, "GENERATE", message, auditCtx); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return scheduleCount, nil
 }
 
-func (r *AssetDepreciationRepository) PostSchedules(ids []int64) (int64, error) {
+func (r *AssetDepreciationRepository) PostSchedules(ids []int64, auditCtx models.AuditContext) (int64, error) {
 	if len(ids) == 0 {
 		return 0, errors.New("pilih minimal satu depresiasi yang akan diposting")
 	}
@@ -873,6 +942,7 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64) (int64, error) 
 
 	currentPeriod := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
 	found := 0
+	records := make([]depreciationScheduleActionRecord, 0, len(ids))
 	for rows.Next() {
 		var id int64
 		var status string
@@ -891,6 +961,7 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64) (int64, error) 
 			rows.Close()
 			return 0, fmt.Errorf("depresiasi periode %s belum dapat diposting", formatDepreciationMonthYearID(periodDate))
 		}
+		records = append(records, depreciationScheduleActionRecord{ID: id, PeriodDate: periodDate})
 	}
 	if err := rows.Close(); err != nil {
 		return 0, err
@@ -901,9 +972,11 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64) (int64, error) 
 
 	updateQuery := `
 		UPDATE asset_depreciation_schedules
-		SET status = 'POSTED', posted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		SET status = 'POSTED', posted_at = CURRENT_TIMESTAMP, posted_by = ?,
+			skipped_at = NULL, skipped_by = NULL, skip_reason = NULL, updated_at = CURRENT_TIMESTAMP
 		WHERE status = 'DRAFT' AND id IN (` + strings.Join(placeholders, ",") + `)`
-	result, err := tx.Exec(updateQuery, args...)
+	updateArgs := append([]any{auditCtx.ActorUserID}, args...)
+	result, err := tx.Exec(updateQuery, updateArgs...)
 	if err != nil {
 		return 0, err
 	}
@@ -913,6 +986,104 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64) (int64, error) 
 	}
 	if affected != int64(len(ids)) {
 		return 0, errors.New("posting dibatalkan karena ada data yang berubah")
+	}
+	for _, record := range records {
+		message := fmt.Sprintf("Depresiasi periode %s diposting", formatDepreciationMonthYearID(record.PeriodDate))
+		if err := insertAuditLogTx(tx, "ASSET_DEPRECIATION", record.ID, "POST", message, auditCtx); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return affected, nil
+}
+
+func (r *AssetDepreciationRepository) SkipSchedules(ids []int64, reason string, auditCtx models.AuditContext) (int64, error) {
+	if len(ids) == 0 {
+		return 0, errors.New("pilih minimal satu depresiasi yang akan dilewati")
+	}
+
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	placeholders := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	rows, err := tx.Query(`
+		SELECT id, status, period_date
+		FROM asset_depreciation_schedules
+		WHERE id IN (`+strings.Join(placeholders, ",")+`)
+		FOR UPDATE
+	`, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	currentPeriod := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
+	records := make([]depreciationScheduleActionRecord, 0, len(ids))
+	for rows.Next() {
+		var record depreciationScheduleActionRecord
+		var status string
+		if err := rows.Scan(&record.ID, &status, &record.PeriodDate); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		if status != "DRAFT" {
+			rows.Close()
+			return 0, fmt.Errorf("depresiasi ID %d sudah berstatus %s", record.ID, status)
+		}
+		period := time.Date(record.PeriodDate.Year(), record.PeriodDate.Month(), 1, 0, 0, 0, 0, time.Local)
+		if period.After(currentPeriod) {
+			rows.Close()
+			return 0, fmt.Errorf("depresiasi periode %s belum dapat dilewati", formatDepreciationMonthYearID(record.PeriodDate))
+		}
+		records = append(records, record)
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if len(records) != len(ids) {
+		return 0, errors.New("sebagian data depresiasi tidak ditemukan")
+	}
+
+	updateArgs := []any{auditCtx.ActorUserID, reason}
+	updateArgs = append(updateArgs, args...)
+	result, err := tx.Exec(`
+		UPDATE asset_depreciation_schedules
+		SET status = 'SKIPPED',
+			accumulated_depreciation = GREATEST(0, accumulated_depreciation - depreciation_amount),
+			closing_book_value = opening_book_value,
+			depreciation_amount = 0,
+			posted_at = NULL, posted_by = NULL,
+			skipped_at = CURRENT_TIMESTAMP, skipped_by = ?, skip_reason = ?,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE status = 'DRAFT' AND id IN (`+strings.Join(placeholders, ",")+`)
+	`, updateArgs...)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	if affected != int64(len(ids)) {
+		return 0, errors.New("proses lewati dibatalkan karena ada data yang berubah")
+	}
+	for _, record := range records {
+		message := fmt.Sprintf("Depresiasi periode %s dilewati. Alasan: %s", formatDepreciationMonthYearID(record.PeriodDate), reason)
+		if err := insertAuditLogTx(tx, "ASSET_DEPRECIATION", record.ID, "SKIP", message, auditCtx); err != nil {
+			return 0, err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, err
