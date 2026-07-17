@@ -111,6 +111,10 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "asset_depreciation_generate", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_post", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_skip", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_reverse", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_correction_edit", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_period_close", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_period_reopen", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_profile_management_access", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_profile_edit", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_posting_history_access", Group: "asset_depreciation", GuardName: "web"},
@@ -156,6 +160,8 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 	if err := s.Repo.GrantPermissionsToRoles(
 		[]string{
 			"asset_depreciation_management_access", "asset_depreciation_view", "asset_depreciation_generate", "asset_depreciation_post", "asset_depreciation_skip",
+			"asset_depreciation_reverse", "asset_depreciation_correction_edit",
+			"asset_depreciation_period_close", "asset_depreciation_period_reopen",
 			"asset_depreciation_profile_management_access", "asset_depreciation_profile_edit", "asset_depreciation_posting_history_access",
 		},
 		[]string{"finance-manager"},

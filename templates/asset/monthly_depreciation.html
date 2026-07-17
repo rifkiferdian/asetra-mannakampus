@@ -22,6 +22,13 @@
             .dep-btn-secondary:hover { background: #f8fafc; }
             .dep-btn-warning { border: 1px solid #d97706; background: #fff7ed; color: #b45309; }
             .dep-btn-warning:hover { background: #ffedd5; }
+            .dep-btn-success { border: 1px solid #047857; background: #047857; color: #fff; }
+            .dep-btn-success:hover { background: #065f46; }
+            .dep-period-badge { display: inline-flex; min-height: 34px; align-items: center; gap: 6px; border-radius: 6px; padding: 0 11px; font-size: 10px; font-weight: 900; white-space: nowrap; }
+            .dep-period-open { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+            .dep-period-generated { border: 1px solid #fde68a; background: #fffbeb; color: #92400e; }
+            .dep-period-posted { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
+            .dep-period-closed { border: 1px solid #cbd5e1; background: #f1f5f9; color: #334155; }
             .dep-btn:disabled { cursor: not-allowed; opacity: .45; }
             .dep-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
             .dep-alert-success { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
@@ -113,9 +120,15 @@
                                 <h1 class="dep-title">Depresiasi Bulanan</h1>
                                 <p class="dep-subtitle">Tinjau dan posting depresiasi bulanan untuk aset yang terdaftar.</p>
                             </div>
-                            {{ if index .Permissions "asset_depreciation_generate" }}
-                            <button type="button" class="dep-btn dep-btn-secondary" data-open-generate-modal><i class="bx bx-calendar-plus"></i>Buat Jadwal</button>
-                            {{ end }}
+                            <div class="dep-actions">
+                                {{ if eq .Period.Status "OPEN" }}<span class="dep-period-badge dep-period-open"><i class="bx bx-lock-open-alt"></i>PERIODE TERBUKA</span>{{ else if eq .Period.Status "GENERATED" }}<span class="dep-period-badge dep-period-generated"><i class="bx bx-loader-circle"></i>JADWAL DIBUAT</span>{{ else if eq .Period.Status "POSTED" }}<span class="dep-period-badge dep-period-posted"><i class="bx bx-check-shield"></i>SIAP DITUTUP</span>{{ else }}<span class="dep-period-badge dep-period-closed"><i class="bx bx-lock-alt"></i>PERIODE DITUTUP</span>{{ end }}
+                                {{ if eq .Period.Status "CLOSED" }}
+                                    {{ if index .Permissions "asset_depreciation_period_reopen" }}<button type="button" class="dep-btn dep-btn-warning" data-open-reopen-period><i class="bx bx-lock-open-alt"></i>Buka Kembali</button>{{ end }}
+                                {{ else }}
+                                    {{ if index .Permissions "asset_depreciation_generate" }}<button type="button" class="dep-btn dep-btn-secondary" data-open-generate-modal><i class="bx bx-calendar-plus"></i>Buat Jadwal</button>{{ end }}
+                                    {{ if index .Permissions "asset_depreciation_period_close" }}<button type="button" class="dep-btn dep-btn-success" data-open-close-period {{ if not .Period.CanClose }}disabled title="Selesaikan seluruh draft sebelum menutup periode"{{ end }}><i class="bx bx-lock-alt"></i>Tutup Periode</button>{{ end }}
+                                {{ end }}
+                            </div>
                         </div>
 
                         {{ if .Success }}<div class="dep-alert dep-alert-success">{{ .Success }}</div>{{ end }}
@@ -136,12 +149,13 @@
                             </div>
                         </section>
 
-                        {{ $canProcessDepreciation := or (index .Permissions "asset_depreciation_post") (index .Permissions "asset_depreciation_skip") }}
+                        {{ $periodClosed := eq .Period.Status "CLOSED" }}
+                        {{ $canProcessDepreciation := and (not $periodClosed) (or (index .Permissions "asset_depreciation_post") (index .Permissions "asset_depreciation_skip")) }}
                         <section class="dep-card">
                             <form action="/asset-depreciation/monthly" method="get" class="dep-filter">
                                 <div><label class="dep-label" for="dep-month">Bulan</label><select id="dep-month" name="month" class="dep-control">{{ range .Months }}<option value="{{ .Value }}" {{ if eq $.Filter.Month .Value }}selected{{ end }}>{{ .Label }}</option>{{ end }}</select></div>
                                 <div><label class="dep-label" for="dep-year">Tahun</label><select id="dep-year" name="year" class="dep-control">{{ range .Years }}<option value="{{ . }}" {{ if eq $.Filter.Year . }}selected{{ end }}>{{ . }}</option>{{ end }}</select></div>
-                                <div><label class="dep-label" for="dep-status">Status</label><select id="dep-status" name="status" class="dep-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>Semua Status</option><option value="DRAFT" {{ if eq .Filter.Status "DRAFT" }}selected{{ end }}>Draft</option><option value="POSTED" {{ if eq .Filter.Status "POSTED" }}selected{{ end }}>Diposting</option><option value="SKIPPED" {{ if eq .Filter.Status "SKIPPED" }}selected{{ end }}>Dilewati</option></select></div>
+                                <div><label class="dep-label" for="dep-status">Status</label><select id="dep-status" name="status" class="dep-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>Semua Status</option><option value="DRAFT" {{ if eq .Filter.Status "DRAFT" }}selected{{ end }}>Draft</option><option value="POSTED" {{ if eq .Filter.Status "POSTED" }}selected{{ end }}>Diposting</option><option value="SKIPPED" {{ if eq .Filter.Status "SKIPPED" }}selected{{ end }}>Dilewati</option><option value="REVERSED" {{ if eq .Filter.Status "REVERSED" }}selected{{ end }}>Dibatalkan</option></select></div>
                                 <div><label class="dep-label" for="dep-search">Cari Aset</label><input id="dep-search" name="search" class="dep-control" value="{{ .Filter.Search }}" placeholder="Kode, nama, atau tipe aset"></div>
                                 <button type="submit" class="dep-btn dep-btn-primary"><i class="bx bx-filter-alt"></i>Terapkan Filter</button>
                             </form>
@@ -154,8 +168,8 @@
                                 <div class="dep-toolbar">
                                     <div><strong class="text-sm text-slate-900">Jadwal Depresiasi - {{ .PeriodLabel }}</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} jadwal</p></div>
                                     <div class="dep-actions">
-                                        {{ if index .Permissions "asset_depreciation_skip" }}<button type="button" class="dep-btn dep-btn-warning" data-skip-button disabled><i class="bx bx-skip-next"></i><span>Lewati Terpilih</span></button>{{ end }}
-                                        {{ if index .Permissions "asset_depreciation_post" }}<button type="submit" class="dep-btn dep-btn-primary" data-post-button disabled><i class="bx bx-check-double"></i><span>Posting Terpilih</span></button>{{ end }}
+                                        {{ if and (not $periodClosed) (index .Permissions "asset_depreciation_skip") }}<button type="button" class="dep-btn dep-btn-warning" data-skip-button disabled><i class="bx bx-skip-next"></i><span>Lewati Terpilih</span></button>{{ end }}
+                                        {{ if and (not $periodClosed) (index .Permissions "asset_depreciation_post") }}<button type="submit" class="dep-btn dep-btn-primary" data-post-button disabled><i class="bx bx-check-double"></i><span>Posting Terpilih</span></button>{{ end }}
                                     </div>
                                 </div>
                                 <div class="dep-table-wrap">
@@ -163,14 +177,14 @@
                                         <thead>
                                             <tr>
                                                 <th>{{ if $canProcessDepreciation }}<input type="checkbox" class="dep-check" data-check-all aria-label="Pilih semua depresiasi draft">{{ end }}</th>
-                                                <th>Aset</th><th>Tipe Aset</th><th>Metode / Umur</th><th>Nilai Perolehan</th><th>Nilai Awal</th><th>Depresiasi Bulanan</th><th>Akumulasi</th><th>Nilai Akhir</th><th>Status</th><th>Waktu Tindakan</th>
+                                                <th>Aset</th><th>Tipe Aset</th><th>Metode / Umur</th><th>Nilai Perolehan</th><th>Nilai Awal</th><th>Depresiasi Bulanan</th><th>Akumulasi</th><th>Nilai Akhir</th><th>Status</th><th>Waktu Tindakan</th><th>Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {{ range .Items }}
                                             <tr>
                                                 <td>{{ if and (eq .Status "DRAFT") $canProcessDepreciation }}<input type="checkbox" name="schedule_ids" value="{{ .ID }}" class="dep-check" data-row-check aria-label="Pilih {{ .AssetCode }}">{{ else }}<span class="text-slate-300">-</span>{{ end }}</td>
-                                                <td><a href="/asset-register/detail/{{ .AssetID }}" class="dep-asset-code">{{ .AssetCode }}</a><div class="dep-asset-name" title="{{ .AssetName }}">{{ .AssetName }}</div></td>
+                                                <td><a href="/asset-register/detail/{{ .AssetID }}" class="dep-asset-code">{{ .AssetCode }}</a><div class="dep-asset-name" title="{{ .AssetName }}">{{ .AssetName }}</div>{{ if .IsCorrection }}<div class="mt-1 text-[10px] font-bold text-amber-700">Koreksi versi {{ .VersionNo }}</div>{{ end }}</td>
                                                 <td>{{ .AssetTypeName }}</td>
                                                 <td><span class="font-bold text-slate-800">{{ if eq .MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .MethodName }}{{ end }}</span><div class="mt-1 text-[10px] text-slate-500">{{ .UsefulLifeMonths }} bulan</div></td>
                                                 <td class="dep-amount">{{ .AcquisitionValueDisplay }}</td>
@@ -178,11 +192,12 @@
                                                 <td class="dep-amount text-[#003b88]">{{ .DepreciationAmountDisplay }}</td>
                                                 <td class="dep-amount">{{ .AccumulatedDepreciationDisplay }}</td>
                                                 <td class="dep-amount">{{ .ClosingBookValueDisplay }}</td>
-                                                <td>{{ if eq .Status "DRAFT" }}<span class="dep-pill dep-status-draft">DRAFT</span>{{ else if eq .Status "POSTED" }}<span class="dep-pill dep-status-posted">DIPOSTING</span>{{ else }}<span class="dep-pill dep-status-skipped">DILEWATI</span>{{ if .SkipReason }}<div class="mt-1 max-w-[180px] truncate text-[10px] text-slate-500" title="{{ .SkipReason }}">{{ .SkipReason }}</div>{{ end }}{{ end }}</td>
+                                                <td>{{ if eq .Status "DRAFT" }}<span class="dep-pill dep-status-draft">DRAFT</span>{{ if .CorrectionReason }}<div class="mt-1 max-w-[180px] truncate text-[10px] text-slate-500" title="{{ .CorrectionReason }}">{{ .CorrectionReason }}</div>{{ end }}{{ else if eq .Status "POSTED" }}<span class="dep-pill dep-status-posted">DIPOSTING</span>{{ else if eq .Status "SKIPPED" }}<span class="dep-pill dep-status-skipped">DILEWATI</span>{{ if .SkipReason }}<div class="mt-1 max-w-[180px] truncate text-[10px] text-slate-500" title="{{ .SkipReason }}">{{ .SkipReason }}</div>{{ end }}{{ else }}<span class="dep-pill border border-red-200 bg-red-50 text-red-700">DIBATALKAN</span>{{ if .ReversalReason }}<div class="mt-1 max-w-[180px] truncate text-[10px] text-slate-500" title="{{ .ReversalReason }}">{{ .ReversalReason }}</div>{{ end }}{{ end }}</td>
                                                 <td>{{ if .ActionAtDisplay }}<span class="font-semibold text-slate-700">{{ .ActionAtDisplay }}</span>{{ if .ActionByName }}<div class="mt-1 text-[10px] text-slate-500">oleh {{ .ActionByName }}</div>{{ end }}{{ else }}<span class="text-slate-400">-</span>{{ end }}</td>
+                                                <td>{{ if and (not $periodClosed) .IsCorrection (eq .Status "DRAFT") (index $.Permissions "asset_depreciation_correction_edit") }}<button type="button" class="dep-btn dep-btn-secondary" data-edit-correction data-id="{{ .ID }}" data-asset="{{ .AssetCode }} - {{ .AssetName }}" data-period="{{ .PeriodDate }}" data-amount="{{ .DepreciationAmountInput }}" data-reason="{{ .CorrectionReason }}"><i class="bx bx-pencil"></i>Ubah Koreksi</button>{{ else }}<span class="text-slate-300">-</span>{{ end }}</td>
                                             </tr>
                                             {{ else }}
-                                            <tr><td colspan="11" class="dep-empty">Tidak ada jadwal depresiasi untuk periode ini</td></tr>
+                                            <tr><td colspan="12" class="dep-empty">Tidak ada jadwal depresiasi untuk periode ini</td></tr>
                                             {{ end }}
                                         </tbody>
                                     </table>
@@ -204,7 +219,7 @@
             </div>
         </div>
 
-        {{ if index .Permissions "asset_depreciation_generate" }}
+        {{ if and (ne .Period.Status "CLOSED") (index .Permissions "asset_depreciation_generate") }}
         <div id="generateScheduleModal" class="dep-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-generate-modal>
             <form action="/asset-depreciation/monthly/generate" method="post" class="dep-modal">
                 <input type="hidden" name="status" value="{{ .Filter.Status }}">
@@ -248,7 +263,7 @@
         </div>
         {{ end }}
 
-        {{ if index .Permissions "asset_depreciation_skip" }}
+        {{ if and (ne .Period.Status "CLOSED") (index .Permissions "asset_depreciation_skip") }}
         <div id="skipDepreciationModal" class="dep-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-skip-modal>
             <form action="/asset-depreciation/monthly/skip" method="post" class="dep-modal" data-skip-form>
                 <input type="hidden" name="year" value="{{ .Filter.Year }}">
@@ -272,6 +287,73 @@
                     <button type="button" class="dep-btn dep-btn-secondary" data-close-skip-modal>Batal</button>
                     <button type="submit" class="dep-btn dep-btn-warning"><i class="bx bx-skip-next"></i>Lewati Depresiasi</button>
                 </div>
+            </form>
+        </div>
+        {{ end }}
+
+        {{ if and (ne .Period.Status "CLOSED") (index .Permissions "asset_depreciation_correction_edit") }}
+        <div class="dep-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-correction-modal>
+            <form action="/asset-depreciation/monthly/correction" method="post" class="dep-modal" data-correction-form>
+                <input type="hidden" name="schedule_id" data-correction-id>
+                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                <input type="hidden" name="status" value="{{ .Filter.Status }}">
+                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                <div class="dep-modal-header">
+                    <div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#fff7ed] text-xl text-[#b45309]"><i class="bx bx-edit"></i></span><div><h2 class="dep-modal-title">Ubah Draft Koreksi</h2><p class="mt-1 text-[11px] text-slate-500" data-correction-summary></p></div></div>
+                    <button type="button" class="dep-modal-close" data-close-correction aria-label="Tutup"><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="dep-modal-body space-y-4">
+                    <div><label class="dep-modal-label" for="correction-amount">Nilai Depresiasi Koreksi</label><input id="correction-amount" type="number" min="0.01" step="0.01" name="depreciation_amount" class="dep-modal-control" data-correction-amount required></div>
+                    <div><label class="dep-modal-label" for="correction-reason">Alasan Koreksi</label><textarea id="correction-reason" name="correction_reason" maxlength="1000" class="dep-modal-control dep-modal-textarea" placeholder="Jelaskan dasar perubahan nilai depresiasi" data-correction-reason required></textarea></div>
+                    <p class="text-[11px] leading-5 text-slate-500">Akumulasi depresiasi dan nilai buku akhir akan dihitung ulang oleh sistem.</p>
+                </div>
+                <div class="dep-modal-actions"><button type="button" class="dep-btn dep-btn-secondary" data-close-correction>Batal</button><button type="submit" class="dep-btn dep-btn-primary"><i class="bx bx-save"></i>Simpan Koreksi</button></div>
+            </form>
+        </div>
+        {{ end }}
+
+        {{ if and (ne .Period.Status "CLOSED") (index .Permissions "asset_depreciation_period_close") }}
+        <div class="dep-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-close-period-modal>
+            <form action="/asset-depreciation/monthly/close-period" method="post" class="dep-modal">
+                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                <input type="hidden" name="status" value="{{ .Filter.Status }}">
+                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                <div class="dep-modal-header">
+                    <div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-xl text-emerald-700"><i class="bx bx-lock-alt"></i></span><div><h2 class="dep-modal-title">Tutup Periode {{ .PeriodLabel }}</h2><p class="mt-1 text-[11px] text-slate-500">Periksa ringkasan sebelum mengunci periode.</p></div></div>
+                    <button type="button" class="dep-modal-close" data-close-period-dismiss aria-label="Tutup"><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="dep-modal-body space-y-4">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="rounded-md border border-slate-200 bg-slate-50 p-3"><div class="text-[10px] font-extrabold uppercase text-slate-500">Diposting</div><div class="mt-1 text-lg font-black text-emerald-700">{{ .Stats.PostedCount }}</div></div>
+                        <div class="rounded-md border border-slate-200 bg-slate-50 p-3"><div class="text-[10px] font-extrabold uppercase text-slate-500">Dilewati</div><div class="mt-1 text-lg font-black text-amber-700">{{ .Stats.SkippedCount }}</div></div>
+                        <div class="rounded-md border border-slate-200 bg-slate-50 p-3"><div class="text-[10px] font-extrabold uppercase text-slate-500">Draft</div><div class="mt-1 text-lg font-black text-slate-800">{{ .Stats.DraftCount }}</div></div>
+                    </div>
+                    <div><label class="dep-modal-label" for="closing-notes">Catatan Penutupan</label><textarea id="closing-notes" name="closing_notes" maxlength="1000" class="dep-modal-control dep-modal-textarea" placeholder="Catatan opsional untuk penutupan periode"></textarea></div>
+                    <p class="text-[11px] leading-5 text-slate-500">Setelah ditutup, generate, posting, skip, reversal, dan koreksi pada periode ini akan diblokir.</p>
+                </div>
+                <div class="dep-modal-actions"><button type="button" class="dep-btn dep-btn-secondary" data-close-period-dismiss>Batal</button><button type="submit" class="dep-btn dep-btn-success"><i class="bx bx-lock-alt"></i>Tutup Periode</button></div>
+            </form>
+        </div>
+        {{ end }}
+
+        {{ if and (eq .Period.Status "CLOSED") (index .Permissions "asset_depreciation_period_reopen") }}
+        <div class="dep-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-reopen-period-modal>
+            <form action="/asset-depreciation/monthly/reopen-period" method="post" class="dep-modal">
+                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                <input type="hidden" name="status" value="{{ .Filter.Status }}">
+                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                <div class="dep-modal-header">
+                    <div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-xl text-amber-700"><i class="bx bx-lock-open-alt"></i></span><div><h2 class="dep-modal-title">Buka Kembali {{ .PeriodLabel }}</h2><p class="mt-1 text-[11px] text-slate-500">Ditutup {{ .Period.ClosedAtDisplay }}{{ if .Period.ClosedByName }} oleh {{ .Period.ClosedByName }}{{ end }}</p></div></div>
+                    <button type="button" class="dep-modal-close" data-reopen-period-dismiss aria-label="Tutup"><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="dep-modal-body">
+                    <label class="dep-modal-label" for="reopen-reason">Alasan Membuka Kembali</label>
+                    <textarea id="reopen-reason" name="reopen_reason" maxlength="1000" class="dep-modal-control dep-modal-textarea" placeholder="Jelaskan alasan periode perlu dibuka kembali" required></textarea>
+                </div>
+                <div class="dep-modal-actions"><button type="button" class="dep-btn dep-btn-secondary" data-reopen-period-dismiss>Batal</button><button type="submit" class="dep-btn dep-btn-warning"><i class="bx bx-lock-open-alt"></i>Buka Kembali</button></div>
             </form>
         </div>
         {{ end }}
@@ -404,6 +486,34 @@
                         }
                     });
                 }
+                var correctionModal = document.querySelector('[data-correction-modal]');
+                function closeCorrectionModal() { if (!correctionModal) return; correctionModal.classList.add('hidden'); correctionModal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
+                document.querySelectorAll('[data-edit-correction]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!correctionModal) return;
+                        correctionModal.querySelector('[data-correction-id]').value = button.dataset.id;
+                        correctionModal.querySelector('[data-correction-summary]').textContent = button.dataset.asset + ' / ' + button.dataset.period;
+                        correctionModal.querySelector('[data-correction-amount]').value = button.dataset.amount;
+                        correctionModal.querySelector('[data-correction-reason]').value = button.dataset.reason || '';
+                        correctionModal.classList.remove('hidden');
+                        correctionModal.classList.add('flex');
+                        document.body.classList.add('overflow-hidden');
+                        correctionModal.querySelector('[data-correction-amount]').focus();
+                    });
+                });
+                document.querySelectorAll('[data-close-correction]').forEach(function (button) { button.addEventListener('click', closeCorrectionModal); });
+                if (correctionModal) correctionModal.addEventListener('click', function (event) { if (event.target === correctionModal) closeCorrectionModal(); });
+                var closePeriodModal = document.querySelector('[data-close-period-modal]');
+                function closePeriodDialog() { if (!closePeriodModal) return; closePeriodModal.classList.add('hidden'); closePeriodModal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
+                document.querySelectorAll('[data-open-close-period]').forEach(function (button) { button.addEventListener('click', function () { if (!closePeriodModal || button.disabled) return; closePeriodModal.classList.remove('hidden'); closePeriodModal.classList.add('flex'); document.body.classList.add('overflow-hidden'); }); });
+                document.querySelectorAll('[data-close-period-dismiss]').forEach(function (button) { button.addEventListener('click', closePeriodDialog); });
+                if (closePeriodModal) closePeriodModal.addEventListener('click', function (event) { if (event.target === closePeriodModal) closePeriodDialog(); });
+
+                var reopenPeriodModal = document.querySelector('[data-reopen-period-modal]');
+                function closeReopenPeriodDialog() { if (!reopenPeriodModal) return; reopenPeriodModal.classList.add('hidden'); reopenPeriodModal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
+                document.querySelectorAll('[data-open-reopen-period]').forEach(function (button) { button.addEventListener('click', function () { if (!reopenPeriodModal) return; reopenPeriodModal.classList.remove('hidden'); reopenPeriodModal.classList.add('flex'); document.body.classList.add('overflow-hidden'); var reason = reopenPeriodModal.querySelector('[name="reopen_reason"]'); if (reason) { reason.value = ''; reason.focus(); } }); });
+                document.querySelectorAll('[data-reopen-period-dismiss]').forEach(function (button) { button.addEventListener('click', closeReopenPeriodDialog); });
+                if (reopenPeriodModal) reopenPeriodModal.addEventListener('click', function (event) { if (event.target === reopenPeriodModal) closeReopenPeriodDialog(); });
                 var generateModal = document.querySelector('[data-generate-modal]');
                 function openGenerateModal() {
                     if (!generateModal) return;
@@ -432,6 +542,9 @@
                     if (event.key === 'Escape') {
                         closeGenerateModal();
                         closeSkipModal();
+                        closeCorrectionModal();
+                        closePeriodDialog();
+                        closeReopenPeriodDialog();
                     }
                 });
             });

@@ -19,6 +19,10 @@ type MonthlyDepreciationItem struct {
 	MethodName                     string
 	UsefulLifeMonths               int
 	PeriodDate                     string
+	VersionNo                      int
+	OriginalScheduleID             int64
+	IsCorrection                   bool
+	CorrectionReason               string
 	AcquisitionValueDisplay        string
 	OpeningBookValueDisplay        string
 	DepreciationAmountDisplay      string
@@ -28,6 +32,8 @@ type MonthlyDepreciationItem struct {
 	ActionAtDisplay                string
 	ActionByName                   string
 	SkipReason                     string
+	ReversalReason                 string
+	DepreciationAmountInput        string
 }
 
 type MonthlyDepreciationStats struct {
@@ -35,6 +41,7 @@ type MonthlyDepreciationStats struct {
 	DraftCount                int
 	PostedCount               int
 	SkippedCount              int
+	ReversedCount             int
 	TotalDepreciationDisplay  string
 	DraftDepreciationDisplay  string
 	PostedDepreciationDisplay string
@@ -45,6 +52,22 @@ type MonthlyDepreciationResult struct {
 	Stats      MonthlyDepreciationStats
 	TotalRows  int
 	TotalPages int
+}
+
+type DepreciationPeriod struct {
+	ID                 int64
+	Year               int
+	Month              int
+	Status             string
+	CanClose           bool
+	GeneratedAtDisplay string
+	PostedAtDisplay    string
+	ClosedAtDisplay    string
+	ClosedByName       string
+	ClosingNotes       string
+	ReopenedAtDisplay  string
+	ReopenedByName     string
+	ReopenReason       string
 }
 
 type DepreciationMonthOption struct {
@@ -189,6 +212,12 @@ type DepreciationPostingHistoryItem struct {
 	AssetTypeName                  string
 	MethodCode                     string
 	MethodName                     string
+	VersionNo                      int
+	OriginalScheduleID             int64
+	Status                         string
+	PeriodStatus                   string
+	PeriodYear                     int
+	PeriodMonth                    int
 	PeriodDisplay                  string
 	OpeningBookValueDisplay        string
 	DepreciationAmountDisplay      string
@@ -196,6 +225,16 @@ type DepreciationPostingHistoryItem struct {
 	ClosingBookValueDisplay        string
 	PostedAtDisplay                string
 	PostedByName                   string
+	ReversedAtDisplay              string
+	ReversedByName                 string
+	ReversalReason                 string
+}
+
+type DepreciationCorrectionInput struct {
+	ScheduleID        int64
+	DepreciationValue float64
+	Reason            string
+	AuditContext      AuditContext
 }
 
 type DepreciationPostingHistoryStats struct {

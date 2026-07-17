@@ -33,6 +33,17 @@ func MonthlyDepreciationIndex(c *gin.Context) {
 		})
 		return
 	}
+	period, err := assetDepreciationService().GetDepreciationPeriod(filter.Year, filter.Month)
+	if err != nil {
+		Render(c, "monthly_depreciation.html", gin.H{
+			"Title": "Depresiasi Bulanan", "Page": "monthly_depreciation",
+			"Filter": filter, "Error": depreciationErrorMessage(err), "Items": result.Items, "Stats": result.Stats,
+			"Months": depreciationMonthOptions(), "Years": depreciationYearOptions(filter.Year), "PeriodLabel": periodLabel,
+			"Period":     models.DepreciationPeriod{Year: filter.Year, Month: filter.Month, Status: "OPEN"},
+			"Pagination": monthlyDepreciationPagination(filter, result),
+		})
+		return
+	}
 
 	Render(c, "monthly_depreciation.html", gin.H{
 		"Title":       "Depresiasi Bulanan",
@@ -43,6 +54,7 @@ func MonthlyDepreciationIndex(c *gin.Context) {
 		"Months":      depreciationMonthOptions(),
 		"Years":       depreciationYearOptions(filter.Year),
 		"PeriodLabel": periodLabel,
+		"Period":      period,
 		"Pagination":  monthlyDepreciationPagination(filter, result),
 		"Success":     strings.TrimSpace(c.Query("success")),
 		"Error":       strings.TrimSpace(c.Query("error")),
@@ -86,6 +98,62 @@ func MonthlyDepreciationSkip(c *gin.Context) {
 		return
 	}
 	redirectMonthlyDepreciation(c, filter, strconv.FormatInt(count, 10)+" depresiasi berhasil dilewati", "")
+}
+
+func MonthlyDepreciationReverse(c *gin.Context) {
+	filter := depreciationPostingHistoryPostFilter(c)
+	correctionID, err := assetDepreciationService().ReverseSchedule(
+		parseInt64Form(c, "schedule_id"),
+		c.PostForm("reversal_reason"),
+		depreciationAuditContext(c),
+	)
+	if err != nil {
+		redirectDepreciationPostingHistory(c, filter, "", depreciationErrorMessage(err))
+		return
+	}
+	message := "Posting berhasil dibatalkan dan draft koreksi ID " + strconv.FormatInt(correctionID, 10) + " telah dibuat"
+	correctionFilter := models.MonthlyDepreciationFilter{
+		Year: parseIntForm(c, "target_year"), Month: parseIntForm(c, "target_month"),
+		Status: "DRAFT", Page: 1, PerPage: monthlyDepreciationPageSize,
+	}
+	redirectMonthlyDepreciation(c, correctionFilter, message, "")
+}
+
+func MonthlyDepreciationCorrectionUpdate(c *gin.Context) {
+	filter := monthlyDepreciationFilter(c)
+	input := models.DepreciationCorrectionInput{
+		ScheduleID:        parseInt64Form(c, "schedule_id"),
+		DepreciationValue: parseFloatForm(c, "depreciation_amount"),
+		Reason:            c.PostForm("correction_reason"),
+		AuditContext:      depreciationAuditContext(c),
+	}
+	if err := assetDepreciationService().UpdateCorrectionDraft(input); err != nil {
+		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
+		return
+	}
+	redirectMonthlyDepreciation(c, filter, "Draft koreksi depresiasi berhasil diperbarui", "")
+}
+
+func MonthlyDepreciationPeriodClose(c *gin.Context) {
+	filter := monthlyDepreciationFilter(c)
+	if err := assetDepreciationService().CloseDepreciationPeriod(
+		filter.Year, filter.Month, c.PostForm("closing_notes"), depreciationAuditContext(c),
+	); err != nil {
+		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
+		return
+	}
+	redirectMonthlyDepreciation(c, filter, "Periode "+depreciationPeriodLabel(filter.Year, filter.Month)+" berhasil ditutup", "")
+}
+
+func MonthlyDepreciationPeriodReopen(c *gin.Context) {
+	filter := monthlyDepreciationFilter(c)
+	if err := assetDepreciationService().ReopenDepreciationPeriod(
+		filter.Year, filter.Month, c.PostForm("reopen_reason"), depreciationAuditContext(c),
+	); err != nil {
+		redirectMonthlyDepreciation(c, filter, "", depreciationErrorMessage(err))
+		return
+	}
+	redirectMonthlyDepreciation(c, filter, "Periode "+depreciationPeriodLabel(filter.Year, filter.Month)+" berhasil dibuka kembali", "")
 }
 
 func DepreciationProfileIndex(c *gin.Context) {
@@ -157,6 +225,8 @@ func DepreciationPostingHistoryIndex(c *gin.Context) {
 		"Months":     depreciationMonthOptions(),
 		"Years":      depreciationYearOptions(filter.Year),
 		"Pagination": depreciationPostingHistoryPagination(filter, result),
+		"Success":    strings.TrimSpace(c.Query("success")),
+		"Error":      strings.TrimSpace(c.Query("error")),
 	})
 }
 
@@ -215,6 +285,21 @@ func depreciationPostingHistoryFilter(c *gin.Context) models.DepreciationPosting
 	}
 	return models.DepreciationPostingHistoryFilter{
 		Year: year, Month: month, Search: strings.TrimSpace(c.Query("search")), Page: page, PerPage: monthlyDepreciationPageSize,
+	}
+}
+
+func depreciationPostingHistoryPostFilter(c *gin.Context) models.DepreciationPostingHistoryFilter {
+	year, _ := strconv.Atoi(c.PostForm("year"))
+	month, _ := strconv.Atoi(c.PostForm("month"))
+	page, _ := strconv.Atoi(c.PostForm("page"))
+	if year == 0 {
+		year = time.Now().Year()
+	}
+	if page < 1 {
+		page = 1
+	}
+	return models.DepreciationPostingHistoryFilter{
+		Year: year, Month: month, Search: strings.TrimSpace(c.PostForm("search")), Page: page, PerPage: monthlyDepreciationPageSize,
 	}
 }
 
@@ -317,6 +402,23 @@ func redirectMonthlyDepreciation(c *gin.Context, filter models.MonthlyDepreciati
 		values.Set("error", errorMessage)
 	}
 	c.Redirect(http.StatusSeeOther, "/asset-depreciation/monthly?"+values.Encode())
+}
+
+func redirectDepreciationPostingHistory(c *gin.Context, filter models.DepreciationPostingHistoryFilter, success, errorMessage string) {
+	values := url.Values{}
+	values.Set("year", strconv.Itoa(filter.Year))
+	values.Set("month", strconv.Itoa(filter.Month))
+	values.Set("page", strconv.Itoa(filter.Page))
+	if filter.Search != "" {
+		values.Set("search", filter.Search)
+	}
+	if success != "" {
+		values.Set("success", success)
+	}
+	if errorMessage != "" {
+		values.Set("error", errorMessage)
+	}
+	c.Redirect(http.StatusSeeOther, "/asset-depreciation/posting-history?"+values.Encode())
 }
 
 func depreciationMonthOptions() []models.DepreciationMonthOption {

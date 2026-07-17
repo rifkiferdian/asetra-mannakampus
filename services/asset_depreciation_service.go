@@ -105,7 +105,7 @@ func (s *AssetDepreciationService) GetMonthlyDepreciation(filter models.MonthlyD
 	if filter.Status == "" {
 		filter.Status = "ALL"
 	}
-	if filter.Status != "ALL" && filter.Status != "DRAFT" && filter.Status != "POSTED" && filter.Status != "SKIPPED" {
+	if filter.Status != "ALL" && filter.Status != "DRAFT" && filter.Status != "POSTED" && filter.Status != "SKIPPED" && filter.Status != "REVERSED" {
 		return models.MonthlyDepreciationResult{}, errors.New("status depresiasi tidak valid")
 	}
 	filter.Search = strings.TrimSpace(filter.Search)
@@ -116,6 +116,44 @@ func (s *AssetDepreciationService) GetMonthlyDepreciation(filter models.MonthlyD
 		filter.PerPage = 50
 	}
 	return s.Repo.GetMonthlyDepreciation(filter)
+}
+
+func (s *AssetDepreciationService) GetDepreciationPeriod(year, month int) (models.DepreciationPeriod, error) {
+	if err := validateDepreciationPeriod(year, month, false); err != nil {
+		return models.DepreciationPeriod{}, err
+	}
+	return s.Repo.GetDepreciationPeriod(year, month)
+}
+
+func (s *AssetDepreciationService) CloseDepreciationPeriod(year, month int, notes string, auditCtx models.AuditContext) error {
+	if err := validateDepreciationPeriod(year, month, true); err != nil {
+		return err
+	}
+	notes = strings.TrimSpace(notes)
+	if len(notes) > 1000 {
+		return errors.New("catatan penutupan maksimal 1000 karakter")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return errors.New("pengguna tidak valid")
+	}
+	return s.Repo.CloseDepreciationPeriod(year, month, notes, auditCtx)
+}
+
+func (s *AssetDepreciationService) ReopenDepreciationPeriod(year, month int, reason string, auditCtx models.AuditContext) error {
+	if err := validateDepreciationPeriod(year, month, true); err != nil {
+		return err
+	}
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return errors.New("alasan membuka kembali periode wajib diisi")
+	}
+	if len(reason) > 1000 {
+		return errors.New("alasan membuka kembali periode maksimal 1000 karakter")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return errors.New("pengguna tidak valid")
+	}
+	return s.Repo.ReopenDepreciationPeriod(year, month, reason, auditCtx)
 }
 
 func (s *AssetDepreciationService) GenerateMonthlySchedules(year, month int, auditCtx models.AuditContext) (int, error) {
@@ -152,6 +190,43 @@ func (s *AssetDepreciationService) SkipSchedules(ids []int64, reason string, aud
 	return s.Repo.SkipSchedules(uniqueDepreciationIDs(ids), reason, auditCtx)
 }
 
+func (s *AssetDepreciationService) ReverseSchedule(scheduleID int64, reason string, auditCtx models.AuditContext) (int64, error) {
+	reason = strings.TrimSpace(reason)
+	if scheduleID <= 0 {
+		return 0, errors.New("jadwal depresiasi tidak valid")
+	}
+	if reason == "" {
+		return 0, errors.New("alasan pembatalan posting wajib diisi")
+	}
+	if len(reason) > 1000 {
+		return 0, errors.New("alasan pembatalan posting maksimal 1000 karakter")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return 0, errors.New("pengguna tidak valid")
+	}
+	return s.Repo.ReverseSchedule(scheduleID, reason, auditCtx)
+}
+
+func (s *AssetDepreciationService) UpdateCorrectionDraft(input models.DepreciationCorrectionInput) error {
+	input.Reason = strings.TrimSpace(input.Reason)
+	if input.ScheduleID <= 0 {
+		return errors.New("draft koreksi tidak valid")
+	}
+	if input.DepreciationValue <= 0 {
+		return errors.New("nilai depresiasi koreksi wajib lebih dari nol")
+	}
+	if input.Reason == "" {
+		return errors.New("alasan koreksi wajib diisi")
+	}
+	if len(input.Reason) > 1000 {
+		return errors.New("alasan koreksi maksimal 1000 karakter")
+	}
+	if input.AuditContext.ActorUserID <= 0 {
+		return errors.New("pengguna tidak valid")
+	}
+	return s.Repo.UpdateCorrectionDraft(input)
+}
+
 func uniqueDepreciationIDs(ids []int64) []int64 {
 	unique := make([]int64, 0, len(ids))
 	seen := make(map[int64]bool, len(ids))
@@ -163,4 +238,21 @@ func uniqueDepreciationIDs(ids []int64) []int64 {
 		unique = append(unique, id)
 	}
 	return unique
+}
+
+func validateDepreciationPeriod(year, month int, rejectFuture bool) error {
+	if year < 2000 || year > 2200 {
+		return errors.New("tahun depresiasi tidak valid")
+	}
+	if month < 1 || month > 12 {
+		return errors.New("bulan depresiasi tidak valid")
+	}
+	if rejectFuture {
+		selected := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+		current := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
+		if selected.After(current) {
+			return errors.New("periode depresiasi masa depan belum dapat ditutup atau dibuka kembali")
+		}
+	}
+	return nil
 }

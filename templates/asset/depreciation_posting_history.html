@@ -30,6 +30,11 @@
             .dph-control { width: 100%; height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 0 10px; color: #334155; font-size: 12px; outline: none; }
             .dph-control:focus { border-color: #003b88; background: #fff; box-shadow: 0 0 0 3px rgba(0,59,136,.08); }
             .dph-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border: 1px solid #003b88; border-radius: 6px; background: #003b88; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; }
+            .dph-btn-danger { border-color: #dc2626; background: #fff; color: #b91c1c; }
+            .dph-btn-secondary { border-color: #cbd5e1; background: #fff; color: #334155; }
+            .dph-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
+            .dph-alert-success { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
+            .dph-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
             .dph-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
             .dph-table-wrap { overflow-x: auto; }
             .dph-table { width: 100%; min-width: 1170px; border-collapse: collapse; font-size: 11px; }
@@ -44,6 +49,17 @@
             .dph-expense { color: #b45309; }
             .dph-closing { color: #047857; }
             .dph-posted { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; background: #d1fae5; padding: 3px 9px; color: #065f46; font-size: 10px; font-weight: 900; }
+            .dph-reversed { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; background: #fee2e2; padding: 3px 9px; color: #991b1b; font-size: 10px; font-weight: 900; }
+            .dph-modal-backdrop { background: rgba(15,23,42,.52); padding: 1.25rem; }
+            .dph-modal { width: min(100%, 34rem); overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 28px 70px -34px rgba(7,20,58,.75); }
+            .dph-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #e2e8f0; padding: 16px 18px; }
+            .dph-modal-title { color: #06143a; font-size: 15px; font-weight: 900; }
+            .dph-modal-close { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 7px; color: #64748b; }
+            .dph-modal-body { padding: 18px; }
+            .dph-modal-label { display: block; margin-bottom: 6px; color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+            .dph-modal-textarea { width: 100%; min-height: 110px; resize: vertical; border: 1px solid #cbd5e1; border-radius: 7px; padding: 10px 11px; color: #0f172a; font-size: 12px; outline: none; }
+            .dph-modal-textarea:focus { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.08); }
+            .dph-modal-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2e8f0; padding: 14px 18px; }
             .dph-empty { padding: 38px 16px !important; text-align: center; color: #64748b !important; }
             .dph-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e2e8f0; padding: 14px; }
             .dph-page { display: inline-flex; min-width: 2rem; height: 2rem; align-items: center; justify-content: center; border: 1px solid #d8e0ee; border-radius: 7px; background: #fff; color: #334155; font-weight: 900; }
@@ -63,11 +79,14 @@
                         <div>
                             <nav class="dph-breadcrumb"><span>Depresiasi Aset</span><i class="bx bx-chevron-right"></i><span class="font-bold text-[#003b88]">Riwayat Posting</span></nav>
                             <h1 class="dph-title">Riwayat Posting Depresiasi</h1>
-                            <p class="dph-subtitle">Daftar seluruh depresiasi bulanan yang sudah diposting.</p>
+                            <p class="dph-subtitle">Daftar depresiasi bulanan yang diposting maupun dibatalkan.</p>
                         </div>
 
+                        {{ if .Success }}<div class="dph-alert dph-alert-success">{{ .Success }}</div>{{ end }}
+                        {{ if .Error }}<div class="dph-alert dph-alert-error">{{ .Error }}</div>{{ end }}
+
                         <section class="dph-stats">
-                            <div class="dph-stat dph-total"><div class="dph-stat-top"><div><div class="dph-stat-label">Total Posting</div><div class="dph-stat-value">{{ .Stats.TotalPostings }}</div><div class="dph-stat-note">Entri final pada periode terpilih</div></div><span class="dph-stat-icon"><i class="bx bx-list-check"></i></span></div></div>
+                            <div class="dph-stat dph-total"><div class="dph-stat-top"><div><div class="dph-stat-label">Total Riwayat</div><div class="dph-stat-value">{{ .Stats.TotalPostings }}</div><div class="dph-stat-note">Posting dan reversal periode terpilih</div></div><span class="dph-stat-icon"><i class="bx bx-list-check"></i></span></div></div>
                             <div class="dph-stat dph-assets"><div class="dph-stat-top"><div><div class="dph-stat-label">Aset Diposting</div><div class="dph-stat-value">{{ .Stats.TotalAssets }}</div><div class="dph-stat-note">Jumlah aset berbeda</div></div><span class="dph-stat-icon"><i class="bx bx-desktop"></i></span></div></div>
                             <div class="dph-stat dph-amount-card"><div class="dph-stat-top"><div><div class="dph-stat-label">Nilai Diposting</div><div class="dph-stat-value">{{ .Stats.TotalAmountDisplay }}</div><div class="dph-stat-note">Total beban depresiasi</div></div><span class="dph-stat-icon"><i class="bx bx-money-withdraw"></i></span></div></div>
                             <div class="dph-stat dph-latest"><div class="dph-stat-top"><div><div class="dph-stat-label">Posting Terakhir</div><div class="dph-stat-value text-base">{{ if .Stats.LatestPostingDisplay }}{{ .Stats.LatestPostingDisplay }}{{ else }}-{{ end }}</div><div class="dph-stat-note">Waktu posting terbaru</div></div><span class="dph-stat-icon"><i class="bx bx-time-five"></i></span></div></div>
@@ -80,20 +99,21 @@
                                 <div><label class="dph-label" for="history-search">Cari Aset</label><input id="history-search" name="search" value="{{ .Filter.Search }}" class="dph-control" placeholder="Kode, nama, atau tipe aset"></div>
                                 <button type="submit" class="dph-btn"><i class="bx bx-filter-alt"></i>Terapkan Filter</button>
                             </form>
-                            <div class="dph-toolbar"><div><strong class="text-sm text-slate-900">Daftar Depresiasi Diposting</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} posting</p></div></div>
+                            <div class="dph-toolbar"><div><strong class="text-sm text-slate-900">Daftar Posting dan Reversal</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} riwayat</p></div></div>
                             <div class="dph-table-wrap">
                                 <table class="dph-table">
-                                    <thead><tr><th>Aset</th><th>Tipe / Metode</th><th>Periode</th><th class="text-right">Nilai Awal</th><th class="text-right">Depresiasi</th><th class="text-right">Akumulasi</th><th class="text-right">Nilai Akhir</th><th>Status / Pelaku</th></tr></thead>
+                                    <thead><tr><th>Aset</th><th>Tipe / Metode</th><th>Periode / Versi</th><th class="text-right">Nilai Awal</th><th class="text-right">Depresiasi</th><th class="text-right">Akumulasi</th><th class="text-right">Nilai Akhir</th><th>Status / Pelaku</th><th>Aksi</th></tr></thead>
                                     <tbody>
                                         {{ range .Items }}
                                         <tr>
                                             <td><a href="/asset-register/detail/{{ .AssetID }}" class="dph-asset">{{ .AssetCode }}</a><div class="dph-subtext" title="{{ .AssetName }}">{{ .AssetName }}</div></td>
                                             <td><span class="font-bold text-slate-800">{{ .AssetTypeName }}</span><div class="dph-subtext">{{ if eq .MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .MethodName }}{{ end }}</div></td>
-                                            <td><span class="dph-period">{{ .PeriodDisplay }}</span></td>
+                                            <td><span class="dph-period">{{ .PeriodDisplay }}</span><div class="dph-subtext">Versi {{ .VersionNo }}</div></td>
                                             <td class="dph-amount">{{ .OpeningBookValueDisplay }}</td><td class="dph-amount dph-expense">{{ .DepreciationAmountDisplay }}</td><td class="dph-amount">{{ .AccumulatedDepreciationDisplay }}</td><td class="dph-amount dph-closing">{{ .ClosingBookValueDisplay }}</td>
-                                            <td><span class="dph-posted"><i class="bx bx-check"></i>DIPOSTING</span><div class="dph-subtext">{{ .PostedAtDisplay }}{{ if .PostedByName }} · {{ .PostedByName }}{{ end }}</div></td>
+                                            <td>{{ if eq .Status "POSTED" }}<span class="dph-posted"><i class="bx bx-check"></i>DIPOSTING</span><div class="dph-subtext">{{ .PostedAtDisplay }}{{ if .PostedByName }} / {{ .PostedByName }}{{ end }}</div>{{ else }}<span class="dph-reversed"><i class="bx bx-undo"></i>DIBATALKAN</span><div class="dph-subtext">{{ .ReversedAtDisplay }}{{ if .ReversedByName }} / {{ .ReversedByName }}{{ end }}</div>{{ if .ReversalReason }}<div class="dph-subtext" title="{{ .ReversalReason }}">{{ .ReversalReason }}</div>{{ end }}{{ end }}</td>
+                                            <td>{{ if and (eq .Status "POSTED") (ne .PeriodStatus "CLOSED") (index $.Permissions "asset_depreciation_reverse") }}<button type="button" class="dph-btn dph-btn-danger" data-reverse-button data-id="{{ .ID }}" data-asset="{{ .AssetCode }} - {{ .AssetName }}" data-period="{{ .PeriodDisplay }}" data-year="{{ .PeriodYear }}" data-month="{{ .PeriodMonth }}"><i class="bx bx-undo"></i>Batalkan</button>{{ else if eq .PeriodStatus "CLOSED" }}<span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500"><i class="bx bx-lock-alt"></i>Terkunci</span>{{ else }}<span class="text-slate-300">-</span>{{ end }}</td>
                                         </tr>
-                                        {{ else }}<tr><td colspan="8" class="dph-empty">Tidak ada depresiasi yang diposting pada periode terpilih</td></tr>{{ end }}
+                                        {{ else }}<tr><td colspan="9" class="dph-empty">Tidak ada riwayat posting depresiasi pada periode terpilih</td></tr>{{ end }}
                                     </tbody>
                                 </table>
                             </div>
@@ -107,12 +127,56 @@
                 {{ template "footer" . }}
             </div>
         </div>
+        {{ if index .Permissions "asset_depreciation_reverse" }}
+        <div class="dph-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center" data-reverse-modal>
+            <form action="/asset-depreciation/monthly/reverse" method="post" class="dph-modal" data-reverse-form>
+                <input type="hidden" name="schedule_id" data-reverse-id>
+                <input type="hidden" name="target_year" data-reverse-year>
+                <input type="hidden" name="target_month" data-reverse-month>
+                <input type="hidden" name="year" value="{{ .Filter.Year }}">
+                <input type="hidden" name="month" value="{{ .Filter.Month }}">
+                <input type="hidden" name="page" value="{{ .Pagination.CurrentPage }}">
+                <input type="hidden" name="search" value="{{ .Filter.Search }}">
+                <div class="dph-modal-header">
+                    <div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-xl text-red-700"><i class="bx bx-undo"></i></span><div><h2 class="dph-modal-title">Batalkan Posting Depresiasi</h2><p class="mt-1 text-[11px] text-slate-500" data-reverse-summary></p></div></div>
+                    <button type="button" class="dph-modal-close" data-close-reverse aria-label="Tutup"><i class="bx bx-x text-xl"></i></button>
+                </div>
+                <div class="dph-modal-body">
+                    <label class="dph-modal-label" for="reversal-reason">Alasan Pembatalan</label>
+                    <textarea id="reversal-reason" name="reversal_reason" maxlength="1000" class="dph-modal-textarea" placeholder="Jelaskan alasan posting harus dibatalkan" data-reversal-reason required></textarea>
+                    <p class="mt-2 text-[11px] leading-5 text-slate-500">Posting asli akan disimpan sebagai riwayat DIBATALKAN dan sistem membuat draft koreksi versi baru.</p>
+                </div>
+                <div class="dph-modal-actions"><button type="button" class="dph-btn dph-btn-secondary" data-close-reverse>Batal</button><button type="submit" class="dph-btn dph-btn-danger"><i class="bx bx-undo"></i>Batalkan Posting</button></div>
+            </form>
+        </div>
+        {{ end }}
         <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var sidebar = document.getElementById('app-sidebar'); var overlay = document.getElementById('sidebar-overlay');
                 document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; var closed = sidebar.classList.contains('-translate-x-full'); sidebar.classList.toggle('-translate-x-full', !closed); if (overlay) overlay.classList.toggle('hidden', !closed); document.body.classList.toggle('overflow-hidden', closed); }); });
                 if (overlay) overlay.addEventListener('click', function () { if (sidebar) sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); });
+
+                var reverseModal = document.querySelector('[data-reverse-modal]');
+                function closeReverseModal() { if (!reverseModal) return; reverseModal.classList.add('hidden'); reverseModal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
+                document.querySelectorAll('[data-reverse-button]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        if (!reverseModal) return;
+                        reverseModal.querySelector('[data-reverse-id]').value = button.dataset.id;
+                        reverseModal.querySelector('[data-reverse-year]').value = button.dataset.year;
+                        reverseModal.querySelector('[data-reverse-month]').value = button.dataset.month;
+                        reverseModal.querySelector('[data-reverse-summary]').textContent = button.dataset.asset + ' / ' + button.dataset.period;
+                        var reason = reverseModal.querySelector('[data-reversal-reason]');
+                        reason.value = '';
+                        reverseModal.classList.remove('hidden');
+                        reverseModal.classList.add('flex');
+                        document.body.classList.add('overflow-hidden');
+                        reason.focus();
+                    });
+                });
+                document.querySelectorAll('[data-close-reverse]').forEach(function (button) { button.addEventListener('click', closeReverseModal); });
+                if (reverseModal) reverseModal.addEventListener('click', function (event) { if (event.target === reverseModal) closeReverseModal(); });
+                document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeReverseModal(); });
             });
         </script>
     </body>
