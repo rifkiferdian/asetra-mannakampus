@@ -18,6 +18,8 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "dashboard_access", Group: "dashboard", GuardName: "web"},
 		{Name: "document_type_management_access", Group: "document_type", GuardName: "web"},
 		{Name: "report_management_access", Group: "report", GuardName: "web"},
+		{Name: "asset_disposal_report_access", Group: "report", GuardName: "web"},
+		{Name: "asset_disposal_report_export", Group: "report", GuardName: "web"},
 		{Name: "role_management_access", Group: "role", GuardName: "web"},
 		{Name: "role_view", Group: "role", GuardName: "web"},
 		{Name: "role_create", Group: "role", GuardName: "web"},
@@ -226,6 +228,22 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 	if err := s.Repo.GrantPermissionsToRoles(
 		[]string{"asset_disposal_approval_inbox_access", "asset_disposal_approval_view", "asset_disposal_approval_approve", "asset_disposal_approval_reject"},
 		[]string{"manager", "ga-manager", "gm"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	if err := s.Repo.GrantPermissionsToRoles(
+		[]string{"asset_disposal_report_access", "asset_disposal_report_export"},
+		[]string{"finance-manager"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	if err := s.Repo.GrantPermissionsToRoles(
+		[]string{"asset_disposal_report_access"},
+		[]string{"IT-manager", "it-manager"},
 		"web",
 	); err != nil {
 		return err

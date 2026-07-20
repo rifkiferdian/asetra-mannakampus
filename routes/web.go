@@ -97,6 +97,8 @@ func RegisterWebRoutes(r *gin.Engine) {
 		auth.GET("/asset-disposal-approval/inbox", middleware.RequirePermission("asset_disposal_approval_inbox_access"), controllers.AssetDisposalApprovalInboxIndex)
 		auth.POST("/asset-disposal-approval/tasks/:id/approve", middleware.RequirePermission("asset_disposal_approval_approve"), controllers.AssetDisposalApprovalTaskApprove)
 		auth.POST("/asset-disposal-approval/tasks/:id/reject", middleware.RequirePermission("asset_disposal_approval_reject"), controllers.AssetDisposalApprovalTaskReject)
+		auth.GET("/reports/asset-disposals", middleware.RequirePermission("asset_disposal_report_access"), controllers.AssetDisposalReportIndex)
+		auth.GET("/reports/asset-disposals/export", middleware.RequirePermission("asset_disposal_report_export"), controllers.AssetDisposalReportExportCSV)
 
 		auth.POST("/register", middleware.RequirePermission("user_create"), controllers.CreateUser)
 		auth.GET("/stores", middleware.RequirePermission("store_management_access"), controllers.StoreIndex)
