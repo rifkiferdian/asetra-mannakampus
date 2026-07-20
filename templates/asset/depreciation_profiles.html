@@ -18,6 +18,8 @@
             .dpf-btn-primary:hover { background: #002f6d; }
             .dpf-btn-secondary { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; }
             .dpf-btn-secondary:hover { background: #f8fafc; }
+            .dpf-btn-warning { border: 1px solid #f59e0b; background: #fffbeb; color: #92400e; }
+            .dpf-btn-success { border: 1px solid #059669; background: #ecfdf5; color: #047857; }
             .dpf-alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 700; }
             .dpf-alert-success { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
             .dpf-alert-error { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
@@ -52,6 +54,7 @@
             .dpf-active { border: 1px solid #a7f3d0; background: #d1fae5; color: #065f46; }
             .dpf-paused { border: 1px solid #fde68a; background: #fef3c7; color: #92400e; }
             .dpf-finished { border: 1px solid #d1d5db; background: #f3f4f6; color: #475569; }
+            .dpf-terminated { border: 1px solid #fecaca; background: #fff1f2; color: #be123c; }
             .dpf-lock { display: inline-flex; align-items: center; gap: 4px; color: #64748b; font-size: 10px; font-weight: 800; }
             .dpf-empty { padding: 38px 16px !important; text-align: center; color: #64748b !important; }
             .dpf-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e2e8f0; padding: 14px; }
@@ -111,7 +114,7 @@
 
                         <section class="dpf-card">
                             <form action="/asset-depreciation/profiles" method="get" class="dpf-filter">
-                                <div><label class="dpf-label" for="profile-status">Status</label><select id="profile-status" name="status" class="dpf-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>Semua Status</option><option value="ACTIVE" {{ if eq .Filter.Status "ACTIVE" }}selected{{ end }}>Aktif</option><option value="PAUSED" {{ if eq .Filter.Status "PAUSED" }}selected{{ end }}>Dijeda</option><option value="FINISHED" {{ if eq .Filter.Status "FINISHED" }}selected{{ end }}>Selesai</option></select></div>
+                                <div><label class="dpf-label" for="profile-status">Status</label><select id="profile-status" name="status" class="dpf-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>Semua Status</option><option value="ACTIVE" {{ if eq .Filter.Status "ACTIVE" }}selected{{ end }}>Aktif</option><option value="PAUSED" {{ if eq .Filter.Status "PAUSED" }}selected{{ end }}>Dijeda</option><option value="FINISHED" {{ if eq .Filter.Status "FINISHED" }}selected{{ end }}>Selesai</option><option value="TERMINATED" {{ if eq .Filter.Status "TERMINATED" }}selected{{ end }}>Dihentikan</option></select></div>
                                 <div><label class="dpf-label" for="profile-search">Cari</label><input id="profile-search" name="search" value="{{ .Filter.Search }}" class="dpf-control" placeholder="Kode, nama, tipe aset, atau metode"></div>
                                 <button type="submit" class="dpf-btn dpf-btn-primary"><i class="bx bx-filter-alt"></i>Terapkan Filter</button>
                             </form>
@@ -123,14 +126,16 @@
                                         {{ range .Items }}
                                         <tr>
                                             <td><a href="/asset-register/detail/{{ .AssetID }}" class="dpf-asset">{{ .AssetCode }}</a><div class="dpf-subtext" title="{{ .AssetName }}">{{ .AssetName }} · {{ .AssetTypeName }}</div></td>
-                                            <td><span class="font-bold text-slate-800">{{ if eq .MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .MethodName }}{{ end }}</span><div class="dpf-subtext">{{ if .UsefulLifeMonths }}{{ .UsefulLifeMonths }} bulan{{ else }}Tanpa umur manfaat{{ end }}</div></td>
+                                            <td><span class="font-bold text-slate-800">{{ if eq .MethodCode "STRAIGHT_LINE" }}Garis Lurus{{ else if eq .MethodCode "NONE" }}Tidak Disusutkan{{ else }}{{ .MethodName }}{{ end }}</span><div class="dpf-subtext">{{ if .UsefulLifeMonths }}{{ .UsefulLifeMonths }} bulan{{ else }}Tanpa umur manfaat{{ end }} · {{ .FirstMonthPolicyName }}</div></td>
                                             <td class="dpf-amount">{{ .DepreciableBasisDisplay }}</td><td class="dpf-amount text-[#003b88]">{{ .MonthlyDepreciationDisplay }}</td><td class="dpf-amount">{{ .PostedDepreciationDisplay }}</td><td class="dpf-amount text-[#047857]">{{ .CurrentBookValueDisplay }}</td>
-                                            <td>{{ if eq .Status "ACTIVE" }}<span class="dpf-pill dpf-active">AKTIF</span>{{ else if eq .Status "PAUSED" }}<span class="dpf-pill dpf-paused">DIJEDA</span>{{ else }}<span class="dpf-pill dpf-finished">SELESAI</span>{{ end }}</td>
+                                            <td>{{ if eq .Status "ACTIVE" }}<span class="dpf-pill dpf-active">AKTIF</span>{{ else if eq .Status "PAUSED" }}<span class="dpf-pill dpf-paused" title="{{ .PauseReason }}">DIJEDA</span>{{ else if eq .Status "TERMINATED" }}<span class="dpf-pill dpf-terminated" title="{{ .TerminationReason }}">DIHENTIKAN</span>{{ else }}<span class="dpf-pill dpf-finished">SELESAI</span>{{ end }}</td>
                                             <td><span class="font-bold text-slate-800">{{ .PostedScheduleCount }} diposting</span><div class="dpf-subtext">{{ .DraftScheduleCount }} draft{{ if .LastPostedPeriodDisplay }} · {{ .LastPostedPeriodDisplay }}{{ end }}</div></td>
                                             <td>
                                                 {{ if index $.Permissions "asset_depreciation_profile_edit" }}
-                                                <button type="button" class="dpf-btn dpf-btn-secondary" data-edit-profile data-id="{{ .ID }}" data-asset="{{ .AssetID }}" data-method="{{ .MethodID }}" data-life="{{ .UsefulLifeMonths }}" data-salvage="{{ .SalvageValueInput }}" data-basis="{{ .DepreciableBasisInput }}" data-start="{{ .StartDate }}" data-status="{{ .Status }}" data-notes="{{ .Notes }}" data-locked="{{ .ConfigurationLocked }}"><i class="bx bx-pencil"></i>Ubah</button>
+                                                <button type="button" class="dpf-btn dpf-btn-secondary" data-edit-profile data-id="{{ .ID }}" data-asset="{{ .AssetID }}" data-method="{{ .MethodID }}" data-life="{{ .UsefulLifeMonths }}" data-salvage="{{ .SalvageValueInput }}" data-basis="{{ .DepreciableBasisInput }}" data-start="{{ .StartDate }}" data-first-policy="{{ .FirstMonthPolicyID }}" data-last-policy="{{ .LastMonthPolicyID }}" data-status="{{ .Status }}" data-notes="{{ .Notes }}" data-locked="{{ .ConfigurationLocked }}"><i class="bx bx-pencil"></i>Ubah</button>
                                                 {{ else if .ConfigurationLocked }}<span class="dpf-lock"><i class="bx bx-lock-alt"></i>Terkunci</span>{{ end }}
+                                                {{ if and (eq .Status "ACTIVE") (index $.Permissions "asset_depreciation_profile_pause") }}<button type="button" class="dpf-btn dpf-btn-warning" data-pause-profile data-id="{{ .ID }}" data-asset-code="{{ .AssetCode }}"><i class="bx bx-pause"></i>Jeda</button>{{ end }}
+                                                {{ if and (eq .Status "PAUSED") (index $.Permissions "asset_depreciation_profile_resume") }}<form action="/asset-depreciation/profiles/resume" method="post" class="inline"><input type="hidden" name="profile_id" value="{{ .ID }}"><button type="submit" class="dpf-btn dpf-btn-success" onclick="return confirm('Lanjutkan depresiasi {{ .AssetCode }}?')"><i class="bx bx-play"></i>Lanjutkan</button></form>{{ end }}
                                             </td>
                                         </tr>
                                         {{ else }}<tr><td colspan="9" class="dpf-empty">Tidak ada profil depresiasi yang ditemukan</td></tr>{{ end }}
@@ -160,13 +165,25 @@
                         <div><label class="dpf-modal-label">Umur Manfaat (Bulan)</label><input type="number" min="0" name="useful_life_months" class="dpf-modal-control" data-profile-life required></div>
                         <div><label class="dpf-modal-label">Basis Depresiasi</label><input type="number" min="0" step="0.01" name="depreciable_basis" class="dpf-modal-control" data-profile-basis required></div>
                         <div><label class="dpf-modal-label">Nilai Residu</label><input type="number" min="0" step="0.01" name="salvage_value" value="0" class="dpf-modal-control" data-profile-salvage required></div>
-                        <div><label class="dpf-modal-label">Tanggal Mulai</label><input type="date" name="start_date" class="dpf-modal-control" data-profile-start required></div>
-                        <div><label class="dpf-modal-label">Status</label><select name="status" class="dpf-modal-control" data-profile-status><option value="ACTIVE">Aktif</option><option value="PAUSED">Dijeda</option><option value="FINISHED">Selesai</option></select></div>
+                        <div><label class="dpf-modal-label">Tanggal Siap Digunakan</label><input type="date" name="start_date" class="dpf-modal-control" data-profile-start required></div>
+                        <div><label class="dpf-modal-label">Kebijakan Bulan Pertama</label><select name="first_month_policy_id" class="dpf-modal-control" data-profile-first-policy required>{{ range .FirstMonthPolicies }}<option value="{{ .ID }}" data-code="{{ .Code }}">{{ .Name }}</option>{{ end }}</select></div>
+                        <div><label class="dpf-modal-label">Kebijakan Bulan Terakhir</label><select name="last_month_policy_id" class="dpf-modal-control" data-profile-last-policy required>{{ range .LastMonthPolicies }}<option value="{{ .ID }}" data-code="{{ .Code }}">{{ .Name }}</option>{{ end }}</select></div>
+                        <input type="hidden" name="status" value="ACTIVE" data-profile-status>
                         <div class="dpf-span-2 dpf-modal-note" data-lock-note><i class="bx bx-lock-alt text-base"></i><span>Konfigurasi keuangan dikunci karena profil ini sudah memiliki depresiasi yang diposting.</span></div>
                         <div class="dpf-span-2"><label class="dpf-modal-label">Catatan</label><textarea name="notes" rows="3" class="dpf-modal-control resize-none" data-profile-notes></textarea></div>
                     </div>
                 </div>
                 <div class="dpf-modal-actions"><button type="button" class="dpf-btn dpf-btn-secondary" data-close-profile>Batal</button><button type="submit" class="dpf-btn dpf-btn-primary"><i class="bx bx-save"></i>Simpan Profil</button></div>
+            </form>
+        </div>
+        {{ end }}
+        {{ if index .Permissions "asset_depreciation_profile_pause" }}
+        <div id="pauseProfileModal" class="dpf-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
+            <form action="/asset-depreciation/profiles/pause" method="post" class="dpf-modal" style="width:min(100%,34rem)">
+                <input type="hidden" name="profile_id" data-pause-profile-id>
+                <div class="dpf-modal-header"><div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-xl text-amber-700"><i class="bx bx-pause-circle"></i></span><div><h2 class="dpf-modal-title">Jeda Depresiasi</h2><p class="mt-1 text-[11px] text-slate-500" data-pause-profile-label></p></div></div><button type="button" class="dpf-modal-close" data-close-pause-profile aria-label="Tutup"><i class="bx bx-x text-xl"></i></button></div>
+                <div class="dpf-modal-body"><label class="dpf-modal-label">Alasan Jeda</label><textarea name="pause_reason" rows="4" maxlength="1000" class="dpf-modal-control resize-none" required placeholder="Jelaskan alasan finance menjeda depresiasi"></textarea><p class="mt-3 text-xs text-slate-500">Profil yang dijeda tidak disertakan ketika jadwal bulanan dibuat.</p></div>
+                <div class="dpf-modal-actions"><button type="button" class="dpf-btn dpf-btn-secondary" data-close-pause-profile>Batal</button><button type="submit" class="dpf-btn dpf-btn-warning"><i class="bx bx-pause"></i>Jeda Depresiasi</button></div>
             </form>
         </div>
         {{ end }}
@@ -177,23 +194,29 @@
                 document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) { button.addEventListener('click', function () { if (!sidebar) return; var closed = sidebar.classList.contains('-translate-x-full'); sidebar.classList.toggle('-translate-x-full', !closed); if (overlay) overlay.classList.toggle('hidden', !closed); document.body.classList.toggle('overflow-hidden', closed); }); });
                 if (overlay) overlay.addEventListener('click', function () { if (sidebar) sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); });
 
+                var pauseModal = document.getElementById('pauseProfileModal');
+                function closePauseModal() { if (!pauseModal) return; pauseModal.classList.add('hidden'); pauseModal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
+                document.querySelectorAll('[data-pause-profile]').forEach(function (button) { button.addEventListener('click', function () { if (!pauseModal) return; pauseModal.querySelector('[data-pause-profile-id]').value = button.dataset.id; pauseModal.querySelector('[data-pause-profile-label]').textContent = button.dataset.assetCode; pauseModal.classList.remove('hidden'); pauseModal.classList.add('flex'); document.body.classList.add('overflow-hidden'); }); });
+                document.querySelectorAll('[data-close-pause-profile]').forEach(function (button) { button.addEventListener('click', closePauseModal); });
+                if (pauseModal) pauseModal.addEventListener('click', function (event) { if (event.target === pauseModal) closePauseModal(); });
+
                 var modal = document.getElementById('profileModal'); var form = document.querySelector('[data-profile-form]');
                 if (!modal || !form) return;
-                var id = form.querySelector('[data-profile-id]'); var title = form.querySelector('[data-profile-title]'); var asset = form.querySelector('[data-profile-asset]'); var method = form.querySelector('[data-profile-method]'); var life = form.querySelector('[data-profile-life]'); var basis = form.querySelector('[data-profile-basis]'); var salvage = form.querySelector('[data-profile-salvage]'); var start = form.querySelector('[data-profile-start]'); var status = form.querySelector('[data-profile-status]'); var notes = form.querySelector('[data-profile-notes]'); var lockNote = form.querySelector('[data-lock-note]');
-                var financialControls = [method, life, basis, salvage, start];
+                var id = form.querySelector('[data-profile-id]'); var title = form.querySelector('[data-profile-title]'); var asset = form.querySelector('[data-profile-asset]'); var method = form.querySelector('[data-profile-method]'); var life = form.querySelector('[data-profile-life]'); var basis = form.querySelector('[data-profile-basis]'); var salvage = form.querySelector('[data-profile-salvage]'); var start = form.querySelector('[data-profile-start]'); var firstPolicy = form.querySelector('[data-profile-first-policy]'); var lastPolicy = form.querySelector('[data-profile-last-policy]'); var status = form.querySelector('[data-profile-status]'); var notes = form.querySelector('[data-profile-notes]'); var lockNote = form.querySelector('[data-lock-note]');
+                var financialControls = [method, life, basis, salvage, start, firstPolicy, lastPolicy];
                 function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); document.body.classList.add('overflow-hidden'); }
                 function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.classList.remove('overflow-hidden'); }
                 function lockConfiguration(locked) { financialControls.forEach(function (control) { control.disabled = locked; }); lockNote.classList.toggle('visible', locked); }
                 function configureAssetOptions(mode, selected) { Array.prototype.slice.call(asset.options).forEach(function (option) { if (!option.value) return; option.disabled = mode === 'new' ? option.dataset.profile === 'true' : option.value !== selected; }); }
                 function applyMethodRule() { var selected = method.options[method.selectedIndex]; var isNone = selected && selected.dataset.code === 'NONE'; if (isNone) { life.value = 0; life.required = false; status.value = 'FINISHED'; } else { life.required = true; if (Number(life.value) <= 0) life.value = 36; } }
-                document.querySelectorAll('[data-new-profile]').forEach(function (button) { button.addEventListener('click', function () { form.reset(); id.value = ''; title.textContent = 'Konfigurasi Profil Depresiasi'; configureAssetOptions('new', ''); asset.disabled = false; lockConfiguration(false); salvage.value = '0'; status.value = 'ACTIVE'; applyMethodRule(); showModal(); }); });
-                document.querySelectorAll('[data-edit-profile]').forEach(function (button) { button.addEventListener('click', function () { id.value = button.dataset.id; title.textContent = 'Ubah Profil Depresiasi'; configureAssetOptions('edit', button.dataset.asset); asset.value = button.dataset.asset; asset.disabled = false; method.value = button.dataset.method; life.value = button.dataset.life; basis.value = button.dataset.basis; salvage.value = button.dataset.salvage; start.value = button.dataset.start; status.value = button.dataset.status; notes.value = button.dataset.notes || ''; lockConfiguration(button.dataset.locked === 'true'); showModal(); }); });
+                document.querySelectorAll('[data-new-profile]').forEach(function (button) { button.addEventListener('click', function () { form.reset(); id.value = ''; title.textContent = 'Konfigurasi Profil Depresiasi'; configureAssetOptions('new', ''); asset.disabled = false; lockConfiguration(false); salvage.value = '0'; status.value = 'ACTIVE'; Array.prototype.slice.call(firstPolicy.options).forEach(function(option){if(option.dataset.code==='NEXT_MONTH')firstPolicy.value=option.value;}); Array.prototype.slice.call(lastPolicy.options).forEach(function(option){if(option.dataset.code==='NO_DEPRECIATION')lastPolicy.value=option.value;}); applyMethodRule(); showModal(); }); });
+                document.querySelectorAll('[data-edit-profile]').forEach(function (button) { button.addEventListener('click', function () { id.value = button.dataset.id; title.textContent = 'Ubah Profil Depresiasi'; configureAssetOptions('edit', button.dataset.asset); asset.value = button.dataset.asset; asset.disabled = false; method.value = button.dataset.method; life.value = button.dataset.life; basis.value = button.dataset.basis; salvage.value = button.dataset.salvage; start.value = button.dataset.start; firstPolicy.value = button.dataset.firstPolicy; lastPolicy.value = button.dataset.lastPolicy; status.value = button.dataset.status; notes.value = button.dataset.notes || ''; lockConfiguration(button.dataset.locked === 'true'); showModal(); }); });
                 asset.addEventListener('change', function () { var selected = asset.options[asset.selectedIndex]; if (!selected) return; basis.value = selected.dataset.value || ''; start.value = selected.dataset.date || ''; });
                 method.addEventListener('change', applyMethodRule);
                 form.addEventListener('submit', function () { asset.disabled = false; financialControls.forEach(function (control) { control.disabled = false; }); });
                 document.querySelectorAll('[data-close-profile]').forEach(function (button) { button.addEventListener('click', closeModal); });
                 modal.addEventListener('click', function (event) { if (event.target === modal) closeModal(); });
-                document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeModal(); });
+                document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closeModal(); closePauseModal(); } });
             });
         </script>
     </body>

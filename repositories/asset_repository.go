@@ -300,6 +300,13 @@ func (r *AssetRepository) CreateAsset(input models.AssetInput) error {
 }
 
 func (r *AssetRepository) UpdateAsset(input models.AssetInput) error {
+	var postedDisposalCount int
+	if err := r.DB.QueryRow(`SELECT COUNT(*) FROM asset_disposals WHERE asset_id = ? AND status = 'POSTED'`, input.ID).Scan(&postedDisposalCount); err != nil {
+		return err
+	}
+	if postedDisposalCount > 0 {
+		return errors.New("aset sudah memiliki disposal yang diposting; batalkan disposal untuk mengubah aset")
+	}
 	_, err := r.DB.Exec(`
 		UPDATE assets
 		SET asset_code = ?, asset_name = ?, asset_type_id = ?, serial_number = ?, store_id = ?,

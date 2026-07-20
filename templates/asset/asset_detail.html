@@ -40,6 +40,15 @@
             .detail-status-maintenance { background: #fef3c7; color: #92400e; }
             .detail-status-broken { background: #fee2e2; color: #b91c1c; }
             .detail-status-disposed { background: #f3f4f6; color: #374151; }
+            .detail-disposal { overflow: hidden; border: 1px solid #fda4af; border-radius: 8px; background: #fff; box-shadow: 0 10px 28px -26px rgba(159,18,57,.8); }
+            .detail-disposal-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid #fecdd3; background: #fff1f2; padding: 13px 16px; }
+            .detail-disposal-icon { display: inline-flex; width: 38px; height: 38px; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 7px; background: #be123c; color: #fff; font-size: 20px; }
+            .detail-disposal-title { color: #881337; font-size: 13px; font-weight: 900; }
+            .detail-disposal-subtitle { margin-top: 2px; color: #9f1239; font-size: 11px; font-weight: 700; }
+            .detail-disposal-body { padding: 15px 16px; }
+            .detail-disposal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+            .detail-disposal-reason { margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 12px; color: #334155; font-size: 12px; line-height: 1.6; }
+            .detail-disposal-link { display: inline-flex; align-items: center; gap: 5px; color: #9f1239; font-size: 11px; font-weight: 900; }
             .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(22rem, 31rem); gap: 16px; align-items: start; }
             .detail-left { display: grid; gap: 14px; }
             .detail-right { display: grid; gap: 14px; }
@@ -112,6 +121,8 @@
                 .detail-actions { justify-content: flex-start; }
                 .detail-hero, .detail-two, .component-grid, .detail-spec-grid { grid-template-columns: 1fr; }
                 .detail-media { border-right: 0; border-bottom: 1px solid #dbe3f0; min-height: 9rem; }
+                .detail-disposal-head { align-items: flex-start; flex-direction: column; }
+                .detail-disposal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             }
         </style>
     </head>
@@ -146,6 +157,9 @@
                             </div>
                             <div class="detail-actions">
                                 <a href="/asset-register" class="detail-btn detail-btn-secondary"><i class="bx bx-arrow-back"></i>Kembali</a>
+                                {{ if .Disposal }}
+                                {{ if index .Permissions "asset_disposal_management_access" }}<a href="/asset-disposals?search={{ .Disposal.DisposalNumber }}" class="detail-btn detail-btn-danger"><i class="bx bx-archive-out"></i>Lihat Disposal</a>{{ end }}
+                                {{ else }}
                                 <button type="button" class="detail-btn detail-btn-secondary"><i class="bx bx-wrench"></i>Ajukan Perawatan</button>
                                 <button type="button" class="detail-btn detail-btn-danger"><i class="bx bx-archive"></i>Nonaktifkan Aset</button>
                                 {{ if index .Permissions "asset_delete" }}
@@ -154,8 +168,34 @@
                                 {{ if index .Permissions "asset_edit" }}
                                 <button type="button" class="detail-btn detail-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Ubah Aset</button>
                                 {{ end }}
+                                {{ end }}
                             </div>
                         </div>
+
+                        {{ if .Disposal }}
+                        <section class="detail-disposal">
+                            <div class="detail-disposal-head">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="detail-disposal-icon"><i class="bx bx-archive-out"></i></span>
+                                    <div class="min-w-0"><div class="detail-disposal-title">Aset Telah Didisposal</div><div class="detail-disposal-subtitle">{{ .Disposal.DisposalNumber }} · {{ .Disposal.DisposalTypeName }} · diposting {{ .Disposal.PostedAtDisplay }}</div></div>
+                                </div>
+                                {{ if index .Permissions "asset_disposal_management_access" }}<a href="/asset-disposals?search={{ .Disposal.DisposalNumber }}" class="detail-disposal-link">Buka Transaksi <i class="bx bx-right-arrow-alt text-base"></i></a>{{ end }}
+                            </div>
+                            <div class="detail-disposal-body">
+                                <div class="detail-disposal-grid">
+                                    <div><div class="detail-label">Tanggal Disposal</div><div class="detail-value">{{ .Disposal.DisposalDateDisplay }}</div></div>
+                                    <div><div class="detail-label">Nilai Disposal</div><div class="detail-value">{{ .Disposal.DisposalValueDisplay }}</div></div>
+                                    <div><div class="detail-label">Nilai Buku</div><div class="detail-value">{{ .Disposal.BookValueDisplay }}</div></div>
+                                    <div><div class="detail-label">Hasil Pelepasan</div><div class="detail-value">{{ .Disposal.GainLossLabel }} {{ .Disposal.GainLossAmountDisplay }}</div></div>
+                                    <div><div class="detail-label">Pembeli</div><div class="detail-value">{{ if .Disposal.BuyerName }}{{ .Disposal.BuyerName }}{{ else }}-{{ end }}</div></div>
+                                    <div><div class="detail-label">Referensi Dokumen</div><div class="detail-value">{{ if .Disposal.DocumentReference }}{{ .Disposal.DocumentReference }}{{ else }}-{{ end }}</div></div>
+                                    <div><div class="detail-label">Diproses Oleh</div><div class="detail-value">{{ .Disposal.ProcessedByName }}</div></div>
+                                    <div><div class="detail-label">Diposting Oleh</div><div class="detail-value">{{ if .Disposal.ApprovedByName }}{{ .Disposal.ApprovedByName }}{{ else }}-{{ end }}</div></div>
+                                </div>
+                                <div class="detail-disposal-reason"><span class="font-black text-slate-800">Keterangan:</span> {{ .Disposal.Reason }}{{ if .Disposal.Notes }}<br><span class="font-black text-slate-800">Catatan:</span> {{ .Disposal.Notes }}{{ end }}</div>
+                            </div>
+                        </section>
+                        {{ end }}
 
                         <div class="detail-grid">
                             <div class="detail-left">

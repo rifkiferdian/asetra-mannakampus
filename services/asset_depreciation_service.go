@@ -31,7 +31,7 @@ func (s *AssetDepreciationService) GetDepreciationProfiles(filter models.Depreci
 	if filter.Status == "" {
 		filter.Status = "ALL"
 	}
-	if filter.Status != "ALL" && filter.Status != "ACTIVE" && filter.Status != "PAUSED" && filter.Status != "FINISHED" {
+	if filter.Status != "ALL" && filter.Status != "ACTIVE" && filter.Status != "PAUSED" && filter.Status != "FINISHED" && filter.Status != "TERMINATED" {
 		return models.DepreciationProfileResult{}, errors.New("status profil tidak valid")
 	}
 	filter.Search = strings.TrimSpace(filter.Search)
@@ -48,6 +48,14 @@ func (s *AssetDepreciationService) GetDepreciationMethods() ([]models.Depreciati
 	return s.Repo.GetDepreciationMethods()
 }
 
+func (s *AssetDepreciationService) GetFirstMonthPolicies() ([]models.DepreciationPolicyOption, error) {
+	return s.Repo.GetFirstMonthPolicies()
+}
+
+func (s *AssetDepreciationService) GetLastMonthPolicies() ([]models.DepreciationPolicyOption, error) {
+	return s.Repo.GetLastMonthPolicies()
+}
+
 func (s *AssetDepreciationService) GetDepreciationAssetOptions() ([]models.DepreciationAssetOption, error) {
 	return s.Repo.GetDepreciationAssetOptions()
 }
@@ -58,6 +66,9 @@ func (s *AssetDepreciationService) SaveDepreciationProfile(input models.Deprecia
 	input.StartDate = strings.TrimSpace(input.StartDate)
 	if input.AssetID <= 0 || input.MethodID <= 0 {
 		return errors.New("aset dan metode depresiasi wajib dipilih")
+	}
+	if input.FirstMonthPolicyID <= 0 || input.LastMonthPolicyID <= 0 {
+		return errors.New("kebijakan bulan pertama dan bulan terakhir wajib dipilih")
 	}
 	if input.AuditContext.ActorUserID <= 0 {
 		return errors.New("pengguna tidak valid")
@@ -71,10 +82,37 @@ func (s *AssetDepreciationService) SaveDepreciationProfile(input models.Deprecia
 	if _, err := time.Parse("2006-01-02", input.StartDate); err != nil {
 		return errors.New("tanggal mulai depresiasi tidak valid")
 	}
-	if input.Status != "ACTIVE" && input.Status != "PAUSED" && input.Status != "FINISHED" {
-		return errors.New("status profil tidak valid")
+	if input.ID <= 0 {
+		input.Status = "ACTIVE"
 	}
 	return s.Repo.SaveDepreciationProfile(input)
+}
+
+func (s *AssetDepreciationService) PauseDepreciationProfile(profileID int64, reason string, auditCtx models.AuditContext) error {
+	reason = strings.TrimSpace(reason)
+	if profileID <= 0 {
+		return errors.New("profil depresiasi tidak valid")
+	}
+	if reason == "" {
+		return errors.New("alasan jeda depresiasi wajib diisi")
+	}
+	if len(reason) > 1000 {
+		return errors.New("alasan jeda maksimal 1000 karakter")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return errors.New("pengguna tidak valid")
+	}
+	return s.Repo.PauseDepreciationProfile(profileID, reason, auditCtx)
+}
+
+func (s *AssetDepreciationService) ResumeDepreciationProfile(profileID int64, auditCtx models.AuditContext) error {
+	if profileID <= 0 {
+		return errors.New("profil depresiasi tidak valid")
+	}
+	if auditCtx.ActorUserID <= 0 {
+		return errors.New("pengguna tidak valid")
+	}
+	return s.Repo.ResumeDepreciationProfile(profileID, auditCtx)
 }
 
 func (s *AssetDepreciationService) GetPostingHistory(filter models.DepreciationPostingHistoryFilter) (models.DepreciationPostingHistoryResult, error) {

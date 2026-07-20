@@ -17,7 +17,23 @@ type AssetDepreciationRepository struct {
 
 type depreciationScheduleActionRecord struct {
 	ID         int64
+	ProfileID  int64
 	PeriodDate time.Time
+}
+
+type depreciationGenerationCandidate struct {
+	ProfileID       int64
+	AssetID         int64
+	UsefulLife      int
+	Basis           float64
+	Salvage         float64
+	StartDate       time.Time
+	FirstPolicyCode string
+	LastPolicyCode  string
+	DisposalDate    sql.NullTime
+	PostedAmount    float64
+	PriorDrafts     int
+	LaterSchedules  int
 }
 
 func (r *AssetDepreciationRepository) GetAssetDepreciationDetail(assetID int64) (models.AssetDepreciationDetail, error) {
@@ -221,8 +237,23 @@ func (r *AssetDepreciationRepository) GetDepreciationProfiles(filter models.Depr
 			adp.salvage_value,
 			adp.depreciable_basis,
 			adp.start_date,
+			adp.first_month_policy_id,
+			first_policy.code,
+			first_policy.name,
+			adp.last_month_policy_id,
+			last_policy.code,
+			last_policy.name,
 			adp.status,
 			COALESCE(adp.notes, ''),
+			adp.paused_at,
+			COALESCE(paused_user.name, ''),
+			COALESCE(adp.pause_reason, ''),
+			adp.resumed_at,
+			COALESCE(resumed_user.name, ''),
+			adp.finished_at,
+			adp.terminated_at,
+			COALESCE(terminated_user.name, ''),
+			COALESCE(adp.termination_reason, ''),
 			COALESCE(schedule.posted_amount, 0),
 			COALESCE(schedule.posted_count, 0),
 			COALESCE(schedule.draft_count, 0),
@@ -231,6 +262,11 @@ func (r *AssetDepreciationRepository) GetDepreciationProfiles(filter models.Depr
 		JOIN assets a ON a.id = adp.asset_id
 		LEFT JOIN asset_types at ON at.id = a.asset_type_id
 		JOIN asset_depreciation_methods adm ON adm.id = adp.depreciation_method_id
+		JOIN asset_depreciation_first_month_policies first_policy ON first_policy.id = adp.first_month_policy_id
+		JOIN asset_depreciation_last_month_policies last_policy ON last_policy.id = adp.last_month_policy_id
+		LEFT JOIN users paused_user ON paused_user.id = adp.paused_by
+		LEFT JOIN users resumed_user ON resumed_user.id = adp.resumed_by
+		LEFT JOIN users terminated_user ON terminated_user.id = adp.terminated_by
 		LEFT JOIN (
 			SELECT
 				profile_id,
@@ -255,11 +291,17 @@ func (r *AssetDepreciationRepository) GetDepreciationProfiles(filter models.Depr
 		var item models.AssetDepreciationProfile
 		var salvageValue, depreciableBasis, postedAmount float64
 		var startDate time.Time
-		var lastPostedPeriod sql.NullTime
+		var pausedAt, resumedAt, finishedAt, terminatedAt, lastPostedPeriod sql.NullTime
 		if err := rows.Scan(
 			&item.ID, &item.AssetID, &item.AssetCode, &item.AssetName, &item.AssetTypeName,
 			&item.MethodID, &item.MethodCode, &item.MethodName, &item.UsefulLifeMonths,
-			&salvageValue, &depreciableBasis, &startDate, &item.Status, &item.Notes,
+			&salvageValue, &depreciableBasis, &startDate,
+			&item.FirstMonthPolicyID, &item.FirstMonthPolicyCode, &item.FirstMonthPolicyName,
+			&item.LastMonthPolicyID, &item.LastMonthPolicyCode, &item.LastMonthPolicyName,
+			&item.Status, &item.Notes,
+			&pausedAt, &item.PausedByName, &item.PauseReason,
+			&resumedAt, &item.ResumedByName, &finishedAt,
+			&terminatedAt, &item.TerminatedByName, &item.TerminationReason,
 			&postedAmount, &item.PostedScheduleCount, &item.DraftScheduleCount, &lastPostedPeriod,
 		); err != nil {
 			return result, err
@@ -278,6 +320,18 @@ func (r *AssetDepreciationRepository) GetDepreciationProfiles(filter models.Depr
 		item.CurrentBookValueDisplay = formatAssetAmountID(currentBookValue)
 		item.StartDate = startDate.Format("2006-01-02")
 		item.ConfigurationLocked = item.PostedScheduleCount > 0
+		if pausedAt.Valid {
+			item.PausedAtDisplay = formatDepreciationDateID(pausedAt.Time, true)
+		}
+		if resumedAt.Valid {
+			item.ResumedAtDisplay = formatDepreciationDateID(resumedAt.Time, true)
+		}
+		if finishedAt.Valid {
+			item.FinishedAtDisplay = formatDepreciationDateID(finishedAt.Time, true)
+		}
+		if terminatedAt.Valid {
+			item.TerminatedAtDisplay = formatDepreciationDateID(terminatedAt.Time, true)
+		}
 		if lastPostedPeriod.Valid {
 			item.LastPostedPeriodDisplay = formatDepreciationMonthYearID(lastPostedPeriod.Time)
 		}
@@ -293,11 +347,12 @@ func (r *AssetDepreciationRepository) loadDepreciationProfileStats(stats *models
 			COALESCE(SUM(status = 'ACTIVE'), 0),
 			COALESCE(SUM(status = 'PAUSED'), 0),
 			COALESCE(SUM(status = 'FINISHED'), 0),
+			COALESCE(SUM(status = 'TERMINATED'), 0),
 			(SELECT COUNT(*) FROM assets a WHERE a.status <> 'DISPOSED' AND NOT EXISTS (
 				SELECT 1 FROM asset_depreciation_profiles profile WHERE profile.asset_id = a.id
 			))
 		FROM asset_depreciation_profiles
-	`).Scan(&stats.TotalProfiles, &stats.ActiveProfiles, &stats.PausedProfiles, &stats.FinishedProfiles, &stats.UnconfiguredAssets)
+	`).Scan(&stats.TotalProfiles, &stats.ActiveProfiles, &stats.PausedProfiles, &stats.FinishedProfiles, &stats.TerminatedProfiles, &stats.UnconfiguredAssets)
 }
 
 func (r *AssetDepreciationRepository) GetDepreciationMethods() ([]models.DepreciationMethodOption, error) {
@@ -320,6 +375,34 @@ func (r *AssetDepreciationRepository) GetDepreciationMethods() ([]models.Depreci
 		methods = append(methods, method)
 	}
 	return methods, rows.Err()
+}
+
+func (r *AssetDepreciationRepository) GetFirstMonthPolicies() ([]models.DepreciationPolicyOption, error) {
+	return r.getDepreciationPolicies("asset_depreciation_first_month_policies")
+}
+
+func (r *AssetDepreciationRepository) GetLastMonthPolicies() ([]models.DepreciationPolicyOption, error) {
+	return r.getDepreciationPolicies("asset_depreciation_last_month_policies")
+}
+
+func (r *AssetDepreciationRepository) getDepreciationPolicies(table string) ([]models.DepreciationPolicyOption, error) {
+	if table != "asset_depreciation_first_month_policies" && table != "asset_depreciation_last_month_policies" {
+		return nil, errors.New("master kebijakan depresiasi tidak valid")
+	}
+	rows, err := r.DB.Query(`SELECT id, code, name, COALESCE(description, '') FROM ` + table + ` WHERE is_active = 1 ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]models.DepreciationPolicyOption, 0)
+	for rows.Next() {
+		var item models.DepreciationPolicyOption
+		if err := rows.Scan(&item.ID, &item.Code, &item.Name, &item.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
 }
 
 func (r *AssetDepreciationRepository) GetDepreciationAssetOptions() ([]models.DepreciationAssetOption, error) {
@@ -383,6 +466,17 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 	} else if input.DepreciableBasis <= input.SalvageValue {
 		return errors.New("depreciable basis harus lebih besar dari nilai residu")
 	}
+	var policyCount int
+	if err := tx.QueryRow(`
+		SELECT
+			(SELECT COUNT(*) FROM asset_depreciation_first_month_policies WHERE id = ? AND is_active = 1) +
+			(SELECT COUNT(*) FROM asset_depreciation_last_month_policies WHERE id = ? AND is_active = 1)
+	`, input.FirstMonthPolicyID, input.LastMonthPolicyID).Scan(&policyCount); err != nil {
+		return err
+	}
+	if policyCount != 2 {
+		return errors.New("kebijakan bulan pertama atau bulan terakhir tidak valid")
+	}
 
 	var acquisitionDate sql.NullTime
 	var assetStatus string
@@ -411,10 +505,12 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 		result, err := tx.Exec(`
 			INSERT INTO asset_depreciation_profiles (
 				asset_id, depreciation_method_id, useful_life_months, salvage_value,
-				depreciable_basis, start_date, status, notes
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+				depreciable_basis, start_date, first_month_policy_id, last_month_policy_id,
+				status, finished_at, notes
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? = 'FINISHED', CURRENT_TIMESTAMP, NULL), ?)
 		`, input.AssetID, input.MethodID, nullableUsefulLife(input.UsefulLifeMonths), input.SalvageValue,
-			input.DepreciableBasis, input.StartDate, input.Status, nullableString(input.Notes))
+			input.DepreciableBasis, input.StartDate, input.FirstMonthPolicyID, input.LastMonthPolicyID,
+			input.Status, input.Status, nullableString(input.Notes))
 		if err != nil {
 			return err
 		}
@@ -429,16 +525,19 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 		return tx.Commit()
 	}
 
-	var existingAssetID, existingMethodID int64
+	var existingAssetID, existingMethodID, existingFirstPolicyID, existingLastPolicyID int64
 	var existingLife sql.NullInt64
 	var existingSalvage, existingBasis float64
 	var existingStart time.Time
+	var existingStatus string
 	if err := tx.QueryRow(`
-		SELECT asset_id, depreciation_method_id, useful_life_months, salvage_value, depreciable_basis, start_date
+		SELECT asset_id, depreciation_method_id, useful_life_months, salvage_value, depreciable_basis,
+			start_date, first_month_policy_id, last_month_policy_id, status
 		FROM asset_depreciation_profiles
 		WHERE id = ?
 		FOR UPDATE
-	`, input.ID).Scan(&existingAssetID, &existingMethodID, &existingLife, &existingSalvage, &existingBasis, &existingStart); err != nil {
+	`, input.ID).Scan(&existingAssetID, &existingMethodID, &existingLife, &existingSalvage, &existingBasis,
+		&existingStart, &existingFirstPolicyID, &existingLastPolicyID, &existingStatus); err != nil {
 		return err
 	}
 	if existingAssetID != input.AssetID {
@@ -451,18 +550,27 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 	}
 	configurationChanged := existingMethodID != input.MethodID || int(existingLife.Int64) != input.UsefulLifeMonths ||
 		math.Abs(existingSalvage-input.SalvageValue) > 0.005 || math.Abs(existingBasis-input.DepreciableBasis) > 0.005 ||
-		existingStart.Format("2006-01-02") != input.StartDate
+		existingStart.Format("2006-01-02") != input.StartDate || existingFirstPolicyID != input.FirstMonthPolicyID ||
+		existingLastPolicyID != input.LastMonthPolicyID
 	if postedCount > 0 && configurationChanged {
 		return errors.New("konfigurasi utama tidak dapat diubah karena profil sudah memiliki depresiasi yang diposting")
 	}
 
+	input.Status = existingStatus
+	if methodCode == "NONE" {
+		input.Status = "FINISHED"
+	} else if postedCount == 0 && existingStatus == "FINISHED" && existingMethodID != input.MethodID {
+		input.Status = "ACTIVE"
+	}
 	if _, err := tx.Exec(`
 		UPDATE asset_depreciation_profiles
 		SET depreciation_method_id = ?, useful_life_months = ?, salvage_value = ?,
-			depreciable_basis = ?, start_date = ?, status = ?, notes = ?
+			depreciable_basis = ?, start_date = ?, first_month_policy_id = ?, last_month_policy_id = ?,
+			status = ?, finished_at = IF(? = 'FINISHED', COALESCE(finished_at, CURRENT_TIMESTAMP), NULL), notes = ?
 		WHERE id = ?
 	`, input.MethodID, nullableUsefulLife(input.UsefulLifeMonths), input.SalvageValue,
-		input.DepreciableBasis, input.StartDate, input.Status, nullableString(input.Notes), input.ID); err != nil {
+		input.DepreciableBasis, input.StartDate, input.FirstMonthPolicyID, input.LastMonthPolicyID,
+		input.Status, input.Status, nullableString(input.Notes), input.ID); err != nil {
 		return err
 	}
 	if configurationChanged {
@@ -472,6 +580,99 @@ func (r *AssetDepreciationRepository) SaveDepreciationProfile(input models.Depre
 	}
 	if err := insertAuditLogTx(tx, "DEPRECIATION_PROFILE", input.ID, "UPDATE_PROFILE",
 		fmt.Sprintf("Profil depresiasi aset ID %d diperbarui dengan status %s", input.AssetID, input.Status), input.AuditContext); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *AssetDepreciationRepository) PauseDepreciationProfile(profileID int64, reason string, auditCtx models.AuditContext) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var status, assetCode string
+	if err := tx.QueryRow(`
+		SELECT adp.status, a.asset_code
+		FROM asset_depreciation_profiles adp
+		JOIN assets a ON a.id = adp.asset_id
+		WHERE adp.id = ?
+		FOR UPDATE
+	`, profileID).Scan(&status, &assetCode); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("profil depresiasi tidak ditemukan")
+		}
+		return err
+	}
+	if status != "ACTIVE" {
+		return fmt.Errorf("hanya profil ACTIVE yang dapat dijeda, status saat ini %s", status)
+	}
+	var draftCount int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM asset_depreciation_schedules WHERE profile_id = ? AND status = 'DRAFT'`, profileID).Scan(&draftCount); err != nil {
+		return err
+	}
+	if draftCount > 0 {
+		return errors.New("profil masih memiliki draft depresiasi; posting atau lewati seluruh draft sebelum menjeda")
+	}
+	if _, err := tx.Exec(`
+		UPDATE asset_depreciation_profiles
+		SET status = 'PAUSED', paused_at = CURRENT_TIMESTAMP, paused_by = ?, pause_reason = ?,
+			resumed_at = NULL, resumed_by = NULL, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status = 'ACTIVE'
+	`, auditCtx.ActorUserID, reason, profileID); err != nil {
+		return err
+	}
+	if err := insertAuditLogTx(tx, "DEPRECIATION_PROFILE", profileID, "PAUSE_PROFILE",
+		fmt.Sprintf("Depresiasi aset %s dijeda. Alasan: %s", assetCode, reason), auditCtx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *AssetDepreciationRepository) ResumeDepreciationProfile(profileID int64, auditCtx models.AuditContext) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var status, assetStatus, assetCode string
+	var assetID int64
+	if err := tx.QueryRow(`
+		SELECT adp.status, adp.asset_id, a.status, a.asset_code
+		FROM asset_depreciation_profiles adp
+		JOIN assets a ON a.id = adp.asset_id
+		WHERE adp.id = ?
+		FOR UPDATE
+	`, profileID).Scan(&status, &assetID, &assetStatus, &assetCode); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("profil depresiasi tidak ditemukan")
+		}
+		return err
+	}
+	if status != "PAUSED" {
+		return fmt.Errorf("hanya profil PAUSED yang dapat dilanjutkan, status saat ini %s", status)
+	}
+	if assetStatus == "DISPOSED" {
+		return errors.New("profil aset yang sudah disposed tidak dapat dilanjutkan")
+	}
+	var postedDisposalCount int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM asset_disposals WHERE asset_id = ? AND status = 'POSTED'`, assetID).Scan(&postedDisposalCount); err != nil {
+		return err
+	}
+	if postedDisposalCount > 0 {
+		return errors.New("profil tidak dapat dilanjutkan karena aset sudah memiliki disposal yang diposting")
+	}
+	if _, err := tx.Exec(`
+		UPDATE asset_depreciation_profiles
+		SET status = 'ACTIVE', resumed_at = CURRENT_TIMESTAMP, resumed_by = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status = 'PAUSED'
+	`, auditCtx.ActorUserID, profileID); err != nil {
+		return err
+	}
+	if err := insertAuditLogTx(tx, "DEPRECIATION_PROFILE", profileID, "RESUME_PROFILE",
+		fmt.Sprintf("Depresiasi aset %s dilanjutkan kembali", assetCode), auditCtx); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -929,99 +1130,169 @@ func (r *AssetDepreciationRepository) GenerateMonthlySchedules(year, month int, 
 		return 0, err
 	}
 
-	_, err = tx.Exec(`
-		INSERT INTO asset_depreciation_schedules (
-			profile_id,
-			asset_id,
-			period_year,
-			period_month,
-			period_date,
-			opening_book_value,
-			depreciation_amount,
-			accumulated_depreciation,
-			closing_book_value,
-			status
-		)
+	rows, err := tx.Query(`
 		SELECT
 			adp.id,
 			adp.asset_id,
-			YEAR(?),
-			MONTH(?),
-			?,
-			GREATEST(
-				adp.salvage_value,
-				adp.depreciable_basis - COALESCE(posted.posted_amount, 0)
-			) AS opening_book_value,
-			LEAST(
-				ROUND((adp.depreciable_basis - adp.salvage_value) / adp.useful_life_months, 2),
-				GREATEST(
-					0,
-					adp.depreciable_basis - COALESCE(posted.posted_amount, 0) - adp.salvage_value
-				)
-			) AS depreciation_amount,
-			COALESCE(posted.posted_amount, 0) + LEAST(
-				ROUND((adp.depreciable_basis - adp.salvage_value) / adp.useful_life_months, 2),
-				GREATEST(
-					0,
-					adp.depreciable_basis - COALESCE(posted.posted_amount, 0) - adp.salvage_value
-				)
-			) AS accumulated_depreciation,
-			GREATEST(
-				adp.salvage_value,
-				adp.depreciable_basis - COALESCE(posted.posted_amount, 0) - LEAST(
-					ROUND((adp.depreciable_basis - adp.salvage_value) / adp.useful_life_months, 2),
-					GREATEST(
-						0,
-						adp.depreciable_basis - COALESCE(posted.posted_amount, 0) - adp.salvage_value
-					)
-				)
-			) AS closing_book_value,
-			'DRAFT'
-		FROM asset_depreciation_profiles adp
-		JOIN asset_depreciation_methods adm ON adm.id = adp.depreciation_method_id
-		JOIN assets a ON a.id = adp.asset_id
-		LEFT JOIN (
-			SELECT
-				profile_id,
-				SUM(depreciation_amount) AS posted_amount
-			FROM asset_depreciation_schedules
-			WHERE status = 'POSTED' AND period_date < ?
-			GROUP BY profile_id
-		) posted ON posted.profile_id = adp.id
-		LEFT JOIN (
-			SELECT
-				profile_id,
-				COUNT(*) AS finalized_periods
-			FROM asset_depreciation_schedules
-			WHERE status IN ('POSTED', 'SKIPPED') AND period_date < ?
-			GROUP BY profile_id
-		) finalized ON finalized.profile_id = adp.id
-		WHERE adp.status = 'ACTIVE'
-			AND adm.code = 'STRAIGHT_LINE'
-			AND a.status <> 'DISPOSED'
-			AND adp.useful_life_months IS NOT NULL
-			AND adp.useful_life_months > 0
-			AND adp.depreciable_basis > adp.salvage_value
-			AND ? >= DATE_SUB(adp.start_date, INTERVAL DAYOFMONTH(adp.start_date) - 1 DAY)
-			AND TIMESTAMPDIFF(
-				MONTH,
-				DATE_SUB(adp.start_date, INTERVAL DAYOFMONTH(adp.start_date) - 1 DAY),
-				?
-			) < adp.useful_life_months
-			AND COALESCE(finalized.finalized_periods, 0) = TIMESTAMPDIFF(
-				MONTH,
-				DATE_SUB(adp.start_date, INTERVAL DAYOFMONTH(adp.start_date) - 1 DAY),
-				?
+			adp.useful_life_months,
+			adp.depreciable_basis,
+			adp.salvage_value,
+			adp.start_date,
+			first_policy.code,
+			last_policy.code,
+			disposal.disposal_date,
+			COALESCE((
+				SELECT SUM(schedule.depreciation_amount)
+				FROM asset_depreciation_schedules schedule
+				WHERE schedule.profile_id = adp.id
+				  AND schedule.status = 'POSTED'
+				  AND schedule.period_date < ?
+			), 0),
+			(
+				SELECT COUNT(*)
+				FROM asset_depreciation_schedules schedule
+				WHERE schedule.profile_id = adp.id
+				  AND schedule.status = 'DRAFT'
+				  AND schedule.period_date < ?
+			),
+			(
+				SELECT COUNT(*)
+				FROM asset_depreciation_schedules schedule
+				WHERE schedule.profile_id = adp.id
+				  AND schedule.status IN ('DRAFT', 'POSTED', 'SKIPPED')
+				  AND schedule.period_date > ?
 			)
-		ON DUPLICATE KEY UPDATE
-			opening_book_value = IF(asset_depreciation_schedules.status = 'DRAFT', VALUES(opening_book_value), asset_depreciation_schedules.opening_book_value),
-			depreciation_amount = IF(asset_depreciation_schedules.status = 'DRAFT', VALUES(depreciation_amount), asset_depreciation_schedules.depreciation_amount),
-			accumulated_depreciation = IF(asset_depreciation_schedules.status = 'DRAFT', VALUES(accumulated_depreciation), asset_depreciation_schedules.accumulated_depreciation),
-			closing_book_value = IF(asset_depreciation_schedules.status = 'DRAFT', VALUES(closing_book_value), asset_depreciation_schedules.closing_book_value),
-			updated_at = IF(asset_depreciation_schedules.status = 'DRAFT', CURRENT_TIMESTAMP, asset_depreciation_schedules.updated_at)
-	`, periodDate, periodDate, periodDate, periodDate, periodDate, periodDate, periodDate, periodDate)
+		FROM asset_depreciation_profiles adp
+		JOIN asset_depreciation_methods method ON method.id = adp.depreciation_method_id
+		JOIN asset_depreciation_first_month_policies first_policy ON first_policy.id = adp.first_month_policy_id
+		JOIN asset_depreciation_last_month_policies last_policy ON last_policy.id = adp.last_month_policy_id
+		JOIN assets asset ON asset.id = adp.asset_id
+		LEFT JOIN asset_disposals disposal ON disposal.id = (
+			SELECT MAX(candidate.id)
+			FROM asset_disposals candidate
+			WHERE candidate.asset_id = adp.asset_id AND candidate.status = 'DRAFT'
+		)
+		WHERE adp.status = 'ACTIVE'
+		  AND method.code = 'STRAIGHT_LINE'
+		  AND asset.status <> 'DISPOSED'
+		  AND adp.useful_life_months > 0
+		  AND adp.depreciable_basis > adp.salvage_value
+		FOR UPDATE
+	`, periodDate, periodDate, periodDate)
 	if err != nil {
 		return 0, err
+	}
+	candidates := make([]depreciationGenerationCandidate, 0)
+	for rows.Next() {
+		var candidate depreciationGenerationCandidate
+		if err := rows.Scan(
+			&candidate.ProfileID, &candidate.AssetID, &candidate.UsefulLife,
+			&candidate.Basis, &candidate.Salvage, &candidate.StartDate,
+			&candidate.FirstPolicyCode, &candidate.LastPolicyCode, &candidate.DisposalDate,
+			&candidate.PostedAmount, &candidate.PriorDrafts, &candidate.LaterSchedules,
+		); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		candidates = append(candidates, candidate)
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	changedScheduleIDs := make([]int64, 0)
+	for _, candidate := range candidates {
+		if candidate.PriorDrafts > 0 || candidate.LaterSchedules > 0 {
+			continue
+		}
+		effectiveStart := time.Date(candidate.StartDate.Year(), candidate.StartDate.Month(), 1, 0, 0, 0, 0, time.Local)
+		if candidate.FirstPolicyCode == "NEXT_MONTH" {
+			effectiveStart = effectiveStart.AddDate(0, 1, 0)
+		}
+		if periodDate.Before(effectiveStart) {
+			continue
+		}
+
+		startDay := 1
+		endDay := daysInDepreciationMonth(periodDate)
+		startMonth := time.Date(candidate.StartDate.Year(), candidate.StartDate.Month(), 1, 0, 0, 0, 0, time.Local)
+		if candidate.FirstPolicyCode == "PRORATE_DAILY" && periodDate.Equal(startMonth) {
+			startDay = candidate.StartDate.Day()
+		}
+		if candidate.DisposalDate.Valid {
+			disposalMonth := time.Date(candidate.DisposalDate.Time.Year(), candidate.DisposalDate.Time.Month(), 1, 0, 0, 0, 0, time.Local)
+			if periodDate.After(disposalMonth) || (periodDate.Equal(disposalMonth) && candidate.LastPolicyCode == "NO_DEPRECIATION") {
+				continue
+			}
+			if periodDate.Equal(disposalMonth) && candidate.LastPolicyCode == "PRORATE_DAILY" {
+				endDay = candidate.DisposalDate.Time.Day()
+			}
+		}
+		if endDay < startDay {
+			continue
+		}
+
+		remaining := candidate.Basis - candidate.PostedAmount - candidate.Salvage
+		if remaining <= 0.005 {
+			if err := finishDepreciationProfileTx(tx, candidate.ProfileID, auditCtx); err != nil {
+				return 0, err
+			}
+			continue
+		}
+		monthlyAmount := roundDepreciationAmount((candidate.Basis - candidate.Salvage) / float64(candidate.UsefulLife))
+		factor := float64(endDay-startDay+1) / float64(daysInDepreciationMonth(periodDate))
+		depreciationAmount := math.Min(remaining, roundDepreciationAmount(monthlyAmount*factor))
+		if depreciationAmount <= 0.005 {
+			continue
+		}
+		openingValue := math.Max(candidate.Salvage, candidate.Basis-candidate.PostedAmount)
+		accumulatedValue := candidate.PostedAmount + depreciationAmount
+		closingValue := math.Max(candidate.Salvage, openingValue-depreciationAmount)
+
+		var existingID, originalScheduleID int64
+		var existingStatus string
+		err := tx.QueryRow(`
+			SELECT id, status, COALESCE(original_schedule_id, 0)
+			FROM asset_depreciation_schedules
+			WHERE asset_id = ? AND period_year = ? AND period_month = ?
+			ORDER BY version_no DESC
+			LIMIT 1
+			FOR UPDATE
+		`, candidate.AssetID, year, month).Scan(&existingID, &existingStatus, &originalScheduleID)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			result, err := tx.Exec(`
+				INSERT INTO asset_depreciation_schedules (
+					profile_id, asset_id, period_year, period_month, period_date,
+					opening_book_value, depreciation_amount, accumulated_depreciation,
+					closing_book_value, status
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT')
+			`, candidate.ProfileID, candidate.AssetID, year, month, periodDate,
+				openingValue, depreciationAmount, accumulatedValue, closingValue)
+			if err != nil {
+				return 0, err
+			}
+			existingID, err = result.LastInsertId()
+			if err != nil {
+				return 0, err
+			}
+			changedScheduleIDs = append(changedScheduleIDs, existingID)
+		case err != nil:
+			return 0, err
+		case existingStatus == "DRAFT" && originalScheduleID == 0:
+			if _, err := tx.Exec(`
+				UPDATE asset_depreciation_schedules
+				SET opening_book_value = ?, depreciation_amount = ?, accumulated_depreciation = ?,
+					closing_book_value = ?, updated_at = CURRENT_TIMESTAMP
+				WHERE id = ? AND status = 'DRAFT'
+			`, openingValue, depreciationAmount, accumulatedValue, closingValue, existingID); err != nil {
+				return 0, err
+			}
+			changedScheduleIDs = append(changedScheduleIDs, existingID)
+		}
 	}
 
 	var scheduleCount int
@@ -1033,32 +1304,8 @@ func (r *AssetDepreciationRepository) GenerateMonthlySchedules(year, month int, 
 		return 0, err
 	}
 
-	rows, err := tx.Query(`
-		SELECT id
-		FROM asset_depreciation_schedules
-		WHERE period_year = ? AND period_month = ? AND status = 'DRAFT'
-		ORDER BY id
-	`, year, month)
-	if err != nil {
-		return 0, err
-	}
-	scheduleIDs := make([]int64, 0)
-	for rows.Next() {
-		var scheduleID int64
-		if err := rows.Scan(&scheduleID); err != nil {
-			rows.Close()
-			return 0, err
-		}
-		scheduleIDs = append(scheduleIDs, scheduleID)
-	}
-	if err := rows.Close(); err != nil {
-		return 0, err
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
 	message := fmt.Sprintf("Jadwal depresiasi periode %s dibuat atau diperbarui sebagai DRAFT", formatDepreciationMonthYearID(periodDate))
-	for _, scheduleID := range scheduleIDs {
+	for _, scheduleID := range changedScheduleIDs {
 		if err := insertAuditLogTx(tx, "ASSET_DEPRECIATION", scheduleID, "GENERATE", message, auditCtx); err != nil {
 			return 0, err
 		}
@@ -1070,6 +1317,60 @@ func (r *AssetDepreciationRepository) GenerateMonthlySchedules(year, month int, 
 		return 0, err
 	}
 	return scheduleCount, nil
+}
+
+func daysInDepreciationMonth(period time.Time) int {
+	return time.Date(period.Year(), period.Month()+1, 0, 0, 0, 0, 0, period.Location()).Day()
+}
+
+func roundDepreciationAmount(value float64) float64 {
+	return math.Round(value*100) / 100
+}
+
+func finishDepreciationProfileTx(tx *sql.Tx, profileID int64, auditCtx models.AuditContext) error {
+	result, err := tx.Exec(`
+		UPDATE asset_depreciation_profiles
+		SET status = 'FINISHED', finished_at = COALESCE(finished_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status = 'ACTIVE'
+	`, profileID)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected == 0 {
+		return err
+	}
+	return insertAuditLogTx(tx, "DEPRECIATION_PROFILE", profileID, "FINISH_PROFILE",
+		"Profil otomatis selesai karena nilai buku telah mencapai nilai residu", auditCtx)
+}
+
+func finishCompletedDepreciationProfilesTx(tx *sql.Tx, records []depreciationScheduleActionRecord, auditCtx models.AuditContext) error {
+	seen := make(map[int64]bool, len(records))
+	for _, record := range records {
+		if record.ProfileID <= 0 || seen[record.ProfileID] {
+			continue
+		}
+		seen[record.ProfileID] = true
+		var status string
+		var basis, salvage, posted float64
+		if err := tx.QueryRow(`
+			SELECT adp.status, adp.depreciable_basis, adp.salvage_value,
+				COALESCE(SUM(CASE WHEN schedule.status = 'POSTED' THEN schedule.depreciation_amount ELSE 0 END), 0)
+			FROM asset_depreciation_profiles adp
+			LEFT JOIN asset_depreciation_schedules schedule ON schedule.profile_id = adp.id
+			WHERE adp.id = ?
+			GROUP BY adp.id, adp.status, adp.depreciable_basis, adp.salvage_value
+			FOR UPDATE
+		`, record.ProfileID).Scan(&status, &basis, &salvage, &posted); err != nil {
+			return err
+		}
+		if status == "ACTIVE" && basis-posted <= salvage+0.005 {
+			if err := finishDepreciationProfileTx(tx, record.ProfileID, auditCtx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *AssetDepreciationRepository) PostSchedules(ids []int64, auditCtx models.AuditContext) (int64, error) {
@@ -1090,7 +1391,7 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64, auditCtx models
 		args[i] = id
 	}
 	query := `
-		SELECT id, status, period_date
+		SELECT id, profile_id, status, period_date
 		FROM asset_depreciation_schedules
 		WHERE id IN (` + strings.Join(placeholders, ",") + `)
 		FOR UPDATE`
@@ -1106,7 +1407,8 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64, auditCtx models
 		var id int64
 		var status string
 		var periodDate time.Time
-		if err := rows.Scan(&id, &status, &periodDate); err != nil {
+		var profileID int64
+		if err := rows.Scan(&id, &profileID, &status, &periodDate); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -1120,7 +1422,7 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64, auditCtx models
 			rows.Close()
 			return 0, fmt.Errorf("depresiasi periode %s belum dapat diposting", formatDepreciationMonthYearID(periodDate))
 		}
-		records = append(records, depreciationScheduleActionRecord{ID: id, PeriodDate: periodDate})
+		records = append(records, depreciationScheduleActionRecord{ID: id, ProfileID: profileID, PeriodDate: periodDate})
 	}
 	if err := rows.Close(); err != nil {
 		return 0, err
@@ -1155,6 +1457,9 @@ func (r *AssetDepreciationRepository) PostSchedules(ids []int64, auditCtx models
 			return 0, err
 		}
 	}
+	if err := finishCompletedDepreciationProfilesTx(tx, records, auditCtx); err != nil {
+		return 0, err
+	}
 	if err := syncDepreciationActionPeriodsTx(tx, records, auditCtx.ActorUserID); err != nil {
 		return 0, err
 	}
@@ -1182,7 +1487,7 @@ func (r *AssetDepreciationRepository) SkipSchedules(ids []int64, reason string, 
 		args[i] = id
 	}
 	rows, err := tx.Query(`
-		SELECT id, status, period_date
+		SELECT id, profile_id, status, period_date
 		FROM asset_depreciation_schedules
 		WHERE id IN (`+strings.Join(placeholders, ",")+`)
 		FOR UPDATE
@@ -1196,7 +1501,7 @@ func (r *AssetDepreciationRepository) SkipSchedules(ids []int64, reason string, 
 	for rows.Next() {
 		var record depreciationScheduleActionRecord
 		var status string
-		if err := rows.Scan(&record.ID, &status, &record.PeriodDate); err != nil {
+		if err := rows.Scan(&record.ID, &record.ProfileID, &status, &record.PeriodDate); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -1273,17 +1578,18 @@ func (r *AssetDepreciationRepository) ReverseSchedule(scheduleID int64, reason s
 	var periodYear, periodMonth, versionNo int
 	var periodDate time.Time
 	var openingValue, depreciationAmount, accumulatedValue, closingValue float64
-	var status string
+	var status, assetStatus string
 	if err := tx.QueryRow(`
 		SELECT profile_id, asset_id, period_year, period_month, period_date, version_no,
 			opening_book_value, depreciation_amount, accumulated_depreciation,
-			closing_book_value, status
-		FROM asset_depreciation_schedules
-		WHERE id = ?
+			closing_book_value, schedule.status, asset.status
+		FROM asset_depreciation_schedules schedule
+		JOIN assets asset ON asset.id = schedule.asset_id
+		WHERE schedule.id = ?
 		FOR UPDATE
 	`, scheduleID).Scan(
 		&profileID, &assetID, &periodYear, &periodMonth, &periodDate, &versionNo,
-		&openingValue, &depreciationAmount, &accumulatedValue, &closingValue, &status,
+		&openingValue, &depreciationAmount, &accumulatedValue, &closingValue, &status, &assetStatus,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, errors.New("posting depresiasi tidak ditemukan")
@@ -1292,6 +1598,9 @@ func (r *AssetDepreciationRepository) ReverseSchedule(scheduleID int64, reason s
 	}
 	if status != "POSTED" {
 		return 0, errors.New("hanya depresiasi berstatus POSTED yang dapat dibatalkan")
+	}
+	if assetStatus == "DISPOSED" {
+		return 0, errors.New("batalkan disposal aset terlebih dahulu sebelum melakukan reversal depresiasi")
 	}
 	if _, err := assertDepreciationPeriodOpenTx(tx, periodYear, periodMonth); err != nil {
 		return 0, err
@@ -1357,6 +1666,22 @@ func (r *AssetDepreciationRepository) ReverseSchedule(scheduleID int64, reason s
 	if err := insertAuditLogTx(tx, "ASSET_DEPRECIATION", correctionID, "CREATE_CORRECTION_DRAFT",
 		fmt.Sprintf("Draft koreksi versi %d dibuat dari jadwal ID %d", maxVersion+1, scheduleID), auditCtx); err != nil {
 		return 0, err
+	}
+	result, err = tx.Exec(`
+		UPDATE asset_depreciation_profiles
+		SET status = 'ACTIVE', finished_at = NULL, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status = 'FINISHED'
+	`, profileID)
+	if err != nil {
+		return 0, err
+	}
+	if affected, err := result.RowsAffected(); err != nil {
+		return 0, err
+	} else if affected > 0 {
+		if err := insertAuditLogTx(tx, "DEPRECIATION_PROFILE", profileID, "REOPEN_AFTER_REVERSAL",
+			"Profil diaktifkan kembali karena posting depresiasi terakhir dibatalkan", auditCtx); err != nil {
+			return 0, err
+		}
 	}
 	if err := syncDepreciationPeriodStatusTx(tx, periodYear, periodMonth, auditCtx.ActorUserID); err != nil {
 		return 0, err

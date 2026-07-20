@@ -144,8 +144,23 @@ type AssetDepreciationProfile struct {
 	PostedDepreciationDisplay  string
 	CurrentBookValueDisplay    string
 	StartDate                  string
+	FirstMonthPolicyID         int64
+	FirstMonthPolicyCode       string
+	FirstMonthPolicyName       string
+	LastMonthPolicyID          int64
+	LastMonthPolicyCode        string
+	LastMonthPolicyName        string
 	Status                     string
 	Notes                      string
+	PausedAtDisplay            string
+	PausedByName               string
+	PauseReason                string
+	ResumedAtDisplay           string
+	ResumedByName              string
+	FinishedAtDisplay          string
+	TerminatedAtDisplay        string
+	TerminatedByName           string
+	TerminationReason          string
 	PostedScheduleCount        int
 	DraftScheduleCount         int
 	LastPostedPeriodDisplay    string
@@ -157,6 +172,7 @@ type DepreciationProfileStats struct {
 	ActiveProfiles     int
 	PausedProfiles     int
 	FinishedProfiles   int
+	TerminatedProfiles int
 	UnconfiguredAssets int
 }
 
@@ -173,6 +189,13 @@ type DepreciationMethodOption struct {
 	Name string
 }
 
+type DepreciationPolicyOption struct {
+	ID          int64
+	Code        string
+	Name        string
+	Description string
+}
+
 type DepreciationAssetOption struct {
 	ID                    int64
 	AssetCode             string
@@ -184,16 +207,18 @@ type DepreciationAssetOption struct {
 }
 
 type DepreciationProfileInput struct {
-	ID               int64
-	AssetID          int64
-	MethodID         int64
-	UsefulLifeMonths int
-	SalvageValue     float64
-	DepreciableBasis float64
-	StartDate        string
-	Status           string
-	Notes            string
-	AuditContext     AuditContext
+	ID                 int64
+	AssetID            int64
+	MethodID           int64
+	UsefulLifeMonths   int
+	SalvageValue       float64
+	DepreciableBasis   float64
+	StartDate          string
+	FirstMonthPolicyID int64
+	LastMonthPolicyID  int64
+	Status             string
+	Notes              string
+	AuditContext       AuditContext
 }
 
 type DepreciationPostingHistoryFilter struct {

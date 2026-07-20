@@ -188,6 +188,11 @@ func AssetDetailIndex(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	disposal, err := assetDisposalService().GetPostedDisposalByAssetID(id)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
 	types, _ := service.GetAssetTypes()
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
@@ -199,6 +204,7 @@ func AssetDetailIndex(c *gin.Context) {
 		"Movements":            movements,
 		"Depreciation":         depreciation,
 		"DepreciationPostings": depreciationPostings,
+		"Disposal":             disposal,
 		"Types":                types,
 		"Locations":            locations,
 		"Stores":               stores,

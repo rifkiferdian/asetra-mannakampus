@@ -117,7 +117,20 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "asset_depreciation_period_reopen", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_profile_management_access", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_profile_edit", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_profile_pause", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_depreciation_profile_resume", Group: "asset_depreciation", GuardName: "web"},
 		{Name: "asset_depreciation_posting_history_access", Group: "asset_depreciation", GuardName: "web"},
+		{Name: "asset_disposal_type_management_access", Group: "asset_disposal_type", GuardName: "web"},
+		{Name: "asset_disposal_type_view", Group: "asset_disposal_type", GuardName: "web"},
+		{Name: "asset_disposal_type_create", Group: "asset_disposal_type", GuardName: "web"},
+		{Name: "asset_disposal_type_edit", Group: "asset_disposal_type", GuardName: "web"},
+		{Name: "asset_disposal_type_delete", Group: "asset_disposal_type", GuardName: "web"},
+		{Name: "asset_disposal_management_access", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_view", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_create", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_edit", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_post", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_cancel", Group: "asset_disposal", GuardName: "web"},
 	}
 
 	if err := s.Repo.EnsurePermissions(defs); err != nil {
@@ -162,7 +175,12 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 			"asset_depreciation_management_access", "asset_depreciation_view", "asset_depreciation_generate", "asset_depreciation_post", "asset_depreciation_skip",
 			"asset_depreciation_reverse", "asset_depreciation_correction_edit",
 			"asset_depreciation_period_close", "asset_depreciation_period_reopen",
-			"asset_depreciation_profile_management_access", "asset_depreciation_profile_edit", "asset_depreciation_posting_history_access",
+			"asset_depreciation_profile_management_access", "asset_depreciation_profile_edit",
+			"asset_depreciation_profile_pause", "asset_depreciation_profile_resume", "asset_depreciation_posting_history_access",
+			"asset_disposal_type_management_access", "asset_disposal_type_view", "asset_disposal_type_create",
+			"asset_disposal_type_edit", "asset_disposal_type_delete",
+			"asset_disposal_management_access", "asset_disposal_view", "asset_disposal_create",
+			"asset_disposal_edit", "asset_disposal_post", "asset_disposal_cancel",
 		},
 		[]string{"finance-manager"},
 		"web",
@@ -170,7 +188,7 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		return err
 	}
 
-	return s.Repo.GrantPermissionsToRoles(
+	if err := s.Repo.GrantPermissionsToRoles(
 		[]string{
 			"asset_type_management_access", "asset_type_view", "asset_type_create", "asset_type_edit", "asset_type_delete",
 			"component_type_management_access", "component_type_view", "component_type_create", "component_type_edit", "component_type_delete",
@@ -181,6 +199,17 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 			"asset_component_movement_management_access", "asset_component_movement_view", "asset_component_movement_create",
 		},
 		[]string{"IT-manager", "it-manager", "warehouse", "procurement"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	return s.Repo.GrantPermissionsToRoles(
+		[]string{
+			"asset_disposal_type_management_access", "asset_disposal_type_view",
+			"asset_disposal_management_access", "asset_disposal_view", "asset_disposal_create", "asset_disposal_edit",
+		},
+		[]string{"IT-manager", "it-manager"},
 		"web",
 	)
 }

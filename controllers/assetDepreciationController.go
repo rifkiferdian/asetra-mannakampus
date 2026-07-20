@@ -169,37 +169,51 @@ func DepreciationProfileIndex(c *gin.Context) {
 		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
 		return
 	}
+	firstPolicies, err := service.GetFirstMonthPolicies()
+	if err != nil {
+		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
+		return
+	}
+	lastPolicies, err := service.GetLastMonthPolicies()
+	if err != nil {
+		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
+		return
+	}
 	assets, err := service.GetDepreciationAssetOptions()
 	if err != nil {
 		c.String(http.StatusInternalServerError, depreciationErrorMessage(err))
 		return
 	}
 	Render(c, "depreciation_profiles.html", gin.H{
-		"Title":      "Profil Depresiasi",
-		"Page":       "depreciation_profiles",
-		"Items":      result.Items,
-		"Stats":      result.Stats,
-		"Methods":    methods,
-		"Assets":     assets,
-		"Filter":     filter,
-		"Pagination": depreciationProfilePagination(filter, result),
-		"Success":    strings.TrimSpace(c.Query("success")),
-		"Error":      strings.TrimSpace(c.Query("error")),
+		"Title":              "Profil Depresiasi",
+		"Page":               "depreciation_profiles",
+		"Items":              result.Items,
+		"Stats":              result.Stats,
+		"Methods":            methods,
+		"FirstMonthPolicies": firstPolicies,
+		"LastMonthPolicies":  lastPolicies,
+		"Assets":             assets,
+		"Filter":             filter,
+		"Pagination":         depreciationProfilePagination(filter, result),
+		"Success":            strings.TrimSpace(c.Query("success")),
+		"Error":              strings.TrimSpace(c.Query("error")),
 	})
 }
 
 func DepreciationProfileSave(c *gin.Context) {
 	input := models.DepreciationProfileInput{
-		ID:               parseInt64Form(c, "id"),
-		AssetID:          parseInt64Form(c, "asset_id"),
-		MethodID:         parseInt64Form(c, "depreciation_method_id"),
-		UsefulLifeMonths: parseIntForm(c, "useful_life_months"),
-		SalvageValue:     parseFloatForm(c, "salvage_value"),
-		DepreciableBasis: parseFloatForm(c, "depreciable_basis"),
-		StartDate:        c.PostForm("start_date"),
-		Status:           c.PostForm("status"),
-		Notes:            c.PostForm("notes"),
-		AuditContext:     depreciationAuditContext(c),
+		ID:                 parseInt64Form(c, "id"),
+		AssetID:            parseInt64Form(c, "asset_id"),
+		MethodID:           parseInt64Form(c, "depreciation_method_id"),
+		UsefulLifeMonths:   parseIntForm(c, "useful_life_months"),
+		SalvageValue:       parseFloatForm(c, "salvage_value"),
+		DepreciableBasis:   parseFloatForm(c, "depreciable_basis"),
+		StartDate:          c.PostForm("start_date"),
+		FirstMonthPolicyID: parseInt64Form(c, "first_month_policy_id"),
+		LastMonthPolicyID:  parseInt64Form(c, "last_month_policy_id"),
+		Status:             c.PostForm("status"),
+		Notes:              c.PostForm("notes"),
+		AuditContext:       depreciationAuditContext(c),
 	}
 	if err := assetDepreciationService().SaveDepreciationProfile(input); err != nil {
 		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(depreciationErrorMessage(err)))
@@ -207,6 +221,26 @@ func DepreciationProfileSave(c *gin.Context) {
 	}
 	message := "Profil depresiasi berhasil disimpan"
 	c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?success="+url.QueryEscape(message))
+}
+
+func DepreciationProfilePause(c *gin.Context) {
+	if err := assetDepreciationService().PauseDepreciationProfile(
+		parseInt64Form(c, "profile_id"), c.PostForm("pause_reason"), depreciationAuditContext(c),
+	); err != nil {
+		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(depreciationErrorMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?success="+url.QueryEscape("Profil depresiasi berhasil dijeda"))
+}
+
+func DepreciationProfileResume(c *gin.Context) {
+	if err := assetDepreciationService().ResumeDepreciationProfile(
+		parseInt64Form(c, "profile_id"), depreciationAuditContext(c),
+	); err != nil {
+		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(depreciationErrorMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?success="+url.QueryEscape("Profil depresiasi berhasil dilanjutkan"))
 }
 
 func DepreciationPostingHistoryIndex(c *gin.Context) {

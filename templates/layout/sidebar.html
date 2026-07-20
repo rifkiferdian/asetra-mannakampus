@@ -49,8 +49,8 @@
                 </a>
             </li>
             {{ end }}
-            {{ $assetActive := or (eq .Page "asset_type") (eq .Page "component_type") (eq .Page "asset_location") (eq .Page "asset") (eq .Page "asset_component") (eq .Page "asset_movement") (eq .Page "asset_component_movement") }}
-            {{ $hasAssetAccess := or (index .Permissions "asset_type_management_access") (index .Permissions "component_type_management_access") (index .Permissions "asset_location_management_access") (index .Permissions "asset_management_access") (index .Permissions "asset_component_management_access") (index .Permissions "asset_movement_management_access") (index .Permissions "asset_component_movement_management_access") }}
+            {{ $assetActive := or (eq .Page "asset_type") (eq .Page "component_type") (eq .Page "asset_location") (eq .Page "asset") (eq .Page "asset_component") (eq .Page "asset_movement") (eq .Page "asset_component_movement") (eq .Page "asset_disposal_type") (eq .Page "asset_disposal") }}
+            {{ $hasAssetAccess := or (index .Permissions "asset_type_management_access") (index .Permissions "component_type_management_access") (index .Permissions "asset_location_management_access") (index .Permissions "asset_management_access") (index .Permissions "asset_component_management_access") (index .Permissions "asset_movement_management_access") (index .Permissions "asset_component_movement_management_access") (index .Permissions "asset_disposal_type_management_access") (index .Permissions "asset_disposal_management_access") }}
             {{ if $hasAssetAccess }}
             <li class="space-y-1">
                 <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-[14px] font-semibold transition sm:px-4 sm:py-3 {{ if $assetActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="asset-submenu" aria-expanded="{{ if $assetActive }}true{{ else }}false{{ end }}" aria-controls="asset-submenu" {{ if $assetActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
@@ -72,6 +72,12 @@
                     {{ end }}
                     {{ if index .Permissions "asset_management_access" }}
                     <li><a href="{{ baseURL "/asset-register" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-desktop text-base"></i><span>Assets</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_disposal_type_management_access" }}
+                    <li><a href="{{ baseURL "/asset-disposal-types" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_disposal_type" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-list-check text-base"></i><span class="whitespace-nowrap">Disposal Types</span></a></li>
+                    {{ end }}
+                    {{ if index .Permissions "asset_disposal_management_access" }}
+                    <li><a href="{{ baseURL "/asset-disposals" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_disposal" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-archive-out text-base"></i><span class="whitespace-nowrap">Asset Disposal</span></a></li>
                     {{ end }}
                     {{ if index .Permissions "asset_component_management_access" }}
                     <li><a href="{{ baseURL "/asset-components" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_component" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-memory-card text-base"></i><span>Components</span></a></li>
