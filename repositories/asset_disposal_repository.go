@@ -164,11 +164,15 @@ func (r *AssetDisposalRepository) GetDisposals(filter models.AssetDisposalFilter
 	if err := r.DB.QueryRow(`
 		SELECT COUNT(*),
 			COALESCE(SUM(status = 'DRAFT'), 0),
+			COALESCE(SUM(status = 'IN_APPROVAL'), 0),
+			COALESCE(SUM(status = 'APPROVED'), 0),
+			COALESCE(SUM(status = 'REJECTED'), 0),
 			COALESCE(SUM(status = 'POSTED'), 0),
 			COALESCE(SUM(status = 'CANCELLED'), 0),
 			COALESCE(SUM(CASE WHEN status = 'POSTED' THEN disposal_value ELSE 0 END), 0)
 		FROM asset_disposals
-	`).Scan(&result.Stats.Total, &result.Stats.Draft, &result.Stats.Posted, &result.Stats.Cancelled, &ignoredTotalValue); err != nil {
+	`).Scan(&result.Stats.Total, &result.Stats.Draft, &result.Stats.InApproval, &result.Stats.Approved,
+		&result.Stats.Rejected, &result.Stats.Posted, &result.Stats.Cancelled, &ignoredTotalValue); err != nil {
 		return result, err
 	}
 	var totalValue float64
@@ -185,9 +189,11 @@ func (r *AssetDisposalRepository) GetDisposals(filter models.AssetDisposalFilter
 			disposal.disposal_type_id, type.code, type.name, disposal.disposal_date,
 			disposal.disposal_value, COALESCE(disposal.buyer_name, ''),
 			COALESCE(disposal.document_reference, ''), disposal.reason, disposal.status,
-			processor.name, COALESCE(approver.name, ''), disposal.posted_at,
-			disposal.cancelled_at, COALESCE(canceller.name, ''),
-			COALESCE(disposal.cancellation_reason, ''), COALESCE(disposal.notes, ''),
+			processor.name, COALESCE(approver.name, ''), COALESCE(submitter.name, ''), disposal.submitted_at,
+			COALESCE(rejector.name, ''), disposal.rejected_at, COALESCE(disposal.rejection_reason, ''),
+			disposal.posted_at, COALESCE(poster.name, ''), disposal.cancelled_at, COALESCE(canceller.name, ''),
+			COALESCE(disposal.cancellation_reason, ''), COALESCE(reverser.name, ''), disposal.reversed_at,
+			COALESCE(disposal.reversal_reason, ''), COALESCE(disposal.notes, ''),
 			disposal.acquisition_value, disposal.accumulated_depreciation,
 			disposal.book_value, disposal.gain_loss_amount, disposal.created_at
 		FROM asset_disposals disposal
@@ -196,7 +202,11 @@ func (r *AssetDisposalRepository) GetDisposals(filter models.AssetDisposalFilter
 		JOIN asset_disposal_types type ON type.id = disposal.disposal_type_id
 		JOIN users processor ON processor.id = disposal.processed_by
 		LEFT JOIN users approver ON approver.id = disposal.approved_by
+		LEFT JOIN users submitter ON submitter.id = disposal.submitted_by
+		LEFT JOIN users rejector ON rejector.id = disposal.rejected_by
+		LEFT JOIN users poster ON poster.id = disposal.posted_by
 		LEFT JOIN users canceller ON canceller.id = disposal.cancelled_by
+		LEFT JOIN users reverser ON reverser.id = disposal.reversed_by
 		WHERE `+where+`
 		ORDER BY disposal.id DESC
 		LIMIT ? OFFSET ?
@@ -208,7 +218,7 @@ func (r *AssetDisposalRepository) GetDisposals(filter models.AssetDisposalFilter
 	for rows.Next() {
 		var item models.AssetDisposal
 		var disposalDate time.Time
-		var postedAt, cancelledAt sql.NullTime
+		var submittedAt, rejectedAt, postedAt, cancelledAt, reversedAt sql.NullTime
 		var disposalValue, acquisitionValue, accumulated, bookValue, gainLoss float64
 		var createdAt sql.NullTime
 		if err := rows.Scan(
@@ -216,8 +226,10 @@ func (r *AssetDisposalRepository) GetDisposals(filter models.AssetDisposalFilter
 			&item.AssetCode, &item.AssetName, &item.AssetTypeName,
 			&item.DisposalTypeID, &item.DisposalTypeCode, &item.DisposalTypeName, &disposalDate,
 			&disposalValue, &item.BuyerName, &item.DocumentReference, &item.Reason, &item.Status,
-			&item.ProcessedByName, &item.ApprovedByName, &postedAt, &cancelledAt,
-			&item.CancelledByName, &item.CancellationReason, &item.Notes,
+			&item.ProcessedByName, &item.ApprovedByName, &item.SubmittedByName, &submittedAt,
+			&item.RejectedByName, &rejectedAt, &item.RejectionReason, &postedAt, &item.PostedByName,
+			&cancelledAt, &item.CancelledByName, &item.CancellationReason, &item.ReversedByName,
+			&reversedAt, &item.ReversalReason, &item.Notes,
 			&acquisitionValue, &accumulated, &bookValue, &gainLoss, &createdAt,
 		); err != nil {
 			return result, err
@@ -240,8 +252,17 @@ func (r *AssetDisposalRepository) GetDisposals(filter models.AssetDisposalFilter
 		if postedAt.Valid {
 			item.PostedAtDisplay = formatDepreciationDateID(postedAt.Time, true)
 		}
+		if submittedAt.Valid {
+			item.SubmittedAtDisplay = formatDepreciationDateID(submittedAt.Time, true)
+		}
+		if rejectedAt.Valid {
+			item.RejectedAtDisplay = formatDepreciationDateID(rejectedAt.Time, true)
+		}
 		if cancelledAt.Valid {
 			item.CancelledAtDisplay = formatDepreciationDateID(cancelledAt.Time, true)
+		}
+		if reversedAt.Valid {
+			item.ReversedAtDisplay = formatDepreciationDateID(reversedAt.Time, true)
 		}
 		item.CreatedAtDisplay = formatNullTime(createdAt)
 		result.Items = append(result.Items, item)
@@ -283,7 +304,7 @@ func (r *AssetDisposalRepository) GetDisposalAssetOptions() ([]models.AssetDispo
 		WHERE asset.status <> 'DISPOSED'
 		  AND NOT EXISTS (
 			SELECT 1 FROM asset_disposals disposal
-			WHERE disposal.asset_id = asset.id AND disposal.status = 'POSTED'
+			WHERE disposal.asset_id = asset.id AND disposal.status NOT IN ('CANCELLED','REVERSED')
 		  )
 		ORDER BY asset.asset_code
 	`)
@@ -342,7 +363,7 @@ func (r *AssetDisposalRepository) SaveDisposal(input models.AssetDisposalInput) 
 		return errors.New("tanggal disposal tidak boleh sebelum tanggal perolehan aset")
 	}
 	var duplicateCount int
-	duplicateQuery := `SELECT COUNT(*) FROM asset_disposals WHERE asset_id = ? AND status IN ('DRAFT', 'POSTED')`
+	duplicateQuery := `SELECT COUNT(*) FROM asset_disposals WHERE asset_id = ? AND status NOT IN ('CANCELLED', 'REVERSED')`
 	duplicateArgs := []any{input.AssetID}
 	if input.ID > 0 {
 		duplicateQuery += " AND id <> ?"
@@ -390,14 +411,15 @@ func (r *AssetDisposalRepository) SaveDisposal(input models.AssetDisposalInput) 
 		}
 		return err
 	}
-	if status != "DRAFT" {
-		return errors.New("hanya disposal DRAFT yang dapat diubah")
+	if status != "DRAFT" && status != "REJECTED" {
+		return errors.New("hanya disposal DRAFT atau REJECTED yang dapat diubah")
 	}
 	if _, err := tx.Exec(`
 		UPDATE asset_disposals
 		SET disposal_type_id = ?, disposal_date = ?, disposal_value = ?, buyer_name = ?,
-			document_reference = ?, reason = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ? AND status = 'DRAFT'
+			document_reference = ?, reason = ?, notes = ?, status = 'DRAFT',
+			rejected_by = NULL, rejected_at = NULL, rejection_reason = NULL, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status IN ('DRAFT','REJECTED')
 	`, input.DisposalTypeID, input.DisposalDate, input.DisposalValue, nullableString(input.BuyerName),
 		nullableString(input.DocumentReference), input.Reason, nullableString(input.Notes), input.ID); err != nil {
 		return err
@@ -433,8 +455,8 @@ func (r *AssetDisposalRepository) PostDisposal(id int64, auditCtx models.AuditCo
 		}
 		return err
 	}
-	if disposalStatus != "DRAFT" {
-		return errors.New("hanya disposal DRAFT yang dapat diposting")
+	if disposalStatus != "APPROVED" {
+		return errors.New("hanya disposal APPROVED yang dapat diposting")
 	}
 	if disposalDate.After(time.Now()) {
 		return errors.New("disposal dengan tanggal masa depan belum dapat diposting")
@@ -502,10 +524,10 @@ func (r *AssetDisposalRepository) PostDisposal(id int64, auditCtx models.AuditCo
 		UPDATE asset_disposals
 		SET status = 'POSTED', depreciation_profile_id = ?, acquisition_value = ?,
 			accumulated_depreciation = ?, book_value = ?, gain_loss_amount = ?,
-			prior_asset_status = ?, prior_profile_status = ?, approved_by = ?, posted_at = CURRENT_TIMESTAMP,
+			prior_asset_status = ?, prior_profile_status = ?, posted_by = ?, posted_at = CURRENT_TIMESTAMP,
 			cancelled_at = NULL, cancelled_by = NULL, cancellation_reason = NULL,
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = ? AND status = 'DRAFT'
+		WHERE id = ? AND status = 'APPROVED'
 	`, disposalNullableSQLInt64(profileID), acquisitionValue, postedAmount, bookValue, gainLoss,
 		assetStatus, disposalNullableSQLString(profileStatus), auditCtx.ActorUserID, id); err != nil {
 		return err
@@ -596,7 +618,7 @@ func validateAndFinalizeDisposalDepreciationTx(tx *sql.Tx, disposalID, profileID
 	return syncDepreciationActionPeriodsTx(tx, records, auditCtx.ActorUserID)
 }
 
-func (r *AssetDisposalRepository) CancelDisposal(id int64, reason string, auditCtx models.AuditContext) error {
+func (r *AssetDisposalRepository) ReverseDisposal(id int64, reason string, auditCtx models.AuditContext) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
@@ -616,8 +638,8 @@ func (r *AssetDisposalRepository) CancelDisposal(id int64, reason string, auditC
 		}
 		return err
 	}
-	if status == "CANCELLED" {
-		return errors.New("transaksi disposal sudah dibatalkan")
+	if status != "POSTED" {
+		return errors.New("hanya disposal POSTED yang dapat direversal")
 	}
 	if status == "POSTED" {
 		if !priorAssetStatus.Valid || priorAssetStatus.String == "" {
@@ -683,14 +705,58 @@ func (r *AssetDisposalRepository) CancelDisposal(id int64, reason string, auditC
 	}
 	if _, err := tx.Exec(`
 		UPDATE asset_disposals
-		SET status = 'CANCELLED', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = ?,
-			cancellation_reason = ?, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ? AND status IN ('DRAFT', 'POSTED')
+		SET status = 'REVERSED', reversed_at = CURRENT_TIMESTAMP, reversed_by = ?,
+			reversal_reason = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status = 'POSTED'
 	`, auditCtx.ActorUserID, reason, id); err != nil {
 		return err
 	}
-	if err := insertAuditLogTx(tx, "ASSET_DISPOSAL", id, "CANCEL_DISPOSAL",
-		fmt.Sprintf("Disposal %s dibatalkan. Alasan: %s", number, reason), auditCtx); err != nil {
+	if err := insertAuditLogTx(tx, "ASSET_DISPOSAL", id, "REVERSE_DISPOSAL",
+		fmt.Sprintf("Posting disposal %s direversal. Alasan: %s", number, reason), auditCtx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *AssetDisposalRepository) CancelDisposal(id int64, reason string, auditCtx models.AuditContext) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var number, status string
+	if err := tx.QueryRow(`SELECT disposal_number,status FROM asset_disposals WHERE id=? FOR UPDATE`, id).Scan(&number, &status); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("transaksi disposal tidak ditemukan")
+		}
+		return err
+	}
+	if status == "POSTED" {
+		return errors.New("disposal POSTED harus dibatalkan melalui proses reversal")
+	}
+	if status == "CANCELLED" || status == "REVERSED" {
+		return errors.New("transaksi disposal sudah tidak aktif")
+	}
+	if status != "DRAFT" && status != "REJECTED" && status != "IN_APPROVAL" && status != "APPROVED" {
+		return errors.New("status disposal tidak dapat dibatalkan")
+	}
+	var approvalID sql.NullInt64
+	_ = tx.QueryRow(`SELECT id FROM asset_disposal_approvals WHERE disposal_id=? AND status='PENDING' ORDER BY attempt_no DESC LIMIT 1 FOR UPDATE`, id).Scan(&approvalID)
+	if approvalID.Valid {
+		if _, err := tx.Exec(`UPDATE asset_disposal_approval_tasks SET status='CANCELLED',updated_at=CURRENT_TIMESTAMP WHERE approval_id=? AND status IN ('PENDING','WAITING')`, approvalID.Int64); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE asset_disposal_approvals SET status='CANCELLED',cancelled_by=?,cancelled_at=CURRENT_TIMESTAMP,cancellation_reason=? WHERE id=?`, auditCtx.ActorUserID, reason, approvalID.Int64); err != nil {
+			return err
+		}
+		if err := insertDisposalApprovalHistoryTx(tx, approvalID.Int64, nil, id, "CANCEL", status, "CANCELLED", reason, auditCtx); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(`UPDATE asset_disposals SET status='CANCELLED',cancelled_by=?,cancelled_at=CURRENT_TIMESTAMP,cancellation_reason=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`, auditCtx.ActorUserID, reason, id); err != nil {
+		return err
+	}
+	if err := insertAuditLogTx(tx, "ASSET_DISPOSAL", id, "CANCEL_DISPOSAL", fmt.Sprintf("Disposal %s dibatalkan sebelum posting. Alasan: %s", number, reason), auditCtx); err != nil {
 		return err
 	}
 	return tx.Commit()

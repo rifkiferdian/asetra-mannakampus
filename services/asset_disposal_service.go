@@ -48,7 +48,8 @@ func (s *AssetDisposalService) GetDisposals(filter models.AssetDisposalFilter) (
 	if filter.Status == "" {
 		filter.Status = "ALL"
 	}
-	if filter.Status != "ALL" && filter.Status != "DRAFT" && filter.Status != "POSTED" && filter.Status != "CANCELLED" {
+	validStatuses := map[string]bool{"ALL": true, "DRAFT": true, "IN_APPROVAL": true, "REJECTED": true, "APPROVED": true, "POSTED": true, "CANCELLED": true, "REVERSED": true}
+	if !validStatuses[filter.Status] {
 		return models.AssetDisposalResult{}, errors.New("status disposal tidak valid")
 	}
 	filter.Search = strings.TrimSpace(filter.Search)
@@ -121,4 +122,13 @@ func (s *AssetDisposalService) CancelDisposal(id int64, reason string, auditCtx 
 		return errors.New("pengguna tidak valid")
 	}
 	return s.Repo.CancelDisposal(id, reason, auditCtx)
+}
+
+func (s *AssetDisposalService) ReverseDisposal(id int64, reason string, auditCtx models.AuditContext) error {
+	reason = strings.TrimSpace(reason)
+	if id <= 0 { return errors.New("transaksi disposal tidak valid") }
+	if reason == "" { return errors.New("alasan reversal wajib diisi") }
+	if len(reason) > 1000 { return errors.New("alasan reversal maksimal 1000 karakter") }
+	if auditCtx.ActorUserID <= 0 { return errors.New("pengguna tidak valid") }
+	return s.Repo.ReverseDisposal(id, reason, auditCtx)
 }

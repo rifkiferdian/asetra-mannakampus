@@ -128,6 +128,14 @@ func AssetDisposalCancel(c *gin.Context) {
 	redirectAssetDisposal(c, "Disposal berhasil dibatalkan", "")
 }
 
+func AssetDisposalReverse(c *gin.Context) {
+	if err := assetDisposalService().ReverseDisposal(parseInt64Param(c, "id"), c.PostForm("reversal_reason"), depreciationAuditContext(c)); err != nil {
+		redirectAssetDisposal(c, "", err.Error())
+		return
+	}
+	redirectAssetDisposal(c, "Posting disposal berhasil direversal dan status aset dipulihkan", "")
+}
+
 func assetDisposalInput(c *gin.Context) models.AssetDisposalInput {
 	return models.AssetDisposalInput{
 		AssetID: parseInt64Form(c, "asset_id"), DisposalTypeID: parseInt64Form(c, "disposal_type_id"),

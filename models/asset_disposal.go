@@ -47,10 +47,19 @@ type AssetDisposal struct {
 	Status                         string
 	ProcessedByName                string
 	ApprovedByName                 string
+	SubmittedByName               string
+	SubmittedAtDisplay            string
+	RejectedByName                string
+	RejectedAtDisplay             string
+	RejectionReason               string
 	PostedAtDisplay                string
+	PostedByName                  string
 	CancelledAtDisplay             string
 	CancelledByName                string
 	CancellationReason             string
+	ReversedByName                string
+	ReversedAtDisplay             string
+	ReversalReason                string
 	Notes                          string
 	AcquisitionValueDisplay        string
 	AccumulatedDepreciationDisplay string
@@ -76,6 +85,9 @@ type AssetDisposalInput struct {
 type AssetDisposalStats struct {
 	Total             int
 	Draft             int
+	InApproval        int
+	Approved          int
+	Rejected          int
 	Posted            int
 	Cancelled         int
 	TotalValueDisplay string

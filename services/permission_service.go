@@ -129,8 +129,24 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "asset_disposal_view", Group: "asset_disposal", GuardName: "web"},
 		{Name: "asset_disposal_create", Group: "asset_disposal", GuardName: "web"},
 		{Name: "asset_disposal_edit", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_submit", Group: "asset_disposal", GuardName: "web"},
 		{Name: "asset_disposal_post", Group: "asset_disposal", GuardName: "web"},
 		{Name: "asset_disposal_cancel", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_reverse", Group: "asset_disposal", GuardName: "web"},
+		{Name: "asset_disposal_approval_rule_management_access", Group: "asset_disposal_approval_rule", GuardName: "web"},
+		{Name: "asset_disposal_approval_rule_view", Group: "asset_disposal_approval_rule", GuardName: "web"},
+		{Name: "asset_disposal_approval_rule_create", Group: "asset_disposal_approval_rule", GuardName: "web"},
+		{Name: "asset_disposal_approval_rule_edit", Group: "asset_disposal_approval_rule", GuardName: "web"},
+		{Name: "asset_disposal_approval_rule_delete", Group: "asset_disposal_approval_rule", GuardName: "web"},
+		{Name: "asset_disposal_approver_management_access", Group: "asset_disposal_approver", GuardName: "web"},
+		{Name: "asset_disposal_approver_view", Group: "asset_disposal_approver", GuardName: "web"},
+		{Name: "asset_disposal_approver_create", Group: "asset_disposal_approver", GuardName: "web"},
+		{Name: "asset_disposal_approver_edit", Group: "asset_disposal_approver", GuardName: "web"},
+		{Name: "asset_disposal_approver_delete", Group: "asset_disposal_approver", GuardName: "web"},
+		{Name: "asset_disposal_approval_inbox_access", Group: "asset_disposal_approval", GuardName: "web"},
+		{Name: "asset_disposal_approval_view", Group: "asset_disposal_approval", GuardName: "web"},
+		{Name: "asset_disposal_approval_approve", Group: "asset_disposal_approval", GuardName: "web"},
+		{Name: "asset_disposal_approval_reject", Group: "asset_disposal_approval", GuardName: "web"},
 	}
 
 	if err := s.Repo.EnsurePermissions(defs); err != nil {
@@ -180,7 +196,10 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 			"asset_disposal_type_management_access", "asset_disposal_type_view", "asset_disposal_type_create",
 			"asset_disposal_type_edit", "asset_disposal_type_delete",
 			"asset_disposal_management_access", "asset_disposal_view", "asset_disposal_create",
-			"asset_disposal_edit", "asset_disposal_post", "asset_disposal_cancel",
+			"asset_disposal_edit", "asset_disposal_submit", "asset_disposal_post", "asset_disposal_cancel", "asset_disposal_reverse",
+			"asset_disposal_approval_rule_management_access", "asset_disposal_approval_rule_view", "asset_disposal_approval_rule_create", "asset_disposal_approval_rule_edit", "asset_disposal_approval_rule_delete",
+			"asset_disposal_approver_management_access", "asset_disposal_approver_view", "asset_disposal_approver_create", "asset_disposal_approver_edit", "asset_disposal_approver_delete",
+			"asset_disposal_approval_inbox_access", "asset_disposal_approval_view", "asset_disposal_approval_approve", "asset_disposal_approval_reject",
 		},
 		[]string{"finance-manager"},
 		"web",
@@ -204,10 +223,19 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		return err
 	}
 
+	if err := s.Repo.GrantPermissionsToRoles(
+		[]string{"asset_disposal_approval_inbox_access", "asset_disposal_approval_view", "asset_disposal_approval_approve", "asset_disposal_approval_reject"},
+		[]string{"manager", "ga-manager", "gm"},
+		"web",
+	); err != nil {
+		return err
+	}
+
 	return s.Repo.GrantPermissionsToRoles(
 		[]string{
 			"asset_disposal_type_management_access", "asset_disposal_type_view",
-			"asset_disposal_management_access", "asset_disposal_view", "asset_disposal_create", "asset_disposal_edit",
+			"asset_disposal_management_access", "asset_disposal_view", "asset_disposal_create", "asset_disposal_edit", "asset_disposal_submit",
+			"asset_disposal_approval_inbox_access", "asset_disposal_approval_view", "asset_disposal_approval_approve", "asset_disposal_approval_reject",
 		},
 		[]string{"IT-manager", "it-manager"},
 		"web",

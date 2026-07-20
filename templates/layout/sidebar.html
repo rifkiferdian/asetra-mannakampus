@@ -49,6 +49,21 @@
                 </a>
             </li>
             {{ end }}
+            {{ $disposalApprovalActive := or (eq .Page "asset_disposal_approval_rule") (eq .Page "asset_disposal_approver") (eq .Page "asset_disposal_approval_inbox") }}
+            {{ $hasDisposalApprovalAccess := or (index .Permissions "asset_disposal_approval_rule_management_access") (index .Permissions "asset_disposal_approver_management_access") (index .Permissions "asset_disposal_approval_inbox_access") }}
+            {{ if $hasDisposalApprovalAccess }}
+            <li class="space-y-1">
+                <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-[14px] font-semibold transition sm:px-4 sm:py-3 {{ if $disposalApprovalActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="disposal-approval-submenu" aria-expanded="{{ if $disposalApprovalActive }}true{{ else }}false{{ end }}" aria-controls="disposal-approval-submenu" {{ if $disposalApprovalActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
+                    <span class="flex min-w-0 items-center gap-3 sm:gap-4"><i class="bx bx-check-shield text-xl"></i><span class="whitespace-nowrap">Approval Disposal</span></span>
+                    <i class="bx {{ if $disposalApprovalActive }}bx-chevron-up text-white/80{{ else }}bx-chevron-down text-slate-400{{ end }} text-xl" data-submenu-icon></i>
+                </button>
+                <ul id="disposal-approval-submenu" class="mt-1 {{ if not $disposalApprovalActive }}hidden {{ end }}space-y-1 border-l border-slate-200 pl-4" style="margin-left:1rem">
+                    {{ if index .Permissions "asset_disposal_approval_inbox_access" }}<li><a href="{{ baseURL "/asset-disposal-approval/inbox" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_disposal_approval_inbox" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-task text-base"></i><span class="whitespace-nowrap">Kotak Masuk</span></a></li>{{ end }}
+                    {{ if index .Permissions "asset_disposal_approval_rule_management_access" }}<li><a href="{{ baseURL "/asset-disposal-approval/rules" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_disposal_approval_rule" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-git-branch text-base"></i><span class="whitespace-nowrap">Aturan Approval</span></a></li>{{ end }}
+                    {{ if index .Permissions "asset_disposal_approver_management_access" }}<li><a href="{{ baseURL "/asset-disposal-approval/approvers" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_disposal_approver" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-user-check text-base"></i><span class="whitespace-nowrap">Pemetaan Approver</span></a></li>{{ end }}
+                </ul>
+            </li>
+            {{ end }}
             {{ $assetActive := or (eq .Page "asset_type") (eq .Page "component_type") (eq .Page "asset_location") (eq .Page "asset") (eq .Page "asset_component") (eq .Page "asset_movement") (eq .Page "asset_component_movement") (eq .Page "asset_disposal_type") (eq .Page "asset_disposal") }}
             {{ $hasAssetAccess := or (index .Permissions "asset_type_management_access") (index .Permissions "component_type_management_access") (index .Permissions "asset_location_management_access") (index .Permissions "asset_management_access") (index .Permissions "asset_component_management_access") (index .Permissions "asset_movement_management_access") (index .Permissions "asset_component_movement_management_access") (index .Permissions "asset_disposal_type_management_access") (index .Permissions "asset_disposal_management_access") }}
             {{ if $hasAssetAccess }}
