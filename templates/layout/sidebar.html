@@ -240,8 +240,8 @@
                 </ul>
             </li>
             {{ end }}
-            {{ $reportActive := eq .Page "asset_disposal_report" }}
-            {{ $hasReportAccess := or (index .Permissions "report_management_access") (index .Permissions "asset_disposal_report_access") }}
+            {{ $reportActive := or (eq .Page "asset_disposal_report") (eq .Page "asset_depreciation_annual_report") }}
+            {{ $hasReportAccess := or (index .Permissions "report_management_access") (index .Permissions "asset_disposal_report_access") (index .Permissions "asset_depreciation_annual_report_access") }}
             {{ if $hasReportAccess }}
             <li class="space-y-1">
                 <button type="button" class="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-[14px] font-semibold transition sm:px-4 sm:py-3 {{ if $reportActive }}text-white shadow-card ring-1{{ else }}text-slate-600 hover:bg-brand-50 hover:text-[#f26419]{{ end }}" data-submenu-toggle="reports-submenu" aria-expanded="{{ if $reportActive }}true{{ else }}false{{ end }}" aria-controls="reports-submenu" {{ if $reportActive }}style="background: linear-gradient(135deg, #fb923c 0%, #f26419 100%); --tw-ring-color: rgb(251 146 60 / 0.28); box-shadow: 0 16px 32px -18px rgba(242, 100, 25, 0.85);"{{ end }}>
@@ -253,6 +253,7 @@
                 </button>
                 <ul id="reports-submenu" class="mt-1 {{ if not $reportActive }}hidden {{ end }}space-y-1 border-l border-slate-200 pl-4" style="margin-left: 1rem;">
                     {{ if index .Permissions "asset_disposal_report_access" }}<li><a href="{{ baseURL "/reports/asset-disposals" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_disposal_report" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-archive-out text-base"></i><span class="whitespace-nowrap">Disposal & Laba/Rugi</span></a></li>{{ end }}
+                    {{ if index .Permissions "asset_depreciation_annual_report_access" }}<li><a href="{{ baseURL "/reports/asset-depreciation-annual" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_depreciation_annual_report" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-spreadsheet text-base"></i><span class="whitespace-nowrap">Penyusutan Tahunan</span></a></li>{{ end }}
 
                 </ul>
             </li>
