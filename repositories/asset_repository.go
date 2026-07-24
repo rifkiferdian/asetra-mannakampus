@@ -18,6 +18,7 @@ func (r *AssetRepository) GetAssetTypes() ([]models.AssetType, error) {
 		SELECT
 			at.id,
 			at.code,
+			at.asset_prefix,
 			at.name,
 			COALESCE(at.description, ''),
 			at.is_active,
@@ -26,7 +27,7 @@ func (r *AssetRepository) GetAssetTypes() ([]models.AssetType, error) {
 			at.updated_at
 		FROM asset_types at
 		LEFT JOIN assets a ON a.asset_type_id = at.id
-		GROUP BY at.id, at.code, at.name, at.description, at.is_active, at.created_at, at.updated_at
+		GROUP BY at.id, at.code, at.asset_prefix, at.name, at.description, at.is_active, at.created_at, at.updated_at
 		ORDER BY at.code ASC
 	`)
 	if err != nil {
@@ -40,7 +41,7 @@ func (r *AssetRepository) GetAssetTypes() ([]models.AssetType, error) {
 		var isActive int
 		var createdAt sql.NullTime
 		var updatedAt sql.NullTime
-		if err := rows.Scan(&item.ID, &item.Code, &item.Name, &item.Description, &isActive, &item.AssetCount, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.Code, &item.AssetPrefix, &item.Name, &item.Description, &isActive, &item.AssetCount, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		item.IsActive = isActive == 1
@@ -55,9 +56,9 @@ func (r *AssetRepository) GetAssetTypes() ([]models.AssetType, error) {
 func (r *AssetRepository) CreateAssetType(input models.AssetTypeInput) error {
 	isActive := boolToInt(input.IsActive)
 	_, err := r.DB.Exec(`
-		INSERT INTO asset_types (code, name, description, is_active)
-		VALUES (?, ?, ?, ?)
-	`, input.Code, input.Name, nullableString(input.Description), isActive)
+		INSERT INTO asset_types (code, asset_prefix, name, description, is_active)
+		VALUES (?, ?, ?, ?, ?)
+	`, input.Code, input.AssetPrefix, input.Name, nullableString(input.Description), isActive)
 	return err
 }
 
@@ -65,15 +66,105 @@ func (r *AssetRepository) UpdateAssetType(input models.AssetTypeInput) error {
 	isActive := boolToInt(input.IsActive)
 	_, err := r.DB.Exec(`
 		UPDATE asset_types
-		SET code = ?, name = ?, description = ?, is_active = ?
+		SET code = ?, asset_prefix = ?, name = ?, description = ?, is_active = ?
 		WHERE id = ?
-	`, input.Code, input.Name, nullableString(input.Description), isActive, input.ID)
+	`, input.Code, input.AssetPrefix, input.Name, nullableString(input.Description), isActive, input.ID)
 	return err
 }
 
 func (r *AssetRepository) DeleteAssetType(id int64) error {
 	_, err := r.DB.Exec(`DELETE FROM asset_types WHERE id = ?`, id)
 	return err
+}
+
+func (r *AssetRepository) GetAssetCategories() ([]models.AssetCategory, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			ac.id, ac.asset_type_id, at.name, ac.code, ac.category_prefix,
+			ac.name, COALESCE(ac.description, ''), ac.is_active,
+			COUNT(a.id), ac.created_at, ac.updated_at
+		FROM asset_categories ac
+		JOIN asset_types at ON at.id = ac.asset_type_id
+		LEFT JOIN assets a ON a.asset_category_id = ac.id
+		GROUP BY
+			ac.id, ac.asset_type_id, at.name, ac.code, ac.category_prefix,
+			ac.name, ac.description, ac.is_active, ac.created_at, ac.updated_at
+		ORDER BY at.name, ac.name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.AssetCategory
+	for rows.Next() {
+		var item models.AssetCategory
+		var isActive int
+		var createdAt, updatedAt sql.NullTime
+		if err := rows.Scan(
+			&item.ID, &item.AssetTypeID, &item.AssetTypeName, &item.Code,
+			&item.CategoryPrefix, &item.Name, &item.Description, &isActive,
+			&item.AssetCount, &createdAt, &updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		item.IsActive = isActive == 1
+		item.IsActiveLabel = activeLabel(item.IsActive)
+		item.CreatedAtDisplay = formatNullTime(createdAt)
+		item.UpdatedAtDisplay = formatNullTime(updatedAt)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *AssetRepository) CreateAssetCategory(input models.AssetCategoryInput) error {
+	_, err := r.DB.Exec(`
+		INSERT INTO asset_categories (
+			asset_type_id, code, category_prefix, name, description, is_active
+		) VALUES (?, ?, ?, ?, ?, ?)
+	`, input.AssetTypeID, input.Code, input.CategoryPrefix, input.Name,
+		nullableString(input.Description), boolToInt(input.IsActive))
+	return err
+}
+
+func (r *AssetRepository) UpdateAssetCategory(input models.AssetCategoryInput) error {
+	var currentTypeID int64
+	var linkedAssets int
+	if err := r.DB.QueryRow(`
+		SELECT ac.asset_type_id, COUNT(a.id)
+		FROM asset_categories ac
+		LEFT JOIN assets a ON a.asset_category_id = ac.id
+		WHERE ac.id = ?
+		GROUP BY ac.id, ac.asset_type_id
+	`, input.ID).Scan(&currentTypeID, &linkedAssets); err != nil {
+		return err
+	}
+	if linkedAssets > 0 && currentTypeID != input.AssetTypeID {
+		return errors.New("tipe kategori tidak dapat diubah karena sudah digunakan oleh aset")
+	}
+	_, err := r.DB.Exec(`
+		UPDATE asset_categories
+		SET asset_type_id = ?, code = ?, category_prefix = ?, name = ?,
+			description = ?, is_active = ?
+		WHERE id = ?
+	`, input.AssetTypeID, input.Code, input.CategoryPrefix, input.Name,
+		nullableString(input.Description), boolToInt(input.IsActive), input.ID)
+	return err
+}
+
+func (r *AssetRepository) DeleteAssetCategory(id int64) error {
+	_, err := r.DB.Exec(`DELETE FROM asset_categories WHERE id = ?`, id)
+	return err
+}
+
+func (r *AssetRepository) AssetCategoryBelongsToType(categoryID, assetTypeID int64) (bool, error) {
+	var count int
+	err := r.DB.QueryRow(`
+		SELECT COUNT(*)
+		FROM asset_categories
+		WHERE id = ? AND asset_type_id = ?
+	`, categoryID, assetTypeID).Scan(&count)
+	return count > 0, err
 }
 
 func (r *AssetRepository) GetComponentTypes() ([]models.ComponentType, error) {
@@ -202,6 +293,7 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 	rows, err := r.DB.Query(`
 		SELECT
 			a.id, a.asset_code, a.asset_name, a.asset_type_id, COALESCE(at.name, ''),
+			COALESCE(a.asset_category_id, 0), COALESCE(ac.name, ''), COALESCE(ac.category_prefix, ''),
 			COALESCE(a.serial_number, ''), COALESCE(a.store_id, 0), COALESCE(s.store_name, ''),
 			COALESCE(a.location_id, 0), COALESCE(al.location_name, ''),
 			COALESCE(a.assigned_person_nip, ''), COALESCE(a.assigned_person_name, ''),
@@ -210,6 +302,7 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 			a.status, COALESCE(a.notes, ''), a.created_at
 		FROM assets a
 		JOIN asset_types at ON at.id = a.asset_type_id
+		LEFT JOIN asset_categories ac ON ac.id = a.asset_category_id
 		LEFT JOIN stores s ON s.store_id = a.store_id
 		LEFT JOIN asset_locations al ON al.id = a.location_id
 		ORDER BY a.id DESC
@@ -226,6 +319,7 @@ func (r *AssetRepository) GetAssets() ([]models.Asset, error) {
 		var createdAt sql.NullTime
 		if err := rows.Scan(
 			&item.ID, &item.AssetCode, &item.AssetName, &item.AssetTypeID, &item.AssetTypeName,
+			&item.AssetCategoryID, &item.AssetCategoryName, &item.AssetCategoryPrefix,
 			&item.SerialNumber, &item.StoreID, &item.StoreName, &item.LocationID, &item.LocationName,
 			&item.AssignedPersonNIP, &item.AssignedPersonName, &item.AssignedPersonDepartment,
 			&item.SourceGRItemID, &acquisitionDate,
@@ -249,6 +343,7 @@ func (r *AssetRepository) GetAssetByID(id int64) (*models.Asset, error) {
 	row := r.DB.QueryRow(`
 		SELECT
 			a.id, a.asset_code, a.asset_name, a.asset_type_id, COALESCE(at.name, ''),
+			COALESCE(a.asset_category_id, 0), COALESCE(ac.name, ''), COALESCE(ac.category_prefix, ''),
 			COALESCE(a.serial_number, ''), COALESCE(a.store_id, 0), COALESCE(s.store_name, ''),
 			COALESCE(a.location_id, 0), COALESCE(al.location_name, ''),
 			COALESCE(a.assigned_person_nip, ''), COALESCE(a.assigned_person_name, ''),
@@ -257,6 +352,7 @@ func (r *AssetRepository) GetAssetByID(id int64) (*models.Asset, error) {
 			a.status, COALESCE(a.notes, ''), a.created_at
 		FROM assets a
 		JOIN asset_types at ON at.id = a.asset_type_id
+		LEFT JOIN asset_categories ac ON ac.id = a.asset_category_id
 		LEFT JOIN stores s ON s.store_id = a.store_id
 		LEFT JOIN asset_locations al ON al.id = a.location_id
 		WHERE a.id = ?
@@ -267,6 +363,7 @@ func (r *AssetRepository) GetAssetByID(id int64) (*models.Asset, error) {
 	var createdAt sql.NullTime
 	if err := row.Scan(
 		&item.ID, &item.AssetCode, &item.AssetName, &item.AssetTypeID, &item.AssetTypeName,
+		&item.AssetCategoryID, &item.AssetCategoryName, &item.AssetCategoryPrefix,
 		&item.SerialNumber, &item.StoreID, &item.StoreName, &item.LocationID, &item.LocationName,
 		&item.AssignedPersonNIP, &item.AssignedPersonName, &item.AssignedPersonDepartment,
 		&item.SourceGRItemID, &acquisitionDate,
@@ -285,18 +382,37 @@ func (r *AssetRepository) GetAssetByID(id int64) (*models.Asset, error) {
 }
 
 func (r *AssetRepository) CreateAsset(input models.AssetInput) error {
-	_, err := r.DB.Exec(`
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err = tx.Exec(
+		`CALL sp_generate_asset_code(?, ?, ?, @generated_asset_code)`,
+		input.AssetTypeID, input.AssetCategoryID, nullableDate(input.AcquisitionDate),
+	); err != nil {
+		return err
+	}
+	if err = tx.QueryRow(`SELECT @generated_asset_code`).Scan(&input.AssetCode); err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
 		INSERT INTO assets (
-			asset_code, asset_name, asset_type_id, serial_number, store_id, location_id,
+			asset_code, asset_name, asset_type_id, asset_category_id, serial_number, store_id, location_id,
 			assigned_person_nip, assigned_person_name, assigned_person_department,
 			source_gr_item_id, acquisition_date, acquisition_value, status, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.AssetCode, input.AssetName, input.AssetTypeID, nullableString(input.SerialNumber),
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.AssetCode, input.AssetName, input.AssetTypeID, input.AssetCategoryID, nullableString(input.SerialNumber),
 		nullableInt(input.StoreID), assetNullableInt64(input.LocationID), nullableString(input.AssignedPersonNIP),
 		nullableString(input.AssignedPersonName), nullableString(input.AssignedPersonDepartment),
 		assetNullableInt64(input.SourceGRItemID), nullableDate(input.AcquisitionDate), input.AcquisitionValue,
 		input.Status, nullableString(input.Notes))
-	return err
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *AssetRepository) UpdateAsset(input models.AssetInput) error {
@@ -309,12 +425,12 @@ func (r *AssetRepository) UpdateAsset(input models.AssetInput) error {
 	}
 	_, err := r.DB.Exec(`
 		UPDATE assets
-		SET asset_code = ?, asset_name = ?, asset_type_id = ?, serial_number = ?, store_id = ?,
+		SET asset_name = ?, asset_type_id = ?, asset_category_id = ?, serial_number = ?, store_id = ?,
 			location_id = ?, assigned_person_nip = ?, assigned_person_name = ?,
 			assigned_person_department = ?, source_gr_item_id = ?, acquisition_date = ?,
 			acquisition_value = ?, status = ?, notes = ?
 		WHERE id = ?
-	`, input.AssetCode, input.AssetName, input.AssetTypeID, nullableString(input.SerialNumber),
+	`, input.AssetName, input.AssetTypeID, input.AssetCategoryID, nullableString(input.SerialNumber),
 		nullableInt(input.StoreID), assetNullableInt64(input.LocationID), nullableString(input.AssignedPersonNIP),
 		nullableString(input.AssignedPersonName), nullableString(input.AssignedPersonDepartment),
 		assetNullableInt64(input.SourceGRItemID), nullableDate(input.AcquisitionDate), input.AcquisitionValue,

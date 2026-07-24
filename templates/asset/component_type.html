@@ -156,6 +156,7 @@
                                 <table class="ct-table">
                                     <thead>
                                         <tr>
+                                            <th>No</th>
                                             <th>Code</th>
                                             <th>Name</th>
                                             <th>Description</th>
@@ -167,8 +168,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
+                                        {{ range $index, $item := .Items }}
                                         <tr data-ct-row data-search="{{ .Code }} {{ .Name }} {{ .Description }} {{ .IsActiveLabel }}">
+                                            <td class="text-center font-bold text-slate-500">{{ no $index 1 }}</td>
                                             <td><span class="ct-link">{{ .Code }}</span></td>
                                             <td class="font-bold text-slate-800">{{ .Name }}</td>
                                             <td><div class="ct-desc">{{ if .Description }}{{ .Description }}{{ else }}-{{ end }}</div></td>
@@ -194,7 +196,7 @@
                                             </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="8" class="ct-empty">Belum ada component type</td></tr>
+                                        <tr><td colspan="9" class="ct-empty">Belum ada component type</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>

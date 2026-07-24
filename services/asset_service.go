@@ -4,8 +4,11 @@ import (
 	"errors"
 	"gobase-app/models"
 	"gobase-app/repositories"
+	"regexp"
 	"strings"
 )
+
+var assetPrefixPattern = regexp.MustCompile(`^[A-Z0-9]{1,10}$`)
 
 type AssetService struct {
 	Repo *repositories.AssetRepository
@@ -17,10 +20,14 @@ func (s *AssetService) GetAssetTypes() ([]models.AssetType, error) {
 
 func (s *AssetService) SaveAssetType(input models.AssetTypeInput) error {
 	input.Code = strings.ToUpper(strings.TrimSpace(input.Code))
+	input.AssetPrefix = strings.ToUpper(strings.TrimSpace(input.AssetPrefix))
 	input.Name = strings.TrimSpace(input.Name)
 	input.Description = strings.TrimSpace(input.Description)
-	if input.Code == "" || input.Name == "" {
-		return errors.New("kode dan nama asset type wajib diisi")
+	if input.Code == "" || input.AssetPrefix == "" || input.Name == "" {
+		return errors.New("kode, prefix, dan nama asset type wajib diisi")
+	}
+	if !assetPrefixPattern.MatchString(input.AssetPrefix) {
+		return errors.New("prefix asset type hanya boleh berisi huruf dan angka, maksimal 10 karakter")
 	}
 	if input.ID > 0 {
 		return s.Repo.UpdateAssetType(input)
@@ -33,6 +40,34 @@ func (s *AssetService) DeleteAssetType(id int64) error {
 		return errors.New("asset type tidak valid")
 	}
 	return s.Repo.DeleteAssetType(id)
+}
+
+func (s *AssetService) GetAssetCategories() ([]models.AssetCategory, error) {
+	return s.Repo.GetAssetCategories()
+}
+
+func (s *AssetService) SaveAssetCategory(input models.AssetCategoryInput) error {
+	input.Code = strings.ToUpper(strings.TrimSpace(input.Code))
+	input.CategoryPrefix = strings.ToUpper(strings.TrimSpace(input.CategoryPrefix))
+	input.Name = strings.TrimSpace(input.Name)
+	input.Description = strings.TrimSpace(input.Description)
+	if input.AssetTypeID <= 0 || input.Code == "" || input.CategoryPrefix == "" || input.Name == "" {
+		return errors.New("tipe aset, kode, prefix, dan nama kategori wajib diisi")
+	}
+	if !assetPrefixPattern.MatchString(input.CategoryPrefix) {
+		return errors.New("prefix kategori hanya boleh berisi huruf dan angka, maksimal 10 karakter")
+	}
+	if input.ID > 0 {
+		return s.Repo.UpdateAssetCategory(input)
+	}
+	return s.Repo.CreateAssetCategory(input)
+}
+
+func (s *AssetService) DeleteAssetCategory(id int64) error {
+	if id <= 0 {
+		return errors.New("kategori aset tidak valid")
+	}
+	return s.Repo.DeleteAssetCategory(id)
 }
 
 func (s *AssetService) GetComponentTypes() ([]models.ComponentType, error) {
@@ -118,7 +153,6 @@ func (s *AssetService) GetAssetMovementsByAssetID(assetID int64, limit int) ([]m
 }
 
 func (s *AssetService) SaveAsset(input models.AssetInput) error {
-	input.AssetCode = strings.ToUpper(strings.TrimSpace(input.AssetCode))
 	input.AssetName = strings.TrimSpace(input.AssetName)
 	input.SerialNumber = strings.TrimSpace(input.SerialNumber)
 	input.AssignedPersonNIP = strings.TrimSpace(input.AssignedPersonNIP)
@@ -129,13 +163,23 @@ func (s *AssetService) SaveAsset(input models.AssetInput) error {
 	if input.Status == "" {
 		input.Status = "AVAILABLE"
 	}
-	if input.AssetCode == "" || input.AssetName == "" || input.AssetTypeID <= 0 {
-		return errors.New("kode, nama, dan tipe asset wajib diisi")
+	if input.AssetName == "" || input.AssetTypeID <= 0 || input.AssetCategoryID <= 0 {
+		return errors.New("nama, tipe, dan kategori aset wajib diisi")
+	}
+	if input.AcquisitionDate == "" {
+		return errors.New("tanggal perolehan wajib diisi untuk membuat kode aset")
 	}
 	if !allowedAssetStatus(input.Status) {
 		return errors.New("status asset tidak valid")
 	}
 	if input.ID > 0 {
+		validCategory, err := s.Repo.AssetCategoryBelongsToType(input.AssetCategoryID, input.AssetTypeID)
+		if err != nil {
+			return err
+		}
+		if !validCategory {
+			return errors.New("kategori aset tidak sesuai dengan tipe aset")
+		}
 		return s.Repo.UpdateAsset(input)
 	}
 	return s.Repo.CreateAsset(input)

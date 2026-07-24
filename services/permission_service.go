@@ -84,6 +84,11 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "asset_type_create", Group: "asset_type", GuardName: "web"},
 		{Name: "asset_type_edit", Group: "asset_type", GuardName: "web"},
 		{Name: "asset_type_delete", Group: "asset_type", GuardName: "web"},
+		{Name: "asset_category_management_access", Group: "asset_category", GuardName: "web"},
+		{Name: "asset_category_view", Group: "asset_category", GuardName: "web"},
+		{Name: "asset_category_create", Group: "asset_category", GuardName: "web"},
+		{Name: "asset_category_edit", Group: "asset_category", GuardName: "web"},
+		{Name: "asset_category_delete", Group: "asset_category", GuardName: "web"},
 		{Name: "component_type_management_access", Group: "component_type", GuardName: "web"},
 		{Name: "component_type_view", Group: "component_type", GuardName: "web"},
 		{Name: "component_type_create", Group: "component_type", GuardName: "web"},
@@ -214,6 +219,7 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 	if err := s.Repo.GrantPermissionsToRoles(
 		[]string{
 			"asset_type_management_access", "asset_type_view", "asset_type_create", "asset_type_edit", "asset_type_delete",
+			"asset_category_management_access", "asset_category_view", "asset_category_create", "asset_category_edit", "asset_category_delete",
 			"component_type_management_access", "component_type_view", "component_type_create", "component_type_edit", "component_type_delete",
 			"asset_location_management_access", "asset_location_view", "asset_location_create", "asset_location_edit", "asset_location_delete",
 			"asset_management_access", "asset_view", "asset_create", "asset_edit", "asset_delete",

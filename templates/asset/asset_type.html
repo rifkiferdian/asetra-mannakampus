@@ -145,8 +145,10 @@
                                     <thead>
                                         <tr>
                                             <th class="w-12 px-5 text-left"><input type="checkbox" class="rounded border-slate-300"></th>
+                                            <th class="w-14 px-4 text-center">No</th>
                                             <th class="px-4 text-left">Asset Type Name</th>
                                             <th class="px-4 text-left">Code</th>
+                                            <th class="px-4 text-left">Prefix</th>
                                             <th class="px-4 text-left">Status</th>
                                             <th class="px-4 text-left">Total Assets</th>
                                             <th class="px-4 text-left">Updated At</th>
@@ -154,9 +156,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
+                                        {{ range $index, $item := .Items }}
                                         <tr class="bg-white hover:bg-[#f8fbff]">
                                             <td class="px-5"><input type="checkbox" class="rounded border-slate-300"></td>
+                                            <td class="px-4 text-center font-bold text-slate-500">{{ no $index $.Pagination.PageStart }}</td>
                                             <td class="px-4">
                                                 <div class="flex items-center gap-3">
                                                     <div class="asset-type-avatar"><i class="bx bx-package"></i></div>
@@ -167,6 +170,7 @@
                                                 </div>
                                             </td>
                                             <td class="px-4 font-bold text-[#1f3260]">{{ .Code }}</td>
+                                            <td class="px-4"><span class="asset-status bg-[#dce9ff] text-[#07317f]">{{ .AssetPrefix }}</span></td>
                                             <td class="px-4">
                                                 {{ if .IsActive }}
                                                 <span class="asset-status bg-[#dce9ff] text-[#07317f]">Active</span>
@@ -179,7 +183,7 @@
                                             <td class="px-4">
                                                 <div class="flex justify-end gap-3">
                                                     {{ if index $.Permissions "asset_type_edit" }}
-                                                    <button type="button" class="text-[#06143a] transition hover:text-[#07317f]" title="Edit" data-edit data-id="{{ .ID }}" data-code="{{ .Code }}" data-name="{{ .Name }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}">
+                                                    <button type="button" class="text-[#06143a] transition hover:text-[#07317f]" title="Edit" data-edit data-id="{{ .ID }}" data-code="{{ .Code }}" data-prefix="{{ .AssetPrefix }}" data-name="{{ .Name }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}">
                                                         <i class="bx bx-pencil text-base"></i>
                                                     </button>
                                                     {{ end }}
@@ -192,7 +196,7 @@
                                             </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="7" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada asset type</td></tr>
+                                        <tr><td colspan="9" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada asset type</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>
@@ -259,6 +263,7 @@
                 </div>
                 <div class="asset-modal-body space-y-3">
                     <div class="asset-modal-field"><label class="asset-modal-label">Code</label><input name="code" placeholder="IT" maxlength="50" class="asset-modal-control uppercase" required></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Asset Prefix</label><input name="asset_prefix" placeholder="IT" maxlength="10" class="asset-modal-control uppercase" required></div>
                     <div class="asset-modal-field"><label class="asset-modal-label">Name</label><input name="name" placeholder="Peralatan IT" maxlength="150" class="asset-modal-control" required></div>
                     <div class="asset-modal-field"><label class="asset-modal-label">Description</label><textarea name="description" placeholder="Laptop, komputer, printer, scanner, server" class="asset-modal-control h-24 resize-none"></textarea></div>
                     <div class="asset-modal-field"><label class="asset-modal-label">Status</label><select name="is_active" class="asset-modal-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
@@ -276,6 +281,7 @@
                 </div>
                 <div class="asset-modal-body space-y-3">
                     <div class="asset-modal-field"><label class="asset-modal-label">Code</label><input name="code" id="edit_code" maxlength="50" class="asset-modal-control uppercase" required></div>
+                    <div class="asset-modal-field"><label class="asset-modal-label">Asset Prefix</label><input name="asset_prefix" id="edit_prefix" maxlength="10" class="asset-modal-control uppercase" required></div>
                     <div class="asset-modal-field"><label class="asset-modal-label">Name</label><input name="name" id="edit_name" maxlength="150" class="asset-modal-control" required></div>
                     <div class="asset-modal-field"><label class="asset-modal-label">Description</label><textarea name="description" id="edit_description" class="asset-modal-control h-24 resize-none"></textarea></div>
                     <div class="asset-modal-field"><label class="asset-modal-label">Status</label><select name="is_active" id="edit_active" class="asset-modal-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
@@ -309,6 +315,7 @@
                 btn.addEventListener('click', function () {
                     document.getElementById('edit_id').value = btn.dataset.id || '';
                     document.getElementById('edit_code').value = btn.dataset.code || '';
+                    document.getElementById('edit_prefix').value = btn.dataset.prefix || '';
                     document.getElementById('edit_name').value = btn.dataset.name || '';
                     document.getElementById('edit_description').value = btn.dataset.description || '';
                     document.getElementById('edit_active').value = btn.dataset.active || '1';

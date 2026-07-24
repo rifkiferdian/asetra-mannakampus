@@ -114,6 +114,7 @@
                                     <thead>
                                         <tr>
                                             <th class="w-12 px-5 text-left"><input type="checkbox" class="rounded border-slate-300"></th>
+                                            <th class="w-14 px-4 text-center">No</th>
                                             <th class="px-4 text-left">Location Name</th>
                                             <th class="px-4 text-left">Code</th>
                                             <th class="px-4 text-left">Type</th>
@@ -125,9 +126,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
+                                        {{ range $index, $item := .Items }}
                                         <tr class="bg-white hover:bg-[#f8fbff]">
                                             <td class="px-5"><input type="checkbox" class="rounded border-slate-300"></td>
+                                            <td class="px-4 text-center font-bold text-slate-500">{{ no $index $.Pagination.PageStart }}</td>
                                             <td class="px-4">
                                                 <div class="flex items-center gap-3">
                                                     <div class="loc-avatar"><i class="bx bx-map-pin"></i></div>
@@ -161,7 +163,7 @@
                                             </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="9" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada lokasi asset</td></tr>
+                                        <tr><td colspan="10" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada lokasi asset</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>

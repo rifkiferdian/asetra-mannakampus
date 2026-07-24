@@ -167,6 +167,7 @@
                                 <table class="asset-table">
                                     <thead>
                                         <tr>
+                                            <th>No</th>
                                             <th>Asset Code</th>
                                             <th>Asset Name</th>
                                             <th>Type</th>
@@ -181,11 +182,12 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
-                                        <tr data-asset-row data-search="{{ .AssetCode }} {{ .AssetName }} {{ .AssetTypeName }} {{ .SerialNumber }} {{ .StoreName }} {{ .LocationName }} {{ .AssignedPersonName }} {{ .AssignedPersonNIP }} {{ .AssignedPersonDepartment }} {{ .Status }}">
+                                        {{ range $index, $item := .Items }}
+                                        <tr data-asset-row data-search="{{ .AssetCode }} {{ .AssetName }} {{ .AssetTypeName }} {{ .AssetCategoryName }} {{ .AssetCategoryPrefix }} {{ .SerialNumber }} {{ .StoreName }} {{ .LocationName }} {{ .AssignedPersonName }} {{ .AssignedPersonNIP }} {{ .AssignedPersonDepartment }} {{ .Status }}">
+                                            <td class="text-center font-bold text-slate-500">{{ no $index 1 }}</td>
                                             <td><a href="/asset-register/detail/{{ .ID }}" class="asset-link">{{ .AssetCode }}</a></td>
                                             <td class="font-bold text-slate-800">{{ .AssetName }}</td>
-                                            <td>{{ .AssetTypeName }}</td>
+                                            <td><div class="font-bold text-slate-800">{{ .AssetTypeName }}</div><div class="asset-person-meta">{{ if .AssetCategoryName }}{{ .AssetCategoryName }} ({{ .AssetCategoryPrefix }}){{ else }}Belum dikategorikan{{ end }}</div></td>
                                             <td>{{ if .SerialNumber }}{{ .SerialNumber }}{{ else }}<span class="asset-muted">-</span>{{ end }}</td>
                                             <td>{{ if .StoreName }}{{ .StoreName }}{{ else }}<span class="asset-muted">-</span>{{ end }}</td>
                                             <td>{{ if .LocationName }}{{ .LocationName }}{{ else }}<span class="asset-muted">-</span>{{ end }}</td>
@@ -226,7 +228,7 @@
                                             </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="11" class="asset-empty">Belum ada asset</td></tr>
+                                        <tr><td colspan="12" class="asset-empty">Belum ada asset</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>
@@ -247,9 +249,10 @@
                 </div>
                 <div class="asset-modal-body">
                     <div class="asset-modal-grid">
-                        <div><label class="asset-modal-label">Asset Code</label><input name="asset_code" placeholder="IT-LPT-2026-0001" class="asset-modal-control uppercase" required></div>
+                        <div><label class="asset-modal-label">Asset Code</label><input id="create_asset_code_preview" value="Otomatis saat disimpan" class="asset-modal-control bg-slate-50 font-bold text-slate-500" readonly></div>
                         <div class="asset-modal-span-2"><label class="asset-modal-label">Asset Name</label><input name="asset_name" placeholder="Laptop Lenovo ThinkPad E14" class="asset-modal-control" required></div>
-                        <div><label class="asset-modal-label">Asset Type</label><select name="asset_type_id" class="asset-modal-control" required><option value="">-</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Asset Type</label><select name="asset_type_id" id="create_asset_type" class="asset-modal-control" required><option value="">Pilih tipe</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}" data-prefix="{{ .AssetPrefix }}">{{ .Name }} ({{ .AssetPrefix }})</option>{{ end }}{{ end }}</select></div>
+                        <div><label class="asset-modal-label">Asset Category</label><select name="asset_category_id" id="create_asset_category" class="asset-modal-control" required disabled><option value="">Pilih kategori</option>{{ range .Categories }}{{ if .IsActive }}<option value="{{ .ID }}" data-type-id="{{ .AssetTypeID }}" data-prefix="{{ .CategoryPrefix }}">{{ .Name }} ({{ .CategoryPrefix }})</option>{{ end }}{{ end }}</select></div>
                         <div><label class="asset-modal-label">Serial Number</label><input name="serial_number" class="asset-modal-control"></div>
                         <div><label class="asset-modal-label">Status</label><select name="status" class="asset-modal-control"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
                         <div><label class="asset-modal-label">Store</label><select name="store_id" class="asset-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
@@ -258,7 +261,7 @@
                         <div><label class="asset-modal-label">PIC NIP</label><input name="assigned_person_nip" class="asset-modal-control"></div>
                         <div><label class="asset-modal-label">PIC Name</label><input name="assigned_person_name" class="asset-modal-control"></div>
                         <div><label class="asset-modal-label">PIC Department</label><input name="assigned_person_department" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" class="asset-modal-control"></div>
+                        <div><label class="asset-modal-label">Acquisition Date</label><input type="date" name="acquisition_date" id="create_acquisition_date" class="asset-modal-control" required></div>
                         <div><label class="asset-modal-label">Acquisition Value</label><input type="number" step="0.01" name="acquisition_value" class="asset-modal-control"></div>
                         <div class="asset-modal-span-3"><label class="asset-modal-label">Notes</label><textarea name="notes" class="asset-modal-control h-20 resize-none"></textarea></div>
                     </div>
@@ -303,6 +306,45 @@
                     });
                 });
             });
+            function refreshAssetCategories() {
+                var typeSelect = document.getElementById('create_asset_type');
+                var categorySelect = document.getElementById('create_asset_category');
+                if (!typeSelect || !categorySelect) return;
+                var typeID = typeSelect.value;
+                var selectedStillVisible = false;
+                Array.prototype.forEach.call(categorySelect.options, function (option, index) {
+                    if (index === 0) return;
+                    var visible = option.dataset.typeId === typeID;
+                    option.hidden = !visible;
+                    option.disabled = !visible;
+                    if (visible && option.selected) selectedStillVisible = true;
+                });
+                categorySelect.disabled = !typeID;
+                if (!selectedStillVisible) categorySelect.value = '';
+                refreshAssetCodePreview();
+            }
+            function refreshAssetCodePreview() {
+                var typeSelect = document.getElementById('create_asset_type');
+                var categorySelect = document.getElementById('create_asset_category');
+                var dateInput = document.getElementById('create_acquisition_date');
+                var preview = document.getElementById('create_asset_code_preview');
+                if (!typeSelect || !categorySelect || !dateInput || !preview) return;
+                var typeOption = typeSelect.options[typeSelect.selectedIndex];
+                var categoryOption = categorySelect.options[categorySelect.selectedIndex];
+                var typePrefix = typeOption && typeOption.dataset.prefix;
+                var categoryPrefix = categoryOption && categoryOption.dataset.prefix;
+                var year = dateInput.value ? dateInput.value.slice(0, 4) : '';
+                preview.value = typePrefix && categoryPrefix && year
+                    ? typePrefix + '-' + categoryPrefix + '-' + year + '-####'
+                    : 'Otomatis saat disimpan';
+            }
+            var createType = document.getElementById('create_asset_type');
+            var createCategory = document.getElementById('create_asset_category');
+            var createDate = document.getElementById('create_acquisition_date');
+            if (createType) createType.addEventListener('change', refreshAssetCategories);
+            if (createCategory) createCategory.addEventListener('change', refreshAssetCodePreview);
+            if (createDate) createDate.addEventListener('change', refreshAssetCodePreview);
+            refreshAssetCategories();
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') closeAssetModals();
             });

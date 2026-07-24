@@ -33,6 +33,7 @@ func AssetTypeIndex(c *gin.Context) {
 func AssetTypeStore(c *gin.Context) {
 	input := models.AssetTypeInput{
 		Code:        c.PostForm("code"),
+		AssetPrefix: c.PostForm("asset_prefix"),
 		Name:        c.PostForm("name"),
 		Description: c.PostForm("description"),
 		IsActive:    c.PostForm("is_active") != "0",
@@ -48,6 +49,7 @@ func AssetTypeUpdate(c *gin.Context) {
 	input := models.AssetTypeInput{
 		ID:          parseInt64Form(c, "id"),
 		Code:        c.PostForm("code"),
+		AssetPrefix: c.PostForm("asset_prefix"),
 		Name:        c.PostForm("name"),
 		Description: c.PostForm("description"),
 		IsActive:    c.PostForm("is_active") != "0",
@@ -66,6 +68,38 @@ func AssetTypeDelete(c *gin.Context) {
 		return
 	}
 	c.Redirect(http.StatusSeeOther, "/asset-types")
+}
+
+func AssetCategoryIndex(c *gin.Context) {
+	renderAssetCategoryPage(c, assetService(), "")
+}
+
+func AssetCategoryStore(c *gin.Context) {
+	input := bindAssetCategoryInput(c)
+	if err := assetService().SaveAssetCategory(input); err != nil {
+		renderAssetCategoryPage(c, assetService(), err.Error())
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/asset-categories")
+}
+
+func AssetCategoryUpdate(c *gin.Context) {
+	input := bindAssetCategoryInput(c)
+	input.ID = parseInt64Form(c, "id")
+	if err := assetService().SaveAssetCategory(input); err != nil {
+		renderAssetCategoryPage(c, assetService(), err.Error())
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/asset-categories")
+}
+
+func AssetCategoryDelete(c *gin.Context) {
+	id := parseInt64Param(c, "id")
+	if err := assetService().DeleteAssetCategory(id); err != nil {
+		renderAssetCategoryPage(c, assetService(), err.Error())
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/asset-categories")
 }
 
 func ComponentTypeIndex(c *gin.Context) {
@@ -194,6 +228,7 @@ func AssetDetailIndex(c *gin.Context) {
 		return
 	}
 	types, _ := service.GetAssetTypes()
+	categories, _ := service.GetAssetCategories()
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
 	Render(c, "asset_detail.html", gin.H{
@@ -206,6 +241,7 @@ func AssetDetailIndex(c *gin.Context) {
 		"DepreciationPostings": depreciationPostings,
 		"Disposal":             disposal,
 		"Types":                types,
+		"Categories":           categories,
 		"Locations":            locations,
 		"Stores":               stores,
 	})
@@ -217,10 +253,6 @@ func AssetStore(c *gin.Context) {
 		renderAssetPage(c, assetService(), err.Error())
 		return
 	}
-	if c.PostForm("redirect_to") == "detail" {
-		c.Redirect(http.StatusSeeOther, "/asset-register/detail/"+strconv.FormatInt(input.ID, 10))
-		return
-	}
 	c.Redirect(http.StatusSeeOther, "/asset-register")
 }
 
@@ -229,6 +261,10 @@ func AssetUpdate(c *gin.Context) {
 	input.ID = parseInt64Form(c, "id")
 	if err := assetService().SaveAsset(input); err != nil {
 		renderAssetPage(c, assetService(), err.Error())
+		return
+	}
+	if c.PostForm("redirect_to") == "detail" {
+		c.Redirect(http.StatusSeeOther, "/asset-register/detail/"+strconv.FormatInt(input.ID, 10))
 		return
 	}
 	c.Redirect(http.StatusSeeOther, "/asset-register")
@@ -375,6 +411,34 @@ func renderAssetTypePage(c *gin.Context, service *services.AssetService, message
 	})
 }
 
+func renderAssetCategoryPage(c *gin.Context, service *services.AssetService, message string) {
+	items, err := service.GetAssetCategories()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	types, err := service.GetAssetTypes()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	activeCategories := 0
+	totalAssets := 0
+	for _, item := range items {
+		totalAssets += item.AssetCount
+		if item.IsActive {
+			activeCategories++
+		}
+	}
+	pageItems, pagination := paginateAssetSlice(c, items)
+	Render(c, "asset_category.html", gin.H{
+		"Title": "Asset Categories", "Page": "asset_category",
+		"Items": pageItems, "Types": types, "Pagination": pagination, "Error": message,
+		"TotalCategories": len(items), "ActiveCategories": activeCategories,
+		"InactiveCategories": len(items) - activeCategories, "TotalAssets": totalAssets,
+	})
+}
+
 func renderComponentTypePage(c *gin.Context, service *services.AssetService, message string) {
 	items, err := service.GetComponentTypes()
 	if err != nil {
@@ -444,6 +508,7 @@ func renderAssetPage(c *gin.Context, service *services.AssetService, message str
 		return
 	}
 	types, _ := service.GetAssetTypes()
+	categories, _ := service.GetAssetCategories()
 	locations, _ := service.GetLocations()
 	stores, _ := service.GetStoreOptions()
 	statusCounts := map[string]int{}
@@ -452,7 +517,7 @@ func renderAssetPage(c *gin.Context, service *services.AssetService, message str
 	}
 	Render(c, "asset.html", gin.H{
 		"Title": "Assets", "Page": "asset", "Items": items, "Types": types,
-		"Locations": locations, "Stores": stores, "Error": message,
+		"Categories": categories, "Locations": locations, "Stores": stores, "Error": message,
 		"TotalAssets":     len(items),
 		"InUseAssets":     statusCounts["IN_USE"],
 		"AvailableAssets": statusCounts["AVAILABLE"],
@@ -539,6 +604,7 @@ func bindAssetInput(c *gin.Context) models.AssetInput {
 		AssetCode:                c.PostForm("asset_code"),
 		AssetName:                c.PostForm("asset_name"),
 		AssetTypeID:              parseInt64Form(c, "asset_type_id"),
+		AssetCategoryID:          parseInt64Form(c, "asset_category_id"),
 		SerialNumber:             c.PostForm("serial_number"),
 		StoreID:                  parseIntForm(c, "store_id"),
 		LocationID:               parseInt64Form(c, "location_id"),
@@ -550,6 +616,17 @@ func bindAssetInput(c *gin.Context) models.AssetInput {
 		AcquisitionValue:         parseFloatForm(c, "acquisition_value"),
 		Status:                   c.PostForm("status"),
 		Notes:                    c.PostForm("notes"),
+	}
+}
+
+func bindAssetCategoryInput(c *gin.Context) models.AssetCategoryInput {
+	return models.AssetCategoryInput{
+		AssetTypeID:    parseInt64Form(c, "asset_type_id"),
+		Code:           c.PostForm("code"),
+		CategoryPrefix: c.PostForm("category_prefix"),
+		Name:           c.PostForm("name"),
+		Description:    c.PostForm("description"),
+		IsActive:       c.PostForm("is_active") != "0",
 	}
 }
 

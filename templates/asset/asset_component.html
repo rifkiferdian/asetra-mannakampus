@@ -166,6 +166,7 @@
                                 <table class="comp-table">
                                     <thead>
                                         <tr>
+                                            <th>No</th>
                                             <th>Code</th>
                                             <th>Name</th>
                                             <th>Type</th>
@@ -179,8 +180,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
+                                        {{ range $index, $item := .Items }}
                                         <tr data-comp-row data-search="{{ .ComponentCode }} {{ .ComponentName }} {{ .ComponentTypeName }} {{ .Brand }} {{ .Model }} {{ .Specification }} {{ .SerialNumber }} {{ .ParentAssetCode }} {{ .LocationName }} {{ .Status }}">
+                                            <td class="text-center font-bold text-slate-500">{{ no $index 1 }}</td>
                                             <td><a href="/asset-components/detail/{{ .ID }}" class="comp-link">{{ .ComponentCode }}</a></td>
                                             <td class="font-bold text-slate-800">{{ .ComponentName }}</td>
                                             <td>{{ .ComponentTypeName }}</td>
@@ -211,7 +213,7 @@
                                             </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="10" class="comp-empty">Belum ada komponen</td></tr>
+                                        <tr><td colspan="11" class="comp-empty">Belum ada komponen</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>

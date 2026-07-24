@@ -3,6 +3,7 @@ package models
 type AssetType struct {
 	ID               int64
 	Code             string
+	AssetPrefix      string
 	Name             string
 	Description      string
 	IsActive         bool
@@ -15,9 +16,35 @@ type AssetType struct {
 type AssetTypeInput struct {
 	ID          int64
 	Code        string
+	AssetPrefix string
 	Name        string
 	Description string
 	IsActive    bool
+}
+
+type AssetCategory struct {
+	ID               int64
+	AssetTypeID      int64
+	AssetTypeName    string
+	Code             string
+	CategoryPrefix   string
+	Name             string
+	Description      string
+	IsActive         bool
+	IsActiveLabel    string
+	AssetCount       int
+	CreatedAtDisplay string
+	UpdatedAtDisplay string
+}
+
+type AssetCategoryInput struct {
+	ID             int64
+	AssetTypeID    int64
+	Code           string
+	CategoryPrefix string
+	Name           string
+	Description    string
+	IsActive       bool
 }
 
 type ComponentType struct {
@@ -71,6 +98,9 @@ type Asset struct {
 	AssetName                string
 	AssetTypeID              int64
 	AssetTypeName            string
+	AssetCategoryID          int64
+	AssetCategoryName        string
+	AssetCategoryPrefix      string
 	SerialNumber             string
 	StoreID                  int
 	StoreName                string
@@ -95,6 +125,7 @@ type AssetInput struct {
 	AssetCode                string
 	AssetName                string
 	AssetTypeID              int64
+	AssetCategoryID          int64
 	SerialNumber             string
 	StoreID                  int
 	LocationID               int64

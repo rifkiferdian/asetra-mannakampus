@@ -212,8 +212,12 @@
                                                 <div class="detail-value">{{ if .Asset.SerialNumber }}{{ .Asset.SerialNumber }}{{ else }}-{{ end }}</div>
                                             </div>
                                             <div>
-                                                <div class="detail-label">Model / Tipe</div>
+                                                <div class="detail-label">Tipe Aset</div>
                                                 <div class="detail-value">{{ .Asset.AssetTypeName }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="detail-label">Kategori Aset</div>
+                                                <div class="detail-value">{{ if .Asset.AssetCategoryName }}{{ .Asset.AssetCategoryName }} ({{ .Asset.AssetCategoryPrefix }}){{ else }}-{{ end }}</div>
                                             </div>
                                             <div>
                                                 <div class="detail-label">Tanggal Perolehan</div>
@@ -392,7 +396,7 @@
                     <div class="detail-modal-grid">
                         <div>
                             <label class="detail-modal-label">Kode Aset</label>
-                            <input name="asset_code" value="{{ .Asset.AssetCode }}" class="detail-modal-control uppercase" required>
+                            <input value="{{ .Asset.AssetCode }}" class="detail-modal-control bg-slate-50 font-bold text-slate-500" readonly>
                         </div>
                         <div class="detail-modal-span-2">
                             <label class="detail-modal-label">Nama Aset</label>
@@ -400,8 +404,14 @@
                         </div>
                         <div>
                             <label class="detail-modal-label">Tipe Aset</label>
-                            <select name="asset_type_id" class="detail-modal-control" required>
-                                {{ range .Types }}<option value="{{ .ID }}" {{ if eq .ID $.Asset.AssetTypeID }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+                            <select name="asset_type_id" id="edit_asset_type" class="detail-modal-control" required>
+                                {{ range .Types }}<option value="{{ .ID }}" data-prefix="{{ .AssetPrefix }}" {{ if eq .ID $.Asset.AssetTypeID }}selected{{ end }}>{{ .Name }} ({{ .AssetPrefix }})</option>{{ end }}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="detail-modal-label">Kategori Aset</label>
+                            <select name="asset_category_id" id="edit_asset_category" class="detail-modal-control" required>
+                                {{ range .Categories }}<option value="{{ .ID }}" data-type-id="{{ .AssetTypeID }}" {{ if eq .ID $.Asset.AssetCategoryID }}selected{{ end }}>{{ .Name }} ({{ .CategoryPrefix }})</option>{{ end }}
                             </select>
                         </div>
                         <div>
@@ -450,7 +460,7 @@
                         </div>
                         <div>
                             <label class="detail-modal-label">Tanggal Perolehan</label>
-                            <input type="date" name="acquisition_date" value="{{ .Asset.AcquisitionDate }}" class="detail-modal-control">
+                            <input type="date" name="acquisition_date" value="{{ .Asset.AcquisitionDate }}" class="detail-modal-control" required>
                         </div>
                         <div>
                             <label class="detail-modal-label">Nilai Perolehan</label>
@@ -496,6 +506,28 @@
                     if (!confirm(a.dataset.confirm)) event.preventDefault();
                 });
             });
+            function refreshEditAssetCategories() {
+                var typeSelect = document.getElementById('edit_asset_type');
+                var categorySelect = document.getElementById('edit_asset_category');
+                if (!typeSelect || !categorySelect) return;
+                var typeID = typeSelect.value;
+                var selectedStillVisible = false;
+                Array.prototype.forEach.call(categorySelect.options, function (option) {
+                    var visible = option.dataset.typeId === typeID;
+                    option.hidden = !visible;
+                    option.disabled = !visible;
+                    if (visible && option.selected) selectedStillVisible = true;
+                });
+                if (!selectedStillVisible) {
+                    var firstVisible = Array.prototype.find.call(categorySelect.options, function (option) {
+                        return !option.disabled;
+                    });
+                    categorySelect.value = firstVisible ? firstVisible.value : '';
+                }
+            }
+            var editAssetType = document.getElementById('edit_asset_type');
+            if (editAssetType) editAssetType.addEventListener('change', refreshEditAssetCategories);
+            refreshEditAssetCategories();
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') closeDetailModals();
             });

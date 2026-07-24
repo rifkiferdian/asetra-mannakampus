@@ -171,6 +171,7 @@
                                 <table class="cm-table">
                                     <thead>
                                         <tr>
+                                            <th>No</th>
                                             <th>Date</th>
                                             <th>Component</th>
                                             <th>Type</th>
@@ -183,8 +184,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
+                                        {{ range $index, $item := .Items }}
                                         <tr data-cm-row data-search="{{ .MovementDate }} {{ .ComponentCode }} {{ .MovementType }} {{ .FromAssetCode }} {{ .ToAssetCode }} {{ .FromLocationName }} {{ .ToLocationName }} {{ .ActedByName }} {{ .Notes }}">
+                                            <td class="text-center font-bold text-slate-500">{{ no $index $.Pagination.PageStart }}</td>
                                             <td>{{ .MovementDate }}</td>
                                             <td><span class="cm-link">{{ .ComponentCode }}</span></td>
                                             <td>
@@ -218,7 +220,7 @@
                                             <td><div class="cm-note">{{ if .Notes }}{{ .Notes }}{{ else }}<span class="cm-muted">-</span>{{ end }}</div></td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="9" class="cm-empty">Belum ada history movement komponen</td></tr>
+                                        <tr><td colspan="10" class="cm-empty">Belum ada history movement komponen</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>

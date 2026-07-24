@@ -172,6 +172,7 @@
                                 <table class="move-table">
                                     <thead>
                                         <tr>
+                                            <th>No</th>
                                             <th>Date</th>
                                             <th>Asset</th>
                                             <th>Type</th>
@@ -183,8 +184,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {{ range .Items }}
+                                        {{ range $index, $item := .Items }}
                                         <tr data-move-row data-search="{{ .MovementDate }} {{ .AssetCode }} {{ .MovementType }} {{ .FromStoreName }} {{ .ToStoreName }} {{ .FromLocationName }} {{ .ToLocationName }} {{ .ToUserName }} {{ .ActedByName }} {{ .Notes }}">
+                                            <td class="text-center font-bold text-slate-500">{{ no $index $.Pagination.PageStart }}</td>
                                             <td>{{ .MovementDate }}</td>
                                             <td><span class="move-link">{{ .AssetCode }}</span></td>
                                             <td>
@@ -217,7 +219,7 @@
                                             <td><div class="move-note">{{ if .Notes }}{{ .Notes }}{{ else }}<span class="move-muted">-</span>{{ end }}</div></td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="8" class="move-empty">Belum ada history movement asset</td></tr>
+                                        <tr><td colspan="9" class="move-empty">Belum ada history movement asset</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>
