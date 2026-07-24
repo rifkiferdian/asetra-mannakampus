@@ -37,7 +37,7 @@ type AnnualDepreciationRow struct {
 	AcquisitionDate         string
 	AcquisitionDateDisplay  string
 	AcquisitionYear         int
-	UnitName                string
+	StoreName               string
 	LocationName            string
 	AssetStatus             string
 	ProfileStatus           string

@@ -44,7 +44,7 @@ func (r *AssetDepreciationAnnualReportRepository) GetReport(filter models.Annual
 		if err := rows.Scan(
 			&item.AssetID, &item.AssetCode, &item.AssetName,
 			&item.AssetTypeID, &item.AssetTypeCode, &item.AssetTypeName,
-			&acquisitionDate, &item.AcquisitionValue, &item.UnitName,
+			&acquisitionDate, &item.AcquisitionValue, &item.StoreName,
 			&item.LocationName, &item.AssetStatus, &item.ProfileStatus,
 			&item.DepreciableBasis, &item.SalvageValue,
 		); err != nil {

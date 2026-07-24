@@ -58,7 +58,7 @@ func AssetDepreciationAnnualReportExportCSV(c *gin.Context) {
 	c.Status(http.StatusOK)
 	_, _ = c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
 	w := csv.NewWriter(c.Writer)
-	header := []string{"No", "Jenis Aktiva", "Kode Aset", "Tanggal", "Tahun Perolehan", "Harga Perolehan"}
+	header := []string{"No", "Jenis Aktiva", "Kode Aset", "Store", "Tanggal", "Tahun Perolehan", "Harga Perolehan"}
 	for _, year := range result.Years {
 		header = append(header,
 			fmt.Sprintf("Penyusutan %d", year.Year),
@@ -71,20 +71,20 @@ func AssetDepreciationAnnualReportExportCSV(c *gin.Context) {
 		for _, item := range group.Rows {
 			record := []string{
 				strconv.Itoa(item.Sequence), assetDisposalReportCSVText(item.AssetName), assetDisposalReportCSVText(item.AssetCode),
-				item.AcquisitionDate, strconv.Itoa(item.AcquisitionYear), reportFloat(item.AcquisitionValue),
+				assetDisposalReportCSVText(item.StoreName), item.AcquisitionDate, strconv.Itoa(item.AcquisitionYear), reportFloat(item.AcquisitionValue),
 			}
 			for _, amount := range item.YearAmounts {
 				record = append(record, reportFloat(amount.Depreciation), reportFloat(amount.AccumulatedDepreciation), reportFloat(amount.BookValue))
 			}
 			_ = w.Write(record)
 		}
-		subtotal := []string{"", "Sub Jumlah " + assetDisposalReportCSVText(group.AssetTypeName), "", "", "", reportFloat(group.AcquisitionValue)}
+		subtotal := []string{"", "Sub Jumlah " + assetDisposalReportCSVText(group.AssetTypeName), "", "", "", "", reportFloat(group.AcquisitionValue)}
 		for _, amount := range group.YearTotals {
 			subtotal = append(subtotal, reportFloat(amount.Depreciation), reportFloat(amount.AccumulatedDepreciation), reportFloat(amount.BookValue))
 		}
 		_ = w.Write(subtotal)
 	}
-	grandTotal := []string{"", "GRAND TOTAL", "", "", "", reportFloat(result.AcquisitionValue)}
+	grandTotal := []string{"", "GRAND TOTAL", "", "", "", "", reportFloat(result.AcquisitionValue)}
 	for _, amount := range result.YearTotals {
 		grandTotal = append(grandTotal, reportFloat(amount.Depreciation), reportFloat(amount.AccumulatedDepreciation), reportFloat(amount.BookValue))
 	}
