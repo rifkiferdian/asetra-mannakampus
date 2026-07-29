@@ -79,6 +79,41 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 		{Name: "purchase_order_view", Group: "purchase_order", GuardName: "web"},
 		{Name: "purchase_order_create", Group: "purchase_order", GuardName: "web"},
 		{Name: "purchase_order_edit", Group: "purchase_order", GuardName: "web"},
+		{Name: "catalog_item_type_management_access", Group: "catalog_item_type", GuardName: "web"},
+		{Name: "catalog_item_type_view", Group: "catalog_item_type", GuardName: "web"},
+		{Name: "catalog_item_type_create", Group: "catalog_item_type", GuardName: "web"},
+		{Name: "catalog_item_type_edit", Group: "catalog_item_type", GuardName: "web"},
+		{Name: "catalog_item_type_delete", Group: "catalog_item_type", GuardName: "web"},
+		{Name: "catalog_category_management_access", Group: "catalog_category", GuardName: "web"},
+		{Name: "catalog_category_view", Group: "catalog_category", GuardName: "web"},
+		{Name: "catalog_category_create", Group: "catalog_category", GuardName: "web"},
+		{Name: "catalog_category_edit", Group: "catalog_category", GuardName: "web"},
+		{Name: "catalog_category_delete", Group: "catalog_category", GuardName: "web"},
+		{Name: "catalog_item_management_access", Group: "catalog_item", GuardName: "web"},
+		{Name: "catalog_item_view", Group: "catalog_item", GuardName: "web"},
+		{Name: "catalog_item_create", Group: "catalog_item", GuardName: "web"},
+		{Name: "catalog_item_edit", Group: "catalog_item", GuardName: "web"},
+		{Name: "catalog_item_delete", Group: "catalog_item", GuardName: "web"},
+		{Name: "catalog_item_detail_management_access", Group: "catalog_item_detail", GuardName: "web"},
+		{Name: "catalog_item_detail_view", Group: "catalog_item_detail", GuardName: "web"},
+		{Name: "catalog_item_detail_create", Group: "catalog_item_detail", GuardName: "web"},
+		{Name: "catalog_item_detail_edit", Group: "catalog_item_detail", GuardName: "web"},
+		{Name: "catalog_item_detail_delete", Group: "catalog_item_detail", GuardName: "web"},
+		{Name: "catalog_package_management_access", Group: "catalog_package", GuardName: "web"},
+		{Name: "catalog_package_view", Group: "catalog_package", GuardName: "web"},
+		{Name: "catalog_package_create", Group: "catalog_package", GuardName: "web"},
+		{Name: "catalog_package_edit", Group: "catalog_package", GuardName: "web"},
+		{Name: "catalog_package_delete", Group: "catalog_package", GuardName: "web"},
+		{Name: "catalog_package_item_management_access", Group: "catalog_package_item", GuardName: "web"},
+		{Name: "catalog_package_item_view", Group: "catalog_package_item", GuardName: "web"},
+		{Name: "catalog_package_item_create", Group: "catalog_package_item", GuardName: "web"},
+		{Name: "catalog_package_item_edit", Group: "catalog_package_item", GuardName: "web"},
+		{Name: "catalog_package_item_delete", Group: "catalog_package_item", GuardName: "web"},
+		{Name: "vendor_item_price_management_access", Group: "vendor_item_price", GuardName: "web"},
+		{Name: "vendor_item_price_view", Group: "vendor_item_price", GuardName: "web"},
+		{Name: "vendor_item_price_create", Group: "vendor_item_price", GuardName: "web"},
+		{Name: "vendor_item_price_edit", Group: "vendor_item_price", GuardName: "web"},
+		{Name: "vendor_item_price_delete", Group: "vendor_item_price", GuardName: "web"},
 		{Name: "asset_type_management_access", Group: "asset_type", GuardName: "web"},
 		{Name: "asset_type_view", Group: "asset_type", GuardName: "web"},
 		{Name: "asset_type_create", Group: "asset_type", GuardName: "web"},
@@ -189,6 +224,48 @@ func (s *PermissionService) EnsureSystemPermissions() error {
 
 	if err := s.Repo.GrantPermissionsToRoles(
 		[]string{"purchase_order_management_access", "purchase_order_view", "purchase_order_create", "purchase_order_edit"},
+		[]string{"procurement"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	catalogReadPermissions := []string{
+		"catalog_item_type_management_access", "catalog_item_type_view",
+		"catalog_category_management_access", "catalog_category_view",
+		"catalog_item_management_access", "catalog_item_view",
+		"catalog_item_detail_management_access", "catalog_item_detail_view",
+		"catalog_package_management_access", "catalog_package_view",
+		"catalog_package_item_management_access", "catalog_package_item_view",
+		"vendor_item_price_management_access", "vendor_item_price_view",
+	}
+	if err := s.Repo.GrantPermissionsToRoles(
+		catalogReadPermissions,
+		[]string{"procurement"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	catalogManagePermissions := append([]string{}, catalogReadPermissions...)
+	catalogManagePermissions = append(catalogManagePermissions,
+		"catalog_item_type_create", "catalog_item_type_edit", "catalog_item_type_delete",
+		"catalog_category_create", "catalog_category_edit", "catalog_category_delete",
+		"catalog_item_create", "catalog_item_edit", "catalog_item_delete",
+		"catalog_item_detail_create", "catalog_item_detail_edit", "catalog_item_detail_delete",
+		"catalog_package_create", "catalog_package_edit", "catalog_package_delete",
+		"catalog_package_item_create", "catalog_package_item_edit", "catalog_package_item_delete",
+	)
+	if err := s.Repo.GrantPermissionsToRoles(
+		catalogManagePermissions,
+		[]string{"ga-manager", "IT-manager", "it-manager"},
+		"web",
+	); err != nil {
+		return err
+	}
+
+	if err := s.Repo.GrantPermissionsToRoles(
+		[]string{"vendor_item_price_create", "vendor_item_price_edit", "vendor_item_price_delete"},
 		[]string{"procurement"},
 		"web",
 	); err != nil {

@@ -1,0 +1,21 @@
+{{ define "catalogPagination" }}
+<div class="flex flex-col gap-3 border-t border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
+        <span>Baris per halaman:</span>
+        <span class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[#07317f]">{{ .Pagination.PageSize }}</span>
+    </div>
+    <div class="flex items-center gap-2">
+        {{ if .Pagination.HasPrev }}
+        <a href="?page={{ .Pagination.PrevPage }}{{ with .PaginationQuery }}{{ . }}{{ end }}" class="catalog-page"><i class="bx bx-chevron-left text-base"></i></a>
+        {{ else }}
+        <span class="catalog-page is-disabled"><i class="bx bx-chevron-left text-base"></i></span>
+        {{ end }}
+        <span class="catalog-page bg-[#07317f] text-white">{{ .Pagination.CurrentPage }} / {{ .Pagination.TotalPages }}</span>
+        {{ if .Pagination.HasNext }}
+        <a href="?page={{ .Pagination.NextPage }}{{ with .PaginationQuery }}{{ . }}{{ end }}" class="catalog-page"><i class="bx bx-chevron-right text-base"></i></a>
+        {{ else }}
+        <span class="catalog-page is-disabled"><i class="bx bx-chevron-right text-base"></i></span>
+        {{ end }}
+    </div>
+</div>
+{{ end }}
