@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gobase-app/models"
 	"strconv"
+	"strings"
 )
 
 type CatalogRepository struct {
@@ -205,22 +206,27 @@ func (r *CatalogRepository) GetItems() ([]models.CatalogItem, error) {
 			item.id, item.item_code, item.category_id, category.name,
 			item.item_type_id, item_type.code, item_type.name,
 			COALESCE(item.asset_type_id, 0), COALESCE(asset_type.name, ''),
+			COALESCE(item.component_type_id, 0), COALESCE(component_type.name, ''),
 			item.name, item.uom, COALESCE(item.description, ''),
-			item.is_asset_candidate, item.is_active,
-			COUNT(DISTINCT detail.id), COUNT(DISTINCT package_item.package_id),
+			item.is_asset_candidate, item.is_purchasable, item.is_active,
+			COUNT(DISTINCT variant.id), COUNT(DISTINCT bom.id),
+			COUNT(DISTINCT package_item.package_id),
 			COUNT(DISTINCT price.id), item.updated_at
 		FROM catalog_items item
 		JOIN catalog_item_categories category ON category.id = item.category_id
 		JOIN catalog_item_types item_type ON item_type.id = item.item_type_id
 		LEFT JOIN asset_types asset_type ON asset_type.id = item.asset_type_id
-		LEFT JOIN catalog_item_details detail ON detail.item_id = item.id
+		LEFT JOIN component_types component_type ON component_type.id = item.component_type_id
+		LEFT JOIN catalog_item_variants variant ON variant.item_id = item.id
+		LEFT JOIN catalog_item_boms bom ON bom.parent_item_id = item.id
 		LEFT JOIN catalog_package_items package_item ON package_item.item_id = item.id
-		LEFT JOIN vendor_item_prices price ON price.item_id = item.id
+		LEFT JOIN vendor_item_prices price ON price.variant_id = variant.id
 		GROUP BY
 			item.id, item.item_code, item.category_id, category.name,
 			item.item_type_id, item_type.code, item_type.name,
-			item.asset_type_id, asset_type.name, item.name, item.uom,
-			item.description, item.is_asset_candidate, item.is_active, item.updated_at
+			item.asset_type_id, asset_type.name, item.component_type_id, component_type.name,
+			item.name, item.uom, item.description, item.is_asset_candidate,
+			item.is_purchasable, item.is_active, item.updated_at
 		ORDER BY item.name
 	`)
 	if err != nil {
@@ -231,18 +237,22 @@ func (r *CatalogRepository) GetItems() ([]models.CatalogItem, error) {
 	var items []models.CatalogItem
 	for rows.Next() {
 		var item models.CatalogItem
-		var isAssetCandidate, isActive int
+		var isAssetCandidate, isPurchasable, isActive int
 		var updatedAt sql.NullTime
 		if err := rows.Scan(
 			&item.ID, &item.ItemCode, &item.CategoryID, &item.CategoryName,
 			&item.ItemTypeID, &item.ItemTypeCode, &item.ItemTypeName,
-			&item.AssetTypeID, &item.AssetTypeName, &item.Name, &item.UOM,
-			&item.Description, &isAssetCandidate, &isActive, &item.DetailCount,
-			&item.PackageCount, &item.PriceCount, &updatedAt,
+			&item.AssetTypeID, &item.AssetTypeName,
+			&item.ComponentTypeID, &item.ComponentTypeName,
+			&item.Name, &item.UOM, &item.Description,
+			&isAssetCandidate, &isPurchasable, &isActive,
+			&item.VariantCount, &item.BOMCount, &item.PackageCount,
+			&item.PriceCount, &updatedAt,
 		); err != nil {
 			return nil, err
 		}
 		item.IsAssetCandidate = isAssetCandidate == 1
+		item.IsPurchasable = isPurchasable == 1
 		item.IsActive = isActive == 1
 		item.UpdatedAtDisplay = formatNullTime(updatedAt)
 		items = append(items, item)
@@ -260,12 +270,13 @@ func (r *CatalogRepository) CreateItem(input models.CatalogItemInput) error {
 	}
 	_, err = r.DB.Exec(`
 		INSERT INTO catalog_items (
-			item_code, category_id, item_type_id, asset_type_id, name, uom,
-			description, is_asset_candidate, is_active
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			item_code, category_id, item_type_id, asset_type_id, component_type_id,
+			name, uom, description, is_asset_candidate, is_purchasable, is_active
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, input.ItemCode, input.CategoryID, input.ItemTypeID, nullablePositiveInt64(input.AssetTypeID),
-		input.Name, input.UOM, nullableString(input.Description),
-		boolToInt(input.IsAssetCandidate), boolToInt(input.IsActive))
+		nullablePositiveInt64(input.ComponentTypeID), input.Name, input.UOM,
+		nullableString(input.Description), boolToInt(input.IsAssetCandidate),
+		boolToInt(input.IsPurchasable), boolToInt(input.IsActive))
 	return err
 }
 
@@ -280,26 +291,35 @@ func (r *CatalogRepository) UpdateItem(input models.CatalogItemInput) error {
 	_, err = r.DB.Exec(`
 		UPDATE catalog_items
 		SET item_code = ?, category_id = ?, item_type_id = ?, asset_type_id = ?,
-			name = ?, uom = ?, description = ?, is_asset_candidate = ?, is_active = ?
+			component_type_id = ?, name = ?, uom = ?, description = ?,
+			is_asset_candidate = ?, is_purchasable = ?, is_active = ?
 		WHERE id = ?
 	`, input.ItemCode, input.CategoryID, input.ItemTypeID, nullablePositiveInt64(input.AssetTypeID),
-		input.Name, input.UOM, nullableString(input.Description),
-		boolToInt(input.IsAssetCandidate), boolToInt(input.IsActive), input.ID)
+		nullablePositiveInt64(input.ComponentTypeID), input.Name, input.UOM,
+		nullableString(input.Description), boolToInt(input.IsAssetCandidate),
+		boolToInt(input.IsPurchasable), boolToInt(input.IsActive), input.ID)
 	return err
 }
 
 func (r *CatalogRepository) DeleteItem(id int64) error {
-	var packageCount, prCount, priceCount int
+	var packageCount, prCount, variantCount, parentBOMCount, componentBOMCount int
 	if err := r.DB.QueryRow(`
 		SELECT
 			(SELECT COUNT(*) FROM catalog_package_items WHERE item_id = ?),
 			(SELECT COUNT(*) FROM purchase_request_items WHERE catalog_item_id = ?),
-			(SELECT COUNT(*) FROM vendor_item_prices WHERE item_id = ?)
-	`, id, id, id).Scan(&packageCount, &prCount, &priceCount); err != nil {
+			(SELECT COUNT(*) FROM catalog_item_variants WHERE item_id = ?),
+			(SELECT COUNT(*) FROM catalog_item_boms WHERE parent_item_id = ?),
+			(SELECT COUNT(*) FROM catalog_item_bom_items WHERE component_item_id = ?)
+	`, id, id, id, id, id).Scan(
+		&packageCount, &prCount, &variantCount, &parentBOMCount, &componentBOMCount,
+	); err != nil {
 		return err
 	}
-	if packageCount > 0 || prCount > 0 || priceCount > 0 {
-		return fmt.Errorf("item masih digunakan oleh %d paket, %d item PR, atau %d harga vendor", packageCount, prCount, priceCount)
+	if packageCount > 0 || prCount > 0 || variantCount > 0 || parentBOMCount > 0 || componentBOMCount > 0 {
+		return fmt.Errorf(
+			"item masih digunakan oleh %d paket, %d item PR, %d varian, %d BOM parent, atau %d komponen BOM",
+			packageCount, prCount, variantCount, parentBOMCount, componentBOMCount,
+		)
 	}
 	result, err := r.DB.Exec(`DELETE FROM catalog_items WHERE id = ?`, id)
 	if err != nil {
@@ -308,84 +328,16 @@ func (r *CatalogRepository) DeleteItem(id int64) error {
 	return ensureAffected(result, "item tidak ditemukan")
 }
 
-func (r *CatalogRepository) GetItemDetails() ([]models.CatalogItemDetail, error) {
-	rows, err := r.DB.Query(`
-		SELECT
-			detail.id, detail.item_id, item.item_code, item.name, category.name,
-			detail.detail_name, detail.detail_value, COALESCE(detail.unit, ''),
-			detail.sort_order, detail.updated_at
-		FROM catalog_item_details detail
-		JOIN catalog_items item ON item.id = detail.item_id
-		JOIN catalog_item_categories category ON category.id = item.category_id
-		ORDER BY item.name, detail.sort_order, detail.detail_name
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var items []models.CatalogItemDetail
-	for rows.Next() {
-		var item models.CatalogItemDetail
-		var updatedAt sql.NullTime
-		if err := rows.Scan(
-			&item.ID, &item.ItemID, &item.ItemCode, &item.ItemName, &item.CategoryName,
-			&item.DetailName, &item.DetailValue, &item.Unit, &item.SortOrder, &updatedAt,
-		); err != nil {
-			return nil, err
-		}
-		item.UpdatedAtDisplay = formatNullTime(updatedAt)
-		items = append(items, item)
-	}
-	return items, rows.Err()
-}
-
-func (r *CatalogRepository) CreateItemDetail(input models.CatalogItemDetailInput) error {
-	exists, err := r.detailNameExists(input.ItemID, input.DetailName, 0)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return errors.New("nama detail sudah digunakan pada item tersebut")
-	}
-	_, err = r.DB.Exec(`
-		INSERT INTO catalog_item_details (
-			item_id, detail_name, detail_value, unit, sort_order
-		) VALUES (?, ?, ?, ?, ?)
-	`, input.ItemID, input.DetailName, input.DetailValue, nullableString(input.Unit), input.SortOrder)
-	return err
-}
-
-func (r *CatalogRepository) UpdateItemDetail(input models.CatalogItemDetailInput) error {
-	exists, err := r.detailNameExists(input.ItemID, input.DetailName, input.ID)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return errors.New("nama detail sudah digunakan pada item tersebut")
-	}
-	_, err = r.DB.Exec(`
-		UPDATE catalog_item_details
-		SET item_id = ?, detail_name = ?, detail_value = ?, unit = ?, sort_order = ?
-		WHERE id = ?
-	`, input.ItemID, input.DetailName, input.DetailValue, nullableString(input.Unit), input.SortOrder, input.ID)
-	return err
-}
-
-func (r *CatalogRepository) DeleteItemDetail(id int64) error {
-	result, err := r.DB.Exec(`DELETE FROM catalog_item_details WHERE id = ?`, id)
-	if err != nil {
-		return err
-	}
-	return ensureAffected(result, "detail item tidak ditemukan")
-}
-
 func (r *CatalogRepository) GetDivisions() ([]models.Division, error) {
 	return (&DivisionRepository{DB: r.DB}).GetAll()
 }
 
 func (r *CatalogRepository) GetAssetTypes() ([]models.AssetType, error) {
 	return (&AssetRepository{DB: r.DB}).GetAssetTypes()
+}
+
+func (r *CatalogRepository) GetComponentTypes() ([]models.ComponentType, error) {
+	return (&AssetRepository{DB: r.DB}).GetComponentTypes()
 }
 
 func (r *CatalogRepository) GetPackages() ([]models.CatalogPackage, error) {
@@ -489,13 +441,65 @@ func (r *CatalogRepository) GetPackageItems() ([]models.CatalogPackageItem, erro
 		SELECT
 			package_item.id, package_item.package_id, package.package_code, package.name,
 			package_item.item_id, item.item_code, item.name, item_type.code,
-			category.name, package_item.qty, item.uom, package_item.is_optional,
+			category.name,
+			COALESCE(package_item.bom_id, 0), COALESCE(bom.bom_code, ''), COALESCE(bom.name, ''),
+			COALESCE(package_item.variant_id, 0), COALESCE(variant.variant_code, ''),
+			COALESCE(variant.model_name, ''), COALESCE(brand.name, ''),
+			COALESCE(package_item.preferred_vendor_id, 0), COALESCE(vendor.name, ''),
+			CASE
+				WHEN package_item.bom_id IS NOT NULL THEN COALESCE(bom_price.total_price, 0)
+				ELSE COALESCE(direct_price.unit_price, 0)
+			END,
+			CASE
+				WHEN package_item.bom_id IS NOT NULL
+					THEN COALESCE(bom_price.component_count, 0) > 0
+						AND COALESCE(bom_price.missing_price_count, 0) = 0
+				ELSE direct_price.id IS NOT NULL
+			END,
+			package_item.qty, item.uom, package_item.is_optional,
 			package_item.sort_order, COALESCE(package_item.notes, ''), package_item.updated_at
 		FROM catalog_package_items package_item
 		JOIN catalog_packages package ON package.id = package_item.package_id
 		JOIN catalog_items item ON item.id = package_item.item_id
 		JOIN catalog_item_types item_type ON item_type.id = item.item_type_id
 		JOIN catalog_item_categories category ON category.id = item.category_id
+		LEFT JOIN catalog_item_boms bom ON bom.id = package_item.bom_id
+		LEFT JOIN catalog_item_variants variant ON variant.id = package_item.variant_id
+		LEFT JOIN catalog_brands brand ON brand.id = variant.brand_id
+		LEFT JOIN vendors vendor ON vendor.id = package_item.preferred_vendor_id
+		LEFT JOIN vendor_item_prices direct_price
+			ON direct_price.id = (
+				SELECT price_lookup.id
+				FROM vendor_item_prices price_lookup
+				WHERE price_lookup.variant_id = package_item.variant_id
+				  AND price_lookup.vendor_id = package_item.preferred_vendor_id
+				  AND price_lookup.is_active = 1
+				  AND price_lookup.valid_from <= CURDATE()
+				  AND (price_lookup.valid_until IS NULL OR price_lookup.valid_until >= CURDATE())
+				ORDER BY price_lookup.is_preferred DESC, price_lookup.valid_from DESC, price_lookup.id DESC
+				LIMIT 1
+			)
+		LEFT JOIN (
+			SELECT
+				bom_item.bom_id,
+				COUNT(*) component_count,
+				SUM(selected_price.id IS NULL) missing_price_count,
+				SUM(bom_item.qty * COALESCE(selected_price.unit_price, 0)) total_price
+			FROM catalog_item_bom_items bom_item
+			LEFT JOIN vendor_item_prices selected_price
+				ON selected_price.id = (
+					SELECT price_lookup.id
+					FROM vendor_item_prices price_lookup
+					WHERE price_lookup.variant_id = bom_item.variant_id
+					  AND price_lookup.vendor_id = bom_item.preferred_vendor_id
+					  AND price_lookup.is_active = 1
+					  AND price_lookup.valid_from <= CURDATE()
+					  AND (price_lookup.valid_until IS NULL OR price_lookup.valid_until >= CURDATE())
+					ORDER BY price_lookup.is_preferred DESC, price_lookup.valid_from DESC, price_lookup.id DESC
+					LIMIT 1
+				)
+			GROUP BY bom_item.bom_id
+		) bom_price ON bom_price.bom_id = package_item.bom_id
 		ORDER BY package.name, package_item.sort_order, item.name
 	`)
 	if err != nil {
@@ -506,18 +510,25 @@ func (r *CatalogRepository) GetPackageItems() ([]models.CatalogPackageItem, erro
 	var items []models.CatalogPackageItem
 	for rows.Next() {
 		var item models.CatalogPackageItem
-		var isOptional int
+		var isOptional, hasCurrentPrice int
 		var updatedAt sql.NullTime
 		if err := rows.Scan(
 			&item.ID, &item.PackageID, &item.PackageCode, &item.PackageName,
 			&item.ItemID, &item.ItemCode, &item.ItemName, &item.ItemTypeCode,
-			&item.CategoryName, &item.Qty, &item.UOM, &isOptional,
+			&item.CategoryName,
+			&item.BOMID, &item.BOMCode, &item.BOMName,
+			&item.VariantID, &item.VariantCode, &item.VariantName, &item.BrandName,
+			&item.PreferredVendorID, &item.PreferredVendorName,
+			&item.EstimatedUnitPrice, &hasCurrentPrice,
+			&item.Qty, &item.UOM, &isOptional,
 			&item.SortOrder, &item.Notes, &updatedAt,
 		); err != nil {
 			return nil, err
 		}
 		item.IsOptional = isOptional == 1
+		item.HasCurrentPrice = hasCurrentPrice == 1
 		item.QtyDisplay = formatQtyLocal(item.Qty)
+		item.EstimatedUnitPriceDisplay = formatCatalogAmountLocal(item.EstimatedUnitPrice)
 		item.UpdatedAtDisplay = formatNullTime(updatedAt)
 		items = append(items, item)
 	}
@@ -534,10 +545,12 @@ func (r *CatalogRepository) CreatePackageItem(input models.CatalogPackageItemInp
 	}
 	_, err = r.DB.Exec(`
 		INSERT INTO catalog_package_items (
-			package_id, item_id, qty, is_optional, sort_order, notes
-		) VALUES (?, ?, ?, ?, ?, ?)
-	`, input.PackageID, input.ItemID, input.Qty, boolToInt(input.IsOptional),
-		input.SortOrder, nullableString(input.Notes))
+			package_id, item_id, bom_id, variant_id, preferred_vendor_id,
+			qty, is_optional, sort_order, notes
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.PackageID, input.ItemID, nullablePositiveInt64(input.BOMID),
+		nullablePositiveInt64(input.VariantID), nullablePositiveInt64(input.PreferredVendorID),
+		input.Qty, boolToInt(input.IsOptional), input.SortOrder, nullableString(input.Notes))
 	return err
 }
 
@@ -551,10 +564,12 @@ func (r *CatalogRepository) UpdatePackageItem(input models.CatalogPackageItemInp
 	}
 	_, err = r.DB.Exec(`
 		UPDATE catalog_package_items
-		SET package_id = ?, item_id = ?, qty = ?, is_optional = ?, sort_order = ?, notes = ?
+		SET package_id = ?, item_id = ?, bom_id = ?, variant_id = ?,
+			preferred_vendor_id = ?, qty = ?, is_optional = ?, sort_order = ?, notes = ?
 		WHERE id = ?
-	`, input.PackageID, input.ItemID, input.Qty, boolToInt(input.IsOptional),
-		input.SortOrder, nullableString(input.Notes), input.ID)
+	`, input.PackageID, input.ItemID, nullablePositiveInt64(input.BOMID),
+		nullablePositiveInt64(input.VariantID), nullablePositiveInt64(input.PreferredVendorID),
+		input.Qty, boolToInt(input.IsOptional), input.SortOrder, nullableString(input.Notes), input.ID)
 	return err
 }
 
@@ -577,7 +592,9 @@ func (r *CatalogRepository) GetVendorItemPrices() ([]models.VendorItemPrice, err
 	rows, err := r.DB.Query(`
 		SELECT
 			price.id, price.vendor_id, vendor.name,
-			price.item_id, item.item_code, item.name, category.name, item.uom,
+			item.id, item.item_code, item.name,
+			price.variant_id, variant.variant_code, variant.model_name, COALESCE(brand.name, ''),
+			category.name, item.uom,
 			price.unit_price, price.currency_code, price.minimum_qty,
 			price.valid_from, price.valid_until, COALESCE(price.lead_time_days, 0),
 			COALESCE(price.quotation_reference, ''),
@@ -587,9 +604,11 @@ func (r *CatalogRepository) GetVendorItemPrices() ([]models.VendorItemPrice, err
 			COALESCE(price.notes, ''), price.updated_at
 		FROM vendor_item_prices price
 		JOIN vendors vendor ON vendor.id = price.vendor_id
-		JOIN catalog_items item ON item.id = price.item_id
+		JOIN catalog_item_variants variant ON variant.id = price.variant_id
+		JOIN catalog_items item ON item.id = variant.item_id
+		LEFT JOIN catalog_brands brand ON brand.id = variant.brand_id
 		JOIN catalog_item_categories category ON category.id = item.category_id
-		ORDER BY item.name, price.is_preferred DESC, price.unit_price, vendor.name
+		ORDER BY item.name, variant.model_name, price.is_preferred DESC, price.unit_price, vendor.name
 	`)
 	if err != nil {
 		return nil, err
@@ -604,7 +623,9 @@ func (r *CatalogRepository) GetVendorItemPrices() ([]models.VendorItemPrice, err
 		var isPreferred, isActive, isCurrentlyValid int
 		if err := rows.Scan(
 			&price.ID, &price.VendorID, &price.VendorName,
-			&price.ItemID, &price.ItemCode, &price.ItemName, &price.CategoryName, &price.UOM,
+			&price.ItemID, &price.ItemCode, &price.ItemName,
+			&price.VariantID, &price.VariantCode, &price.VariantName, &price.BrandName,
+			&price.CategoryName, &price.UOM,
 			&price.UnitPrice, &price.CurrencyCode, &price.MinimumQty,
 			&validFrom, &validUntil, &price.LeadTimeDays, &price.QuotationReference,
 			&isPreferred, &isActive, &isCurrentlyValid, &price.Notes, &updatedAt,
@@ -612,7 +633,7 @@ func (r *CatalogRepository) GetVendorItemPrices() ([]models.VendorItemPrice, err
 			return nil, err
 		}
 		price.UnitPriceInput = strconv.FormatFloat(price.UnitPrice, 'f', -1, 64)
-		price.UnitPriceDisplay = formatAmountIDLocal(price.UnitPrice)
+		price.UnitPriceDisplay = formatCatalogAmountLocal(price.UnitPrice)
 		price.MinimumQtyDisplay = formatQtyLocal(price.MinimumQty)
 		if validFrom.Valid {
 			price.ValidFrom = validFrom.Time.Format("2006-01-02")
@@ -638,7 +659,7 @@ func (r *CatalogRepository) GetVendors() ([]models.Vendor, error) {
 }
 
 func (r *CatalogRepository) CreateVendorItemPrice(input models.VendorItemPriceInput) error {
-	exists, err := r.vendorItemPriceExists(input.VendorID, input.ItemID, input.ValidFrom, 0)
+	exists, err := r.vendorItemPriceExists(input.VendorID, input.VariantID, input.ValidFrom, 0)
 	if err != nil {
 		return err
 	}
@@ -649,7 +670,7 @@ func (r *CatalogRepository) CreateVendorItemPrice(input models.VendorItemPriceIn
 }
 
 func (r *CatalogRepository) UpdateVendorItemPrice(input models.VendorItemPriceInput) error {
-	exists, err := r.vendorItemPriceExists(input.VendorID, input.ItemID, input.ValidFrom, input.ID)
+	exists, err := r.vendorItemPriceExists(input.VendorID, input.VariantID, input.ValidFrom, input.ID)
 	if err != nil {
 		return err
 	}
@@ -670,8 +691,8 @@ func (r *CatalogRepository) saveVendorItemPrice(input models.VendorItemPriceInpu
 		if _, err := tx.Exec(`
 			UPDATE vendor_item_prices
 			SET is_preferred = 0
-			WHERE item_id = ? AND id <> ?
-		`, input.ItemID, input.ID); err != nil {
+			WHERE variant_id = ? AND id <> ?
+		`, input.VariantID, input.ID); err != nil {
 			return err
 		}
 	}
@@ -679,11 +700,11 @@ func (r *CatalogRepository) saveVendorItemPrice(input models.VendorItemPriceInpu
 	if update {
 		_, err = tx.Exec(`
 			UPDATE vendor_item_prices
-			SET vendor_id = ?, item_id = ?, unit_price = ?, currency_code = ?,
+			SET vendor_id = ?, variant_id = ?, unit_price = ?, currency_code = ?,
 				minimum_qty = ?, valid_from = ?, valid_until = ?, lead_time_days = ?,
 				quotation_reference = ?, is_preferred = ?, is_active = ?, notes = ?
 			WHERE id = ?
-		`, input.VendorID, input.ItemID, input.UnitPrice, input.CurrencyCode,
+		`, input.VendorID, input.VariantID, input.UnitPrice, input.CurrencyCode,
 			input.MinimumQty, input.ValidFrom, nullableString(input.ValidUntil),
 			nullableInt(input.LeadTimeDays), nullableString(input.QuotationReference),
 			boolToInt(input.IsPreferred), boolToInt(input.IsActive),
@@ -691,11 +712,11 @@ func (r *CatalogRepository) saveVendorItemPrice(input models.VendorItemPriceInpu
 	} else {
 		_, err = tx.Exec(`
 			INSERT INTO vendor_item_prices (
-				vendor_id, item_id, unit_price, currency_code, minimum_qty,
+				vendor_id, variant_id, unit_price, currency_code, minimum_qty,
 				valid_from, valid_until, lead_time_days, quotation_reference,
 				is_preferred, is_active, notes
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`, input.VendorID, input.ItemID, input.UnitPrice, input.CurrencyCode,
+		`, input.VendorID, input.VariantID, input.UnitPrice, input.CurrencyCode,
 			input.MinimumQty, input.ValidFrom, nullableString(input.ValidUntil),
 			nullableInt(input.LeadTimeDays), nullableString(input.QuotationReference),
 			boolToInt(input.IsPreferred), boolToInt(input.IsActive), nullableString(input.Notes))
@@ -714,12 +735,12 @@ func (r *CatalogRepository) DeleteVendorItemPrice(id int64) error {
 	return ensureAffected(result, "harga vendor tidak ditemukan")
 }
 
-func (r *CatalogRepository) vendorItemPriceExists(vendorID, itemID int64, validFrom string, exceptID int64) (bool, error) {
+func (r *CatalogRepository) vendorItemPriceExists(vendorID, variantID int64, validFrom string, exceptID int64) (bool, error) {
 	var count int
 	err := r.DB.QueryRow(`
 		SELECT COUNT(*) FROM vendor_item_prices
-		WHERE vendor_id = ? AND item_id = ? AND valid_from = ? AND id <> ?
-	`, vendorID, itemID, validFrom, exceptID).Scan(&count)
+		WHERE vendor_id = ? AND variant_id = ? AND valid_from = ? AND id <> ?
+	`, vendorID, variantID, validFrom, exceptID).Scan(&count)
 	return count > 0, err
 }
 
@@ -747,15 +768,6 @@ func (r *CatalogRepository) itemCodeExists(code string, exceptID int64) (bool, e
 		SELECT COUNT(*) FROM catalog_items
 		WHERE item_code = ? AND (? = 0 OR id <> ?)
 	`, code, exceptID, exceptID).Scan(&count)
-	return count > 0, err
-}
-
-func (r *CatalogRepository) detailNameExists(itemID int64, name string, exceptID int64) (bool, error) {
-	var count int
-	err := r.DB.QueryRow(`
-		SELECT COUNT(*) FROM catalog_item_details
-		WHERE item_id = ? AND detail_name = ? AND (? = 0 OR id <> ?)
-	`, itemID, name, exceptID, exceptID).Scan(&count)
 	return count > 0, err
 }
 
@@ -800,6 +812,11 @@ func (r *CatalogRepository) categoryParentCreatesCycle(id, parentID int64) (bool
 		current = parent.Int64
 	}
 	return false, nil
+}
+
+func formatCatalogAmountLocal(value float64) string {
+	formatted := strings.TrimPrefix(formatAmountIDLocal(value), "IDR ")
+	return strings.ReplaceAll(formatted, ",", ".")
 }
 
 func ensureAffected(result sql.Result, notFoundMessage string) error {

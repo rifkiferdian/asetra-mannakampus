@@ -29,9 +29,9 @@
 
                 <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <article class="catalog-panel catalog-kpi catalog-kpi-blue p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Total Item</p><span class="catalog-kpi-icon"><i class="bx bx-package"></i></span></div><p class="catalog-kpi-value">{{ .TotalItems }}</p></article>
-                    <article class="catalog-panel catalog-kpi catalog-kpi-indigo p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Barang</p><span class="catalog-kpi-icon"><i class="bx bx-box"></i></span></div><p class="catalog-kpi-value">{{ .GoodsCount }}</p></article>
-                    <article class="catalog-panel catalog-kpi catalog-kpi-green p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Jasa</p><span class="catalog-kpi-icon"><i class="bx bx-wrench"></i></span></div><p class="catalog-kpi-value">{{ .ServiceCount }}</p></article>
-                    <article class="catalog-panel catalog-kpi catalog-kpi-orange p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Detail Spesifikasi</p><span class="catalog-kpi-icon"><i class="bx bx-list-check"></i></span></div><p class="catalog-kpi-value">{{ .TotalDetails }}</p></article>
+                    <article class="catalog-panel catalog-kpi catalog-kpi-indigo p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Dapat Dibeli</p><span class="catalog-kpi-icon"><i class="bx bx-cart"></i></span></div><p class="catalog-kpi-value">{{ .PurchasableCount }}</p></article>
+                    <article class="catalog-panel catalog-kpi catalog-kpi-green p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Item Rakitan</p><span class="catalog-kpi-icon"><i class="bx bx-sitemap"></i></span></div><p class="catalog-kpi-value">{{ .CompositeCount }}</p></article>
+                    <article class="catalog-panel catalog-kpi catalog-kpi-orange p-6"><div class="flex items-start justify-between"><p class="text-sm font-bold text-[#1b2a52]">Total Varian</p><span class="catalog-kpi-icon"><i class="bx bx-layer"></i></span></div><p class="catalog-kpi-value">{{ .TotalVariants }}</p></article>
                 </section>
 
                 <section class="catalog-panel overflow-hidden">
@@ -40,8 +40,8 @@
                         <p class="text-xs font-bold text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }}</p>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="catalog-table w-full min-w-[1120px]">
-                            <thead><tr><th class="w-14 text-center">No</th><th>Item</th><th>Kode</th><th>Kategori</th><th>Jenis</th><th>Satuan</th><th>Asset Type</th><th>Detail</th><th>Paket</th><th>Harga</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
+                        <table class="catalog-table w-full min-w-[1240px]">
+                            <thead><tr><th class="w-14 text-center">No</th><th>Item</th><th>Kode</th><th>Kategori</th><th>Jenis</th><th>Satuan</th><th>Mapping</th><th>Varian</th><th>BOM</th><th>Paket</th><th>Harga</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
                             <tbody>
                             {{ range $index, $item := .Items }}
                             <tr class="hover:bg-[#f8fbff]">
@@ -49,18 +49,19 @@
                                 <td><div class="flex items-center gap-3"><span class="catalog-row-icon" style="{{ if eq .ItemTypeCode "SERVICE" }}--icon:#047857;--icon-bg:#d1fae5{{ end }}"><i class="bx {{ if eq .ItemTypeCode "SERVICE" }}bx-wrench{{ else }}bx-package{{ end }}"></i></span><div class="min-w-0"><p class="font-extrabold">{{ .Name }}</p><p class="mt-0.5 max-w-[17rem] truncate text-[10px] font-semibold text-slate-500">{{ if .Description }}{{ .Description }}{{ else }}Tanpa deskripsi{{ end }}</p></div></div></td>
                                 <td class="font-extrabold text-[#07317f]">{{ .ItemCode }}</td>
                                 <td>{{ .CategoryName }}</td>
-                                <td>{{ if eq .ItemTypeCode "GOODS" }}<span class="catalog-pill catalog-pill-blue">BARANG</span>{{ else }}<span class="catalog-pill catalog-pill-green">JASA</span>{{ end }}</td>
+                                <td>{{ if eq .ItemTypeCode "COMPOSITE" }}<span class="catalog-pill catalog-pill-orange">RAKITAN</span>{{ else if eq .ItemTypeCode "GOODS" }}<span class="catalog-pill catalog-pill-blue">BARANG</span>{{ else }}<span class="catalog-pill catalog-pill-green">JASA</span>{{ end }}</td>
                                 <td class="font-bold">{{ .UOM }}</td>
-                                <td>{{ if .AssetTypeName }}<span class="catalog-pill catalog-pill-orange">{{ .AssetTypeName }}</span>{{ else }}<span class="text-slate-400">Bukan aset</span>{{ end }}</td>
-                                <td class="font-extrabold">{{ .DetailCount }}</td><td class="font-extrabold">{{ .PackageCount }}</td><td class="font-extrabold">{{ .PriceCount }}</td>
+                                <td>{{ if .ComponentTypeName }}<span class="catalog-pill catalog-pill-blue">{{ .ComponentTypeName }}</span>{{ else if .AssetTypeName }}<span class="catalog-pill catalog-pill-orange">{{ .AssetTypeName }}</span>{{ else }}<span class="text-slate-400">Tidak ada</span>{{ end }}</td>
+                                <td class="font-extrabold">{{ .VariantCount }}</td><td class="font-extrabold">{{ .BOMCount }}</td><td class="font-extrabold">{{ .PackageCount }}</td><td class="font-extrabold">{{ .PriceCount }}</td>
                                 <td>{{ if .IsActive }}<span class="catalog-pill catalog-pill-green">AKTIF</span>{{ else }}<span class="catalog-pill catalog-pill-muted">NONAKTIF</span>{{ end }}</td>
                                 <td><div class="flex justify-end gap-1">
-                                    {{ if index $.Permissions "catalog_item_detail_management_access" }}<a class="catalog-action" href="/catalog/item-details?item_id={{ .ID }}" title="Detail item"><i class="bx bx-list-ul text-base"></i></a>{{ end }}
-                                    {{ if index $.Permissions "catalog_item_edit" }}<button class="catalog-action" type="button" title="Ubah" data-edit-item data-id="{{ .ID }}" data-code="{{ .ItemCode }}" data-name="{{ .Name }}" data-category="{{ .CategoryID }}" data-type="{{ .ItemTypeID }}" data-uom="{{ .UOM }}" data-asset-candidate="{{ if .IsAssetCandidate }}1{{ else }}0{{ end }}" data-asset-type="{{ .AssetTypeID }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}"><i class="bx bx-pencil text-base"></i></button>{{ end }}
+                                    {{ if and (index $.Permissions "catalog_item_variant_management_access") .IsPurchasable }}<a class="catalog-action" href="/catalog/item-variants?item_id={{ .ID }}" title="Kelola varian"><i class="bx bx-layer text-base"></i></a>{{ end }}
+                                    {{ if and (index $.Permissions "catalog_item_bom_management_access") (eq .ItemTypeCode "COMPOSITE") }}<a class="catalog-action" href="/catalog/item-boms" title="Kelola rakitan"><i class="bx bx-sitemap text-base"></i></a>{{ end }}
+                                    {{ if index $.Permissions "catalog_item_edit" }}<button class="catalog-action" type="button" title="Ubah" data-edit-item data-id="{{ .ID }}" data-code="{{ .ItemCode }}" data-name="{{ .Name }}" data-category="{{ .CategoryID }}" data-type="{{ .ItemTypeID }}" data-uom="{{ .UOM }}" data-asset-candidate="{{ if .IsAssetCandidate }}1{{ else }}0{{ end }}" data-asset-type="{{ .AssetTypeID }}" data-component-type="{{ .ComponentTypeID }}" data-purchasable="{{ if .IsPurchasable }}1{{ else }}0{{ end }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}"><i class="bx bx-pencil text-base"></i></button>{{ end }}
                                     {{ if index $.Permissions "catalog_item_delete" }}<form action="/catalog/items/{{ .ID }}/delete" method="post" data-confirm="Hapus item {{ .ItemCode }}?"><button class="catalog-action catalog-action-danger" type="submit" title="Hapus"><i class="bx bx-trash text-base"></i></button></form>{{ end }}
                                 </div></td>
                             </tr>
-                            {{ else }}<tr><td colspan="12" class="py-12 text-center text-sm font-semibold text-slate-500">Belum ada master item.</td></tr>{{ end }}
+                            {{ else }}<tr><td colspan="13" class="py-12 text-center text-sm font-semibold text-slate-500">Belum ada master item.</td></tr>{{ end }}
                             </tbody>
                         </table>
                     </div>
@@ -80,10 +81,12 @@
             <label class="catalog-label">Kode Item<input name="item_code" maxlength="50" class="catalog-control uppercase" placeholder="IT-PC-KASIR" required></label>
             <label class="catalog-label">Nama Item<input name="name" maxlength="200" class="catalog-control" placeholder="PC Kasir" required></label>
             <label class="catalog-label">Kategori<select name="category_id" class="catalog-control" required><option value="">Pilih kategori</option>{{ range .Categories }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
-            <label class="catalog-label">Jenis Item<select name="item_type_id" class="catalog-control" required><option value="">Pilih jenis</option>{{ range .ItemTypes }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select></label>
+            <label class="catalog-label">Jenis Item<select name="item_type_id" class="catalog-control" data-item-type required><option value="">Pilih jenis</option>{{ range .ItemTypes }}<option value="{{ .ID }}" data-code="{{ .Code }}">{{ .Name }}</option>{{ end }}</select></label>
             <label class="catalog-label">Satuan<input name="uom" maxlength="30" class="catalog-control" value="unit" required></label>
+            <label class="catalog-label">Dapat Dibeli<select name="is_purchasable" class="catalog-control" data-purchasable><option value="1">Ya</option><option value="0">Tidak</option></select></label>
             <label class="catalog-label">Kandidat Aset<select name="is_asset_candidate" class="catalog-control" data-asset-candidate><option value="0">Tidak</option><option value="1">Ya</option></select></label>
-            <label class="catalog-label catalog-span-2 hidden" data-asset-type-field>Asset Type<select name="asset_type_id" class="catalog-control" data-asset-type><option value="">Pilih asset type</option>{{ range .AssetTypes }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label hidden" data-asset-type-field>Asset Type<select name="asset_type_id" class="catalog-control" data-asset-type><option value="">Pilih asset type</option>{{ range .AssetTypes }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label">Component Type<select name="component_type_id" class="catalog-control"><option value="">Bukan komponen</option>{{ range .ComponentTypes }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
             <label class="catalog-label catalog-span-2">Deskripsi<textarea name="description" rows="3" class="catalog-control resize-none"></textarea></label>
             <label class="catalog-label catalog-span-2">Status<select name="is_active" class="catalog-control"><option value="1">Aktif</option><option value="0">Nonaktif</option></select></label>
         </div></div>
@@ -101,10 +104,12 @@
             <label class="catalog-label">Kode Item<input name="item_code" maxlength="50" class="catalog-control uppercase" data-field="code" required></label>
             <label class="catalog-label">Nama Item<input name="name" maxlength="200" class="catalog-control" data-field="name" required></label>
             <label class="catalog-label">Kategori<select name="category_id" class="catalog-control" data-field="category" required>{{ range .Categories }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}</select></label>
-            <label class="catalog-label">Jenis Item<select name="item_type_id" class="catalog-control" data-field="type" required>{{ range .ItemTypes }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select></label>
+            <label class="catalog-label">Jenis Item<select name="item_type_id" class="catalog-control" data-field="type" data-item-type required>{{ range .ItemTypes }}<option value="{{ .ID }}" data-code="{{ .Code }}">{{ .Name }}</option>{{ end }}</select></label>
             <label class="catalog-label">Satuan<input name="uom" maxlength="30" class="catalog-control" data-field="uom" required></label>
+            <label class="catalog-label">Dapat Dibeli<select name="is_purchasable" class="catalog-control" data-field="purchasable" data-purchasable><option value="1">Ya</option><option value="0">Tidak</option></select></label>
             <label class="catalog-label">Kandidat Aset<select name="is_asset_candidate" class="catalog-control" data-field="assetCandidate" data-asset-candidate><option value="0">Tidak</option><option value="1">Ya</option></select></label>
-            <label class="catalog-label catalog-span-2 hidden" data-asset-type-field>Asset Type<select name="asset_type_id" class="catalog-control" data-field="assetType" data-asset-type><option value="">Pilih asset type</option>{{ range .AssetTypes }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}</select></label>
+            <label class="catalog-label hidden" data-asset-type-field>Asset Type<select name="asset_type_id" class="catalog-control" data-field="assetType" data-asset-type><option value="">Pilih asset type</option>{{ range .AssetTypes }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}</select></label>
+            <label class="catalog-label">Component Type<select name="component_type_id" class="catalog-control" data-field="componentType"><option value="">Bukan komponen</option>{{ range .ComponentTypes }}<option value="{{ .ID }}">{{ .Code }} - {{ .Name }}</option>{{ end }}</select></label>
             <label class="catalog-label catalog-span-2">Deskripsi<textarea name="description" rows="3" class="catalog-control resize-none" data-field="description"></textarea></label>
             <label class="catalog-label catalog-span-2">Status<select name="is_active" class="catalog-control" data-field="active"><option value="1">Aktif</option><option value="0">Nonaktif</option></select></label>
         </div></div>

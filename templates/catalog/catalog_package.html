@@ -54,7 +54,7 @@
                                 <td>{{ if .IsActive }}<span class="catalog-pill catalog-pill-green">AKTIF</span>{{ else }}<span class="catalog-pill catalog-pill-muted">NONAKTIF</span>{{ end }}</td>
                                 <td class="text-slate-500">{{ .UpdatedAtDisplay }}</td>
                                 <td><div class="flex justify-end gap-1">
-                                    {{ if index $.Permissions "catalog_package_item_management_access" }}<a class="catalog-action" href="/catalog/package-items" title="Kelola isi"><i class="bx bx-list-plus text-base"></i></a>{{ end }}
+                                    {{ if index $.Permissions "catalog_package_item_management_access" }}<a class="catalog-action" href="/catalog/package-items?package_id={{ .ID }}" title="Kelola isi"><i class="bx bx-list-plus text-base"></i></a>{{ end }}
                                     {{ if index $.Permissions "catalog_package_edit" }}<button class="catalog-action" type="button" title="Ubah" data-edit-package data-id="{{ .ID }}" data-code="{{ .PackageCode }}" data-name="{{ .Name }}" data-category="{{ .CategoryID }}" data-division="{{ .OwnerDivisionID }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}"><i class="bx bx-pencil text-base"></i></button>{{ end }}
                                     {{ if index $.Permissions "catalog_package_delete" }}<form action="/catalog/packages/{{ .ID }}/delete" method="post" data-confirm="Hapus paket {{ .PackageCode }} beserta seluruh isinya?"><button class="catalog-action catalog-action-danger" type="submit" title="Hapus"><i class="bx bx-trash text-base"></i></button></form>{{ end }}
                                 </div></td>

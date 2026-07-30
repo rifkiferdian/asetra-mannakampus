@@ -94,6 +94,15 @@ func (s *CatalogService) SaveItem(input models.CatalogItemInput) error {
 	if !input.IsAssetCandidate {
 		input.AssetTypeID = 0
 	}
+	itemTypeCode, err := s.Repo.GetItemTypeCodeByID(input.ItemTypeID)
+	if err != nil {
+		return err
+	}
+	if itemTypeCode == "COMPOSITE" {
+		input.IsPurchasable = false
+	} else if !input.IsPurchasable {
+		return errors.New("item barang atau jasa harus dapat dibeli langsung")
+	}
 	if input.ID > 0 {
 		return s.Repo.UpdateItem(input)
 	}
@@ -107,39 +116,16 @@ func (s *CatalogService) DeleteItem(id int64) error {
 	return s.Repo.DeleteItem(id)
 }
 
-func (s *CatalogService) GetItemDetails() ([]models.CatalogItemDetail, error) {
-	return s.Repo.GetItemDetails()
-}
-
-func (s *CatalogService) SaveItemDetail(input models.CatalogItemDetailInput) error {
-	input.DetailName = strings.TrimSpace(input.DetailName)
-	input.DetailValue = strings.TrimSpace(input.DetailValue)
-	input.Unit = strings.TrimSpace(input.Unit)
-	if input.ItemID <= 0 || input.DetailName == "" || input.DetailValue == "" {
-		return errors.New("item, nama detail, dan nilai wajib diisi")
-	}
-	if input.SortOrder < 0 {
-		return errors.New("urutan tidak boleh negatif")
-	}
-	if input.ID > 0 {
-		return s.Repo.UpdateItemDetail(input)
-	}
-	return s.Repo.CreateItemDetail(input)
-}
-
-func (s *CatalogService) DeleteItemDetail(id int64) error {
-	if id <= 0 {
-		return errors.New("detail item tidak valid")
-	}
-	return s.Repo.DeleteItemDetail(id)
-}
-
 func (s *CatalogService) GetDivisions() ([]models.Division, error) {
 	return s.Repo.GetDivisions()
 }
 
 func (s *CatalogService) GetAssetTypes() ([]models.AssetType, error) {
 	return s.Repo.GetAssetTypes()
+}
+
+func (s *CatalogService) GetComponentTypes() ([]models.ComponentType, error) {
+	return s.Repo.GetComponentTypes()
 }
 
 func (s *CatalogService) GetPackages() ([]models.CatalogPackage, error) {
@@ -184,6 +170,39 @@ func (s *CatalogService) SavePackageItem(input models.CatalogPackageItemInput) e
 	if input.SortOrder < 0 {
 		return errors.New("urutan tidak boleh negatif")
 	}
+	itemTypeCode, err := s.Repo.GetItemTypeCode(input.ItemID)
+	if err != nil {
+		return err
+	}
+	if itemTypeCode == "COMPOSITE" {
+		if input.BOMID <= 0 {
+			return errors.New("konfigurasi BOM wajib dipilih untuk item rakitan")
+		}
+		ok, err := s.Repo.BOMBelongsToItem(input.BOMID, input.ItemID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("BOM tidak sesuai dengan item rakitan")
+		}
+		input.VariantID = 0
+		input.PreferredVendorID = 0
+	} else {
+		if input.VariantID <= 0 {
+			return errors.New("varian wajib dipilih untuk item yang dibeli langsung")
+		}
+		if input.PreferredVendorID <= 0 {
+			return errors.New("vendor pilihan wajib dipilih untuk item yang dibeli langsung")
+		}
+		ok, err := s.Repo.VariantBelongsToItem(input.VariantID, input.ItemID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("varian tidak sesuai dengan item paket")
+		}
+		input.BOMID = 0
+	}
 	if input.ID > 0 {
 		return s.Repo.UpdatePackageItem(input)
 	}
@@ -211,8 +230,8 @@ func (s *CatalogService) SaveVendorItemPrice(input models.VendorItemPriceInput) 
 	input.ValidUntil = strings.TrimSpace(input.ValidUntil)
 	input.QuotationReference = strings.TrimSpace(input.QuotationReference)
 	input.Notes = strings.TrimSpace(input.Notes)
-	if input.VendorID <= 0 || input.ItemID <= 0 {
-		return errors.New("vendor dan item wajib dipilih")
+	if input.VendorID <= 0 || input.VariantID <= 0 {
+		return errors.New("vendor dan varian item wajib dipilih")
 	}
 	if input.UnitPrice <= 0 {
 		return errors.New("harga satuan harus lebih besar dari nol")

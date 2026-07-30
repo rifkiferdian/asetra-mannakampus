@@ -103,36 +103,6 @@ func CatalogItemDelete(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/catalog/items")
 }
 
-func CatalogItemDetailIndex(c *gin.Context) {
-	renderCatalogItemDetailPage(c, catalogService(), "")
-}
-
-func CatalogItemDetailStore(c *gin.Context) {
-	if err := catalogService().SaveItemDetail(bindCatalogItemDetailInput(c)); err != nil {
-		renderCatalogItemDetailPage(c, catalogService(), err.Error())
-		return
-	}
-	redirectCatalogItemDetails(c)
-}
-
-func CatalogItemDetailUpdate(c *gin.Context) {
-	input := bindCatalogItemDetailInput(c)
-	input.ID = parseInt64Form(c, "id")
-	if err := catalogService().SaveItemDetail(input); err != nil {
-		renderCatalogItemDetailPage(c, catalogService(), err.Error())
-		return
-	}
-	redirectCatalogItemDetails(c)
-}
-
-func CatalogItemDetailDelete(c *gin.Context) {
-	if err := catalogService().DeleteItemDetail(parseInt64Param(c, "id")); err != nil {
-		renderCatalogItemDetailPage(c, catalogService(), err.Error())
-		return
-	}
-	redirectCatalogItemDetails(c)
-}
-
 func CatalogPackageIndex(c *gin.Context) {
 	renderCatalogPackagePage(c, catalogService(), "")
 }
@@ -172,7 +142,7 @@ func CatalogPackageItemStore(c *gin.Context) {
 		renderCatalogPackageItemPage(c, catalogService(), err.Error())
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/catalog/package-items")
+	redirectCatalogPackageItems(c)
 }
 
 func CatalogPackageItemUpdate(c *gin.Context) {
@@ -182,7 +152,7 @@ func CatalogPackageItemUpdate(c *gin.Context) {
 		renderCatalogPackageItemPage(c, catalogService(), err.Error())
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/catalog/package-items")
+	redirectCatalogPackageItems(c)
 }
 
 func CatalogPackageItemDelete(c *gin.Context) {
@@ -190,7 +160,7 @@ func CatalogPackageItemDelete(c *gin.Context) {
 		renderCatalogPackageItemPage(c, catalogService(), err.Error())
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/catalog/package-items")
+	redirectCatalogPackageItems(c)
 }
 
 func VendorItemPriceIndex(c *gin.Context) {
@@ -298,82 +268,32 @@ func renderCatalogItemPage(c *gin.Context, service *services.CatalogService, mes
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	activeCount, goodsCount, serviceCount, totalDetails := 0, 0, 0, 0
+	componentTypes, err := service.GetComponentTypes()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	activeCount, purchasableCount, compositeCount, totalVariants := 0, 0, 0, 0
 	for _, item := range items {
 		if item.IsActive {
 			activeCount++
 		}
-		if item.ItemTypeCode == "GOODS" {
-			goodsCount++
+		if item.IsPurchasable {
+			purchasableCount++
 		}
-		if item.ItemTypeCode == "SERVICE" {
-			serviceCount++
+		if item.ItemTypeCode == "COMPOSITE" {
+			compositeCount++
 		}
-		totalDetails += item.DetailCount
+		totalVariants += item.VariantCount
 	}
 	pageItems, pagination := paginateAssetSlice(c, items)
 	Render(c, "catalog_item.html", gin.H{
 		"Title": "Master Item", "Page": "catalog_item", "Items": pageItems,
 		"Categories": categories, "ItemTypes": itemTypes, "AssetTypes": assetTypes,
-		"Pagination": pagination, "Error": message, "TotalItems": len(items),
-		"ActiveCount": activeCount, "GoodsCount": goodsCount,
-		"ServiceCount": serviceCount, "TotalDetails": totalDetails,
-	})
-}
-
-func renderCatalogItemDetailPage(c *gin.Context, service *services.CatalogService, message string) {
-	details, err := service.GetItemDetails()
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
-		return
-	}
-	items, err := service.GetItems()
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	selectedItemID, _ := strconv.ParseInt(c.Query("item_id"), 10, 64)
-	if selectedItemID <= 0 {
-		selectedItemID = parseInt64Form(c, "return_item_id")
-	}
-	selectedItemName := ""
-	if selectedItemID > 0 {
-		filtered := make([]models.CatalogItemDetail, 0)
-		for _, detail := range details {
-			if detail.ItemID == selectedItemID {
-				filtered = append(filtered, detail)
-			}
-		}
-		details = filtered
-		for _, item := range items {
-			if item.ID == selectedItemID {
-				selectedItemName = item.ItemCode + " - " + item.Name
-				break
-			}
-		}
-	}
-
-	distinctItems := map[int64]bool{}
-	withUnit := 0
-	for _, detail := range details {
-		distinctItems[detail.ItemID] = true
-		if detail.Unit != "" {
-			withUnit++
-		}
-	}
-	pageItems, pagination := paginateAssetSlice(c, details)
-	paginationQuery := ""
-	if selectedItemID > 0 {
-		paginationQuery = fmt.Sprintf("&item_id=%d", selectedItemID)
-	}
-	Render(c, "catalog_item_detail.html", gin.H{
-		"Title": "Detail Item", "Page": "catalog_item_detail", "Items": pageItems,
-		"CatalogItems": items, "Pagination": pagination, "Error": message,
-		"TotalDetails": len(details), "ConfiguredItems": len(distinctItems),
-		"WithUnit": withUnit, "AvailableItems": len(items),
-		"SelectedItemID": selectedItemID, "SelectedItemName": selectedItemName,
-		"PaginationQuery": paginationQuery,
+		"ComponentTypes": componentTypes,
+		"Pagination":     pagination, "Error": message, "TotalItems": len(items),
+		"ActiveCount": activeCount, "PurchasableCount": purchasableCount,
+		"CompositeCount": compositeCount, "TotalVariants": totalVariants,
 	})
 }
 
@@ -426,6 +346,43 @@ func renderCatalogPackageItemPage(c *gin.Context, service *services.CatalogServi
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	variants, err := service.GetItemVariants()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	boms, err := service.GetItemBOMs()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	vendors, err := service.GetVendors()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	selectedPackageID, _ := strconv.ParseInt(c.Query("package_id"), 10, 64)
+	if selectedPackageID <= 0 {
+		selectedPackageID = parseInt64Form(c, "return_package_id")
+	}
+	selectedPackageName := ""
+	if selectedPackageID > 0 {
+		filtered := make([]models.CatalogPackageItem, 0)
+		for _, item := range items {
+			if item.PackageID == selectedPackageID {
+				filtered = append(filtered, item)
+			}
+		}
+		items = filtered
+		for _, item := range packages {
+			if item.ID == selectedPackageID {
+				selectedPackageName = item.PackageCode + " - " + item.Name
+				break
+			}
+		}
+	}
+
 	configuredPackages := map[int64]bool{}
 	requiredCount, optionalCount := 0, 0
 	for _, item := range items {
@@ -437,10 +394,17 @@ func renderCatalogPackageItemPage(c *gin.Context, service *services.CatalogServi
 		}
 	}
 	pageItems, pagination := paginateAssetSlice(c, items)
+	paginationQuery := ""
+	if selectedPackageID > 0 {
+		paginationQuery = fmt.Sprintf("&package_id=%d", selectedPackageID)
+	}
 	Render(c, "catalog_package_item.html", gin.H{
 		"Title": "Isi Paket", "Page": "catalog_package_item", "Items": pageItems,
-		"Packages": packages, "CatalogItems": catalogItems, "Pagination": pagination,
-		"Error": message, "TotalLines": len(items), "ConfiguredPackages": len(configuredPackages),
+		"Packages": packages, "CatalogItems": catalogItems, "Variants": variants,
+		"BOMs": boms, "Vendors": vendors, "Pagination": pagination,
+		"PaginationQuery": paginationQuery, "SelectedPackageID": selectedPackageID,
+		"SelectedPackageName": selectedPackageName,
+		"Error":               message, "TotalLines": len(items), "ConfiguredPackages": len(configuredPackages),
 		"RequiredCount": requiredCount, "OptionalCount": optionalCount,
 	})
 }
@@ -456,7 +420,7 @@ func renderVendorItemPricePage(c *gin.Context, service *services.CatalogService,
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	items, err := service.GetItems()
+	variants, err := service.GetItemVariants()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -476,7 +440,7 @@ func renderVendorItemPricePage(c *gin.Context, service *services.CatalogService,
 	pageItems, pagination := paginateAssetSlice(c, prices)
 	Render(c, "vendor_item_price.html", gin.H{
 		"Title": "Harga Vendor", "Page": "vendor_item_price", "Items": pageItems,
-		"Vendors": vendors, "CatalogItems": items, "Pagination": pagination,
+		"Vendors": vendors, "Variants": variants, "Pagination": pagination,
 		"Error": message, "TotalPrices": len(prices), "ActiveCount": activeCount,
 		"PreferredCount": preferredCount, "VendorCount": len(distinctVendors),
 		"Today": time.Now().Format("2006-01-02"),
@@ -503,17 +467,11 @@ func bindCatalogItemInput(c *gin.Context) models.CatalogItemInput {
 	return models.CatalogItemInput{
 		ItemCode: c.PostForm("item_code"), CategoryID: parseInt64Form(c, "category_id"),
 		ItemTypeID: parseInt64Form(c, "item_type_id"), AssetTypeID: parseInt64Form(c, "asset_type_id"),
-		Name: c.PostForm("name"), UOM: c.PostForm("uom"), Description: c.PostForm("description"),
+		ComponentTypeID: parseInt64Form(c, "component_type_id"),
+		Name:            c.PostForm("name"), UOM: c.PostForm("uom"), Description: c.PostForm("description"),
 		IsAssetCandidate: c.PostForm("is_asset_candidate") == "1",
+		IsPurchasable:    c.PostForm("is_purchasable") != "0",
 		IsActive:         c.PostForm("is_active") != "0",
-	}
-}
-
-func bindCatalogItemDetailInput(c *gin.Context) models.CatalogItemDetailInput {
-	return models.CatalogItemDetailInput{
-		ItemID: parseInt64Form(c, "item_id"), DetailName: c.PostForm("detail_name"),
-		DetailValue: c.PostForm("detail_value"), Unit: c.PostForm("unit"),
-		SortOrder: parseIntForm(c, "sort_order"),
 	}
 }
 
@@ -526,26 +484,19 @@ func bindCatalogPackageInput(c *gin.Context) models.CatalogPackageInput {
 	}
 }
 
-func redirectCatalogItemDetails(c *gin.Context) {
-	itemID := parseInt64Form(c, "return_item_id")
-	if itemID > 0 {
-		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/catalog/item-details?item_id=%d", itemID))
-		return
-	}
-	c.Redirect(http.StatusSeeOther, "/catalog/item-details")
-}
-
 func bindCatalogPackageItemInput(c *gin.Context) models.CatalogPackageItemInput {
 	return models.CatalogPackageItemInput{
 		PackageID: parseInt64Form(c, "package_id"), ItemID: parseInt64Form(c, "item_id"),
-		Qty: parseFloatForm(c, "qty"), IsOptional: c.PostForm("is_optional") == "1",
+		BOMID: parseInt64Form(c, "bom_id"), VariantID: parseInt64Form(c, "variant_id"),
+		PreferredVendorID: parseInt64Form(c, "preferred_vendor_id"),
+		Qty:               parseFloatForm(c, "qty"), IsOptional: c.PostForm("is_optional") == "1",
 		SortOrder: parseIntForm(c, "sort_order"), Notes: c.PostForm("notes"),
 	}
 }
 
 func bindVendorItemPriceInput(c *gin.Context) models.VendorItemPriceInput {
 	return models.VendorItemPriceInput{
-		VendorID: parseInt64Form(c, "vendor_id"), ItemID: parseInt64Form(c, "item_id"),
+		VendorID: parseInt64Form(c, "vendor_id"), VariantID: parseInt64Form(c, "variant_id"),
 		UnitPrice: parseFloatForm(c, "unit_price"), CurrencyCode: c.PostForm("currency_code"),
 		MinimumQty: parseFloatForm(c, "minimum_qty"), ValidFrom: c.PostForm("valid_from"),
 		ValidUntil: c.PostForm("valid_until"), LeadTimeDays: parseIntForm(c, "lead_time_days"),
@@ -554,6 +505,15 @@ func bindVendorItemPriceInput(c *gin.Context) models.VendorItemPriceInput {
 		IsActive:           c.PostForm("is_active") != "0",
 		Notes:              c.PostForm("notes"),
 	}
+}
+
+func redirectCatalogPackageItems(c *gin.Context) {
+	packageID := parseInt64Form(c, "return_package_id")
+	if packageID > 0 {
+		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/catalog/package-items?package_id=%d", packageID))
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/catalog/package-items")
 }
 
 func catalogService() *services.CatalogService {

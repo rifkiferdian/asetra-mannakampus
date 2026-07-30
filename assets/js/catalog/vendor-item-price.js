@@ -3,7 +3,7 @@
         button.addEventListener("click", function () {
             var modal = document.getElementById("vendorPriceEdit");
             var fields = [
-                "id", "vendor", "item", "price", "currency", "minimum",
+                "id", "vendor", "variant", "price", "currency", "minimum",
                 "validFrom", "validUntil", "leadTime", "quotation",
                 "preferred", "active", "notes"
             ];

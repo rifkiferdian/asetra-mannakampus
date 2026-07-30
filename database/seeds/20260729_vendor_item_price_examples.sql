@@ -3,7 +3,7 @@
 
 INSERT INTO vendor_item_prices (
     vendor_id,
-    item_id,
+    variant_id,
     unit_price,
     currency_code,
     minimum_qty,
@@ -17,7 +17,7 @@ INSERT INTO vendor_item_prices (
 )
 SELECT
     vendor.id,
-    item.id,
+    variant.id,
     example.unit_price,
     'IDR',
     example.minimum_qty,
@@ -30,15 +30,15 @@ SELECT
     example.notes
 FROM (
     SELECT
-        'IT-PC-KASIR' AS item_code,
-        7850000.00 AS unit_price,
+        'VAR-RAM-KINGSTON-16GB' AS variant_code,
+        700000.00 AS unit_price,
         1.00 AS minimum_qty,
-        7 AS lead_time_days,
-        'QT-SIT/PC/2026-001' AS quotation_reference,
-        'Harga paket unit PC kasir sesuai spesifikasi katalog.' AS notes
+        3 AS lead_time_days,
+        'QT-SIT/RAM/2026-010' AS quotation_reference,
+        'Harga RAM untuk konfigurasi PC Kasir.' AS notes
     UNION ALL
     SELECT
-        'IT-MONITOR-24',
+        'VAR-MON-SAMSUNG-24-IPS',
         2150000.00,
         1.00,
         4,
@@ -48,9 +48,9 @@ FROM (
 JOIN vendors vendor
     ON vendor.name = 'PT Sumber IT'
    AND vendor.is_active = 1
-JOIN catalog_items item
-    ON item.item_code = example.item_code
-   AND item.is_active = 1
+JOIN catalog_item_variants variant
+    ON variant.variant_code = example.variant_code
+   AND variant.is_active = 1
 ON DUPLICATE KEY UPDATE
     unit_price = VALUES(unit_price),
     currency_code = VALUES(currency_code),

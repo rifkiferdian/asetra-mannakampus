@@ -35,31 +35,39 @@
                 </section>
 
                 <section class="catalog-panel overflow-hidden">
+                    <form action="/catalog/package-items" method="get" class="flex flex-col gap-3 border-b border-[#e3e8f3] bg-[#f8faff] px-5 py-4 sm:flex-row sm:items-end">
+                        <label class="catalog-label min-w-0 flex-1 sm:max-w-md">Filter Paket
+                            <select name="package_id" class="catalog-control"><option value="">Semua paket</option>{{ range .Packages }}<option value="{{ .ID }}" {{ if eq .ID $.SelectedPackageID }}selected{{ end }}>{{ .PackageCode }} - {{ .Name }}</option>{{ end }}</select>
+                        </label>
+                        <button class="catalog-primary" type="submit"><i class="bx bx-filter-alt"></i>Terapkan</button>
+                        {{ if .SelectedPackageID }}<a href="/catalog/package-items" class="catalog-secondary"><i class="bx bx-reset"></i>Reset</a>{{ end }}
+                    </form>
                     <div class="flex flex-col gap-2 border-b border-[#e3e8f3] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div><p class="text-sm font-extrabold">Komposisi Paket</p><p class="mt-1 text-xs text-slate-500">Setiap item hanya dapat dimasukkan satu kali dalam paket yang sama.</p></div>
+                        <div><p class="text-sm font-extrabold">Komposisi Paket</p><p class="mt-1 text-xs text-slate-500">{{ if .SelectedPackageName }}Menampilkan isi {{ .SelectedPackageName }}.{{ else }}Setiap item hanya dapat dimasukkan satu kali dalam paket yang sama.{{ end }}</p></div>
                         <p class="text-xs font-bold text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }}</p>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="catalog-table w-full min-w-[1040px]">
-                            <thead><tr><th class="w-14 text-center">No</th><th>Paket</th><th>Item</th><th>Kategori</th><th>Jenis</th><th>Jumlah</th><th>Sifat Item</th><th>Urutan</th><th>Catatan</th><th class="text-right">Aksi</th></tr></thead>
+                        <table class="catalog-table w-full min-w-[1180px]">
+                            <thead><tr><th class="w-14 text-center">No</th><th>Paket</th><th>Item</th><th>Pilihan Produk</th><th>Vendor</th><th>Estimasi</th><th>Jumlah</th><th>Sifat Item</th><th>Urutan</th><th>Catatan</th><th class="text-right">Aksi</th></tr></thead>
                             <tbody>
                             {{ range $index, $item := .Items }}
                             <tr class="hover:bg-[#f8fbff]">
                                 <td class="text-center font-bold text-slate-500">{{ no $index $.Pagination.PageStart }}</td>
                                 <td><p class="font-extrabold">{{ .PackageName }}</p><p class="mt-0.5 text-[10px] font-extrabold text-[#07317f]">{{ .PackageCode }}</p></td>
                                 <td><div class="flex items-center gap-3"><span class="catalog-row-icon"><i class="bx {{ if eq .ItemTypeCode "SERVICE" }}bx-wrench{{ else }}bx-package{{ end }}"></i></span><div><p class="font-extrabold">{{ .ItemName }}</p><p class="mt-0.5 text-[10px] font-extrabold text-[#07317f]">{{ .ItemCode }}</p></div></div></td>
-                                <td>{{ .CategoryName }}</td>
-                                <td>{{ if eq .ItemTypeCode "SERVICE" }}<span class="catalog-pill catalog-pill-green">JASA</span>{{ else }}<span class="catalog-pill catalog-pill-blue">BARANG</span>{{ end }}</td>
+                                <td>{{ if .BOMID }}<p class="font-extrabold">{{ .BOMName }}</p><p class="mt-0.5 text-[10px] text-[#07317f]">{{ .BOMCode }}</p>{{ else }}<p class="font-extrabold">{{ .BrandName }} {{ .VariantName }}</p><p class="mt-0.5 text-[10px] text-slate-500">{{ .VariantCode }}</p>{{ end }}</td>
+                                <td>{{ if .BOMID }}<span class="text-slate-400">Mengikuti BOM</span>{{ else if .PreferredVendorName }}<span class="font-bold">{{ .PreferredVendorName }}</span>{{ else }}<span class="catalog-pill catalog-pill-orange">BELUM DIPILIH</span>{{ end }}</td>
+                                <td>{{ if .HasCurrentPrice }}<span class="font-extrabold text-[#07317f]">Rp {{ .EstimatedUnitPriceDisplay }}</span>{{ else }}<span class="catalog-pill catalog-pill-orange">BELUM LENGKAP</span>{{ end }}</td>
                                 <td class="font-extrabold">{{ .QtyDisplay }} {{ .UOM }}</td>
                                 <td>{{ if .IsOptional }}<span class="catalog-pill catalog-pill-orange">OPSIONAL</span>{{ else }}<span class="catalog-pill catalog-pill-green">WAJIB</span>{{ end }}</td>
                                 <td class="font-extrabold">{{ .SortOrder }}</td>
                                 <td><p class="max-w-[13rem] truncate text-slate-500">{{ if .Notes }}{{ .Notes }}{{ else }}-{{ end }}</p></td>
                                 <td><div class="flex justify-end gap-1">
-                                    {{ if index $.Permissions "catalog_package_item_edit" }}<button class="catalog-action" type="button" title="Ubah" data-edit-package-item data-id="{{ .ID }}" data-package="{{ .PackageID }}" data-item="{{ .ItemID }}" data-qty="{{ .Qty }}" data-optional="{{ if .IsOptional }}1{{ else }}0{{ end }}" data-order="{{ .SortOrder }}" data-notes="{{ .Notes }}"><i class="bx bx-pencil text-base"></i></button>{{ end }}
-                                    {{ if index $.Permissions "catalog_package_item_delete" }}<form action="/catalog/package-items/{{ .ID }}/delete" method="post" data-confirm="Hapus {{ .ItemCode }} dari paket {{ .PackageCode }}?"><button class="catalog-action catalog-action-danger" type="submit" title="Hapus"><i class="bx bx-trash text-base"></i></button></form>{{ end }}
+                                    {{ if index $.Permissions "catalog_package_item_edit" }}<button class="catalog-action" type="button" title="Ubah" data-edit-package-item data-id="{{ .ID }}" data-package="{{ .PackageID }}" data-item="{{ .ItemID }}" data-bom="{{ .BOMID }}" data-variant="{{ .VariantID }}" data-vendor="{{ .PreferredVendorID }}" data-qty="{{ .Qty }}" data-optional="{{ if .IsOptional }}1{{ else }}0{{ end }}" data-order="{{ .SortOrder }}" data-notes="{{ .Notes }}"><i class="bx bx-pencil text-base"></i></button>{{ end }}
+                                    {{ if index $.Permissions "catalog_package_item_delete" }}<form action="/catalog/package-items/{{ .ID }}/delete" method="post" data-confirm="Hapus {{ .ItemCode }} dari paket {{ .PackageCode }}?"><input type="hidden" name="return_package_id" value="{{ $.SelectedPackageID }}"><button class="catalog-action catalog-action-danger" type="submit" title="Hapus"><i class="bx bx-trash text-base"></i></button></form>{{ end }}
                                 </div></td>
                             </tr>
-                            {{ else }}<tr><td colspan="10" class="py-12 text-center text-sm font-semibold text-slate-500">Belum ada isi paket.</td></tr>{{ end }}
+                            {{ else }}<tr><td colspan="11" class="py-12 text-center text-sm font-semibold text-slate-500">Belum ada isi paket.</td></tr>{{ end }}
                             </tbody>
                         </table>
                     </div>
@@ -73,11 +81,15 @@
 
 {{ if index .Permissions "catalog_package_item_create" }}
 <div id="packageItemCreate" class="catalog-backdrop fixed inset-0 z-50 hidden items-center justify-center">
-    <form action="/catalog/package-items" method="post" class="catalog-modal">
+    <form action="/catalog/package-items" method="post" class="catalog-modal" data-package-item-form>
+        <input type="hidden" name="return_package_id" value="{{ .SelectedPackageID }}">
         <div class="catalog-modal-head"><div><h2 class="font-extrabold">Tambah Isi Paket</h2><p class="mt-1 text-xs text-slate-500">Masukkan item katalog ke paket pilihan.</p></div><button type="button" class="catalog-action" data-close><i class="bx bx-x text-xl"></i></button></div>
         <div class="catalog-modal-body"><div class="catalog-modal-grid">
-            <label class="catalog-label catalog-span-2">Paket<select name="package_id" class="catalog-control" required><option value="">Pilih paket</option>{{ range .Packages }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .PackageCode }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
-            <label class="catalog-label catalog-span-2">Item<select name="item_id" class="catalog-control" required><option value="">Pilih item</option>{{ range .CatalogItems }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .ItemCode }} - {{ .Name }} ({{ .UOM }})</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2">Paket<select name="package_id" class="catalog-control" required><option value="">Pilih paket</option>{{ range .Packages }}{{ if .IsActive }}<option value="{{ .ID }}" {{ if eq .ID $.SelectedPackageID }}selected{{ end }}>{{ .PackageCode }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2">Item<select name="item_id" class="catalog-control" data-package-item required><option value="">Pilih item</option>{{ range .CatalogItems }}{{ if .IsActive }}<option value="{{ .ID }}" data-type="{{ .ItemTypeCode }}">{{ .ItemCode }} - {{ .Name }} ({{ .UOM }})</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2 hidden" data-bom-field>Konfigurasi BOM<select name="bom_id" class="catalog-control" data-bom><option value="">Pilih BOM</option>{{ range .BOMs }}{{ if .IsActive }}<option value="{{ .ID }}" data-item="{{ .ParentItemID }}">{{ .BOMCode }} - {{ .Name }}</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2 hidden" data-variant-field>Varian Produk<select name="variant_id" class="catalog-control" data-variant><option value="">Pilih varian</option>{{ range .Variants }}{{ if .IsActive }}<option value="{{ .ID }}" data-item="{{ .ItemID }}">{{ .VariantCode }} - {{ .BrandName }} {{ .ModelName }}</option>{{ end }}{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2 hidden" data-vendor-field>Vendor Pilihan<select name="preferred_vendor_id" class="catalog-control" data-vendor><option value="">Pilih vendor</option>{{ range .Vendors }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}</select></label>
             <label class="catalog-label">Jumlah<input name="qty" type="number" min="0.01" step="0.01" value="1" class="catalog-control" required></label>
             <label class="catalog-label">Sifat Item<select name="is_optional" class="catalog-control"><option value="0">Wajib</option><option value="1">Opsional</option></select></label>
             <label class="catalog-label">Urutan<input name="sort_order" type="number" min="0" value="0" class="catalog-control" required></label>
@@ -90,12 +102,15 @@
 
 {{ if index .Permissions "catalog_package_item_edit" }}
 <div id="packageItemEdit" class="catalog-backdrop fixed inset-0 z-50 hidden items-center justify-center">
-    <form action="/catalog/package-items/update" method="post" class="catalog-modal">
-        <input type="hidden" name="id" data-field="id">
+    <form action="/catalog/package-items/update" method="post" class="catalog-modal" data-package-item-form>
+        <input type="hidden" name="id" data-field="id"><input type="hidden" name="return_package_id" value="{{ .SelectedPackageID }}">
         <div class="catalog-modal-head"><div><h2 class="font-extrabold">Ubah Isi Paket</h2><p class="mt-1 text-xs text-slate-500">Perbarui item, jumlah, dan sifatnya.</p></div><button type="button" class="catalog-action" data-close><i class="bx bx-x text-xl"></i></button></div>
         <div class="catalog-modal-body"><div class="catalog-modal-grid">
             <label class="catalog-label catalog-span-2">Paket<select name="package_id" class="catalog-control" data-field="package" required>{{ range .Packages }}<option value="{{ .ID }}">{{ .PackageCode }} - {{ .Name }}</option>{{ end }}</select></label>
-            <label class="catalog-label catalog-span-2">Item<select name="item_id" class="catalog-control" data-field="item" required>{{ range .CatalogItems }}<option value="{{ .ID }}">{{ .ItemCode }} - {{ .Name }} ({{ .UOM }})</option>{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2">Item<select name="item_id" class="catalog-control" data-field="item" data-package-item required>{{ range .CatalogItems }}<option value="{{ .ID }}" data-type="{{ .ItemTypeCode }}">{{ .ItemCode }} - {{ .Name }} ({{ .UOM }})</option>{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2 hidden" data-bom-field>Konfigurasi BOM<select name="bom_id" class="catalog-control" data-field="bom" data-bom><option value="">Pilih BOM</option>{{ range .BOMs }}<option value="{{ .ID }}" data-item="{{ .ParentItemID }}">{{ .BOMCode }} - {{ .Name }}</option>{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2 hidden" data-variant-field>Varian Produk<select name="variant_id" class="catalog-control" data-field="variant" data-variant><option value="">Pilih varian</option>{{ range .Variants }}<option value="{{ .ID }}" data-item="{{ .ItemID }}">{{ .VariantCode }} - {{ .BrandName }} {{ .ModelName }}</option>{{ end }}</select></label>
+            <label class="catalog-label catalog-span-2 hidden" data-vendor-field>Vendor Pilihan<select name="preferred_vendor_id" class="catalog-control" data-field="vendor" data-vendor><option value="">Pilih vendor</option>{{ range .Vendors }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}</select></label>
             <label class="catalog-label">Jumlah<input name="qty" type="number" min="0.01" step="0.01" class="catalog-control" data-field="qty" required></label>
             <label class="catalog-label">Sifat Item<select name="is_optional" class="catalog-control" data-field="optional"><option value="0">Wajib</option><option value="1">Opsional</option></select></label>
             <label class="catalog-label">Urutan<input name="sort_order" type="number" min="0" class="catalog-control" data-field="order" required></label>
