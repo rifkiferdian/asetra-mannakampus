@@ -2,18 +2,17 @@ package controllers
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"gobase-app/config"
-	helpers "gobase-app/helper"
-	"gobase-app/models"
+	"gobase-app/repositories"
+	"gobase-app/services"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
-
-const userModelType = "Models\\User"
 
 func LoginPage(c *gin.Context) {
 	session := sessions.Default(c)
@@ -28,91 +27,49 @@ func LoginPage(c *gin.Context) {
 }
 
 func LoginPost(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
+	authService := buildAuthService()
+	user, err := authService.Authenticate(c.PostForm("username"), c.PostForm("password"))
+	if err != nil {
+		status := http.StatusOK
+		message := err.Error()
+		if !isAuthenticationError(err) {
+			status = http.StatusInternalServerError
+			message = "Terjadi kesalahan saat mengambil data user"
+		}
 
-	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-	// 	return
-	// }
-
-	// fmt.Println("DEBUG:", string(hashedPassword))
-
-	var (
-		userID  int
-		dbUser  string
-		dbName  string
-		dbPass  string
-		dbNip   sql.NullString
-		dbRole  sql.NullString
-		dbStore sql.NullString
-	)
-	err := config.DB.QueryRow(`
-		SELECT 
-			u.id,
-			u.username,
-			u.name,
-			u.password,
-			COALESCE(u.nip, '') AS nip,
-			COALESCE(GROUP_CONCAT(DISTINCT r.name ORDER BY r.name SEPARATOR ', '), '') AS role,
-			COALESCE(GROUP_CONCAT(DISTINCT us.store_id ORDER BY us.store_id SEPARATOR ','), '') AS store_id
-		FROM users u
-		LEFT JOIN model_has_roles mhr ON mhr.model_id = u.id 
-		LEFT JOIN roles r ON r.id = mhr.role_id
-		LEFT JOIN user_stores us ON us.user_id = u.id
-		WHERE u.username = ? and u.status = 'active'
-		GROUP BY u.id, u.username, u.name, u.password, u.nip
-	`, username).
-		Scan(&userID, &dbUser, &dbName, &dbPass, &dbNip, &dbRole, &dbStore)
-
-	if err == sql.ErrNoRows {
-		c.HTML(200, "login.html", gin.H{
-			"Title": "Login User",
-			"Error": "Username tidak ditemukan / atau mungkin user tidak aktif",
-		})
-		return
-	} else if err != nil {
-		c.HTML(500, "login.html", gin.H{
-			"Title": "Login User",
-			"Error": "Terjadi kesalahan saat mengambil data user",
-		})
+		renderLogin(c, status, message)
 		return
 	}
 
-	// cek password
-	if bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(password)) != nil {
-		c.HTML(200, "login.html", gin.H{
-			"Title": "Login User",
-			"Error": "Password salah",
-		})
-		return
-	}
-
-	// simpan session
-	userInitials := helpers.Initials(dbName)
 	session := sessions.Default(c)
-	session.Set("user", models.SessionUser{
-		UserID:          userID,
-		NIP:             dbNip.String,
-		Name:            dbName,
-		Initials:        userInitials,
-		Username:        dbUser,
-		Role:            dbRole.String,
-		StoreID:         dbStore.String,
-		IsAuthenticated: true,
-	})
-	// simpan id user secara eksplisit agar mudah dipakai middleware permission
-	session.Set("user_id", userID)
+	session.Set("user", user)
+	session.Set("user_id", user.UserID)
 	if err := session.Save(); err != nil {
-		c.HTML(500, "login.html", gin.H{
-			"Title": "Login User",
-			"Error": "Gagal menyimpan sesi: " + err.Error(),
-		})
+		renderLogin(c, http.StatusInternalServerError, "Gagal menyimpan sesi")
 		return
 	}
 
-	c.Redirect(302, "/dashboard")
+	c.Redirect(http.StatusFound, "/dashboard")
+}
+
+func buildAuthService() *services.AuthService {
+	return &services.AuthService{
+		Repo: &repositories.AuthRepository{DB: config.DB},
+	}
+}
+
+func isAuthenticationError(err error) bool {
+	return errors.Is(err, services.ErrUsernameRequired) ||
+		errors.Is(err, services.ErrPasswordRequired) ||
+		errors.Is(err, services.ErrInactiveOrMissing) ||
+		errors.Is(err, services.ErrInvalidPassword)
+}
+
+func renderLogin(c *gin.Context, status int, message string) {
+	c.HTML(status, "login.html", gin.H{
+		"Title": "Login User",
+		"Error": message,
+	})
 }
 
 func Logout(c *gin.Context) {
