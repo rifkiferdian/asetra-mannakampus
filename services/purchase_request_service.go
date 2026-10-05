@@ -43,7 +43,10 @@ func (s *PurchaseRequestService) CreatePurchaseRequest(input models.PurchaseRequ
 	if err := s.validateInput(input); err != nil {
 		return err
 	}
-	totalAmount := calculatePRTotal(input.Items)
+	totalAmount, err := calculatePRTotal(input.Items)
+	if err != nil {
+		return err
+	}
 	if err := s.validateBudgetException(input, totalAmount); err != nil {
 		return err
 	}
@@ -52,7 +55,7 @@ func (s *PurchaseRequestService) CreatePurchaseRequest(input models.PurchaseRequ
 	return err
 }
 
-func (s *PurchaseRequestService) GetFormCheck(storeID, divisionID, glAccountID int, neededDate string, amount float64, urgentLevel string) (*models.PurchaseRequestFormCheck, error) {
+func (s *PurchaseRequestService) GetFormCheck(storeID, divisionID, glAccountID int, neededDate string, amount models.Money, urgentLevel string) (*models.PurchaseRequestFormCheck, error) {
 	if storeID <= 0 || glAccountID <= 0 || amount < 0 {
 		return nil, errors.New("parameter pengecekan PR tidak valid")
 	}
@@ -141,7 +144,10 @@ func (s *PurchaseRequestService) UpdatePurchaseRequest(input models.PurchaseRequ
 	input.AssetLocation = createLike.AssetLocation
 	input.AssetPIC = createLike.AssetPIC
 	input.Items = createLike.Items
-	totalAmount := calculatePRTotal(input.Items)
+	totalAmount, err := calculatePRTotal(input.Items)
+	if err != nil {
+		return err
+	}
 
 	return s.Repo.UpdateEditable(input, totalAmount)
 }
@@ -303,7 +309,7 @@ func (s *PurchaseRequestService) validateEditableInput(input models.PurchaseRequ
 	return nil
 }
 
-func (s *PurchaseRequestService) validateBudgetException(input models.PurchaseRequestCreateInput, totalAmount float64) error {
+func (s *PurchaseRequestService) validateBudgetException(input models.PurchaseRequestCreateInput, totalAmount models.Money) error {
 	if input.Action != "submit" {
 		return nil
 	}
@@ -344,10 +350,14 @@ func normalizePRCreateInput(input models.PurchaseRequestCreateInput) models.Purc
 	return input
 }
 
-func calculatePRTotal(items []models.PurchaseRequestItemInput) float64 {
-	total := 0.0
+func calculatePRTotal(items []models.PurchaseRequestItemInput) (models.Money, error) {
+	var total models.Money
 	for _, item := range items {
-		total += item.Qty * item.EstUnitPrice
+		lineTotal, err := models.MultiplyMoneyByQuantity(item.EstUnitPrice, item.Qty)
+		if err != nil {
+			return 0, err
+		}
+		total = total.Add(lineTotal)
 	}
-	return total
+	return total, nil
 }

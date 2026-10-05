@@ -11,7 +11,7 @@ type ApprovalTaskInboxItem struct {
 	RoleName         string
 	StepOrder        int
 	Scope            string
-	Amount           float64
+	Amount           Money
 	AmountDisplay    string
 	SpendType        string
 	UrgentLevel      string
@@ -32,7 +32,7 @@ type ApprovalTaskInboxFilter struct {
 type ApprovalTaskInboxResult struct {
 	Items      []ApprovalTaskInboxItem
 	TotalRows  int
-	QueueValue float64
+	QueueValue Money
 }
 
 type PaginationPage struct {

@@ -132,7 +132,7 @@ func bindPurchaseOrderCreateInput(c *gin.Context) (models.PurchaseOrderCreateInp
 			return models.PurchaseOrderCreateInput{PRID: prID}, fmt.Sprintf("item PR baris %d tidak valid", i+1)
 		}
 
-		unitPrice, err := strconv.ParseFloat(strings.TrimSpace(unitPrices[i]), 64)
+		unitPrice, err := models.ParseMoney(strings.TrimSpace(unitPrices[i]))
 		if err != nil {
 			return models.PurchaseOrderCreateInput{PRID: prID}, fmt.Sprintf("harga final baris %d tidak valid", i+1)
 		}
@@ -158,8 +158,9 @@ func bindPurchaseOrderCreateInput(c *gin.Context) (models.PurchaseOrderCreateInp
 
 func buildPurchaseOrderService() *services.PurchaseOrderService {
 	return &services.PurchaseOrderService{
-		Repo:       &repositories.PurchaseOrderRepository{DB: config.DB},
-		VendorRepo: &repositories.VendorRepository{DB: config.DB},
+		Repo:                   &repositories.PurchaseOrderRepository{DB: config.DB},
+		VendorRepo:             &repositories.VendorRepository{DB: config.DB},
+		POVarianceToleranceBPS: config.POVarianceToleranceBPS(),
 	}
 }
 

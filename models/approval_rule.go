@@ -1,18 +1,18 @@
 package models
 
 type ApprovalRule struct {
-	ID              int64
-	Name            string
-	IsActive        bool
-	IsActiveLabel   string
-	MinAmount       float64
-	MaxAmount       *float64
-	MaxAmountLabel  string
-	LocationScope   string
-	SpendType       string
-	UrgentLevel     string
-	StepCount       int
-	CreatedAt       string
+	ID               int64
+	Name             string
+	IsActive         bool
+	IsActiveLabel    string
+	MinAmount        Money
+	MaxAmount        *Money
+	MaxAmountLabel   string
+	LocationScope    string
+	SpendType        string
+	UrgentLevel      string
+	StepCount        int
+	CreatedAt        string
 	CreatedAtDisplay string
 }
 
@@ -31,8 +31,8 @@ type ApprovalRuleDetail struct {
 	ID            int64
 	Name          string
 	IsActive      bool
-	MinAmount     float64
-	MaxAmount     *float64
+	MinAmount     Money
+	MaxAmount     *Money
 	LocationScope string
 	SpendType     string
 	UrgentLevel   string
@@ -42,8 +42,8 @@ type ApprovalRuleDetail struct {
 type ApprovalRuleCreateInput struct {
 	Name          string
 	IsActive      bool
-	MinAmount     float64
-	MaxAmount     *float64
+	MinAmount     Money
+	MaxAmount     *Money
 	LocationScope string
 	SpendType     string
 	UrgentLevel   string
@@ -54,8 +54,8 @@ type ApprovalRuleUpdateInput struct {
 	ID            int64
 	Name          string
 	IsActive      bool
-	MinAmount     float64
-	MaxAmount     *float64
+	MinAmount     Money
+	MaxAmount     *Money
 	LocationScope string
 	SpendType     string
 	UrgentLevel   string

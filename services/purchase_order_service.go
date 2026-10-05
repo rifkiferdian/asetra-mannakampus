@@ -9,8 +9,9 @@ import (
 )
 
 type PurchaseOrderService struct {
-	Repo       *repositories.PurchaseOrderRepository
-	VendorRepo *repositories.VendorRepository
+	Repo                   *repositories.PurchaseOrderRepository
+	VendorRepo             *repositories.VendorRepository
+	POVarianceToleranceBPS int64
 }
 
 func (s *PurchaseOrderService) GetPurchaseOrders(scope models.AccessScope) ([]models.PurchaseOrder, error) {
@@ -42,6 +43,7 @@ func (s *PurchaseOrderService) GetPurchaseOrderDetail(id int64, scope models.Acc
 }
 
 func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInput) (int64, error) {
+	input.VarianceToleranceBPS = s.POVarianceToleranceBPS
 	if input.PRID <= 0 {
 		return 0, errors.New("purchase request tidak valid")
 	}
@@ -68,7 +70,7 @@ func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInpu
 		return 0, err
 	}
 
-	priceByPRItemID := make(map[int64]float64)
+	priceByPRItemID := make(map[int64]models.Money)
 	for _, item := range input.Items {
 		if item.PRItemID <= 0 {
 			return 0, errors.New("item PR tidak valid")
@@ -80,7 +82,7 @@ func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInpu
 	}
 
 	normalizedItems := make([]models.PurchaseOrderItemInput, 0, len(form.PR.Items))
-	totalAmount := 0.0
+	var totalAmount models.Money
 	for _, prItem := range form.PR.Items {
 		unitPrice, ok := priceByPRItemID[prItem.ID]
 		if !ok {
@@ -93,8 +95,15 @@ func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInpu
 			UOM:       strings.TrimSpace(prItem.UOM),
 			UnitPrice: unitPrice,
 		}
-		totalAmount += normalized.Qty * normalized.UnitPrice
+		lineTotal, err := models.MultiplyMoneyByQuantity(normalized.UnitPrice, normalized.Qty)
+		if err != nil {
+			return 0, fmt.Errorf("total item %s tidak valid: %w", normalized.ItemName, err)
+		}
+		totalAmount = totalAmount.Add(lineTotal)
 		normalizedItems = append(normalizedItems, normalized)
+	}
+	if models.ExceedsVariance(totalAmount, form.PR.TotalAmount, input.VarianceToleranceBPS) {
+		return 0, fmt.Errorf("nilai PO %s melebihi toleransi terhadap nilai PR %s; lakukan approval ulang", totalAmount.FormatIDR(), form.PR.TotalAmount.FormatIDR())
 	}
 
 	input.Items = normalizedItems

@@ -289,7 +289,7 @@
                                                             <option value="liter" {{ if eq .UOM "liter" }}selected{{ end }}>liter</option>
                                                         </select>
                                                     </td>
-                                                    <td><input type="number" step="0.01" min="0" name="est_unit_price[]" value="{{ printf "%.0f" .EstUnitPrice }}" class="edit-control" data-edit-price required></td>
+                                                    <td><input type="number" step="0.01" min="0" name="est_unit_price[]" value="{{ .EstUnitPrice.DecimalString }}" class="edit-control" data-edit-price required></td>
                                                     <td><input type="text" class="edit-control edit-row-total" data-edit-total readonly></td>
                                                     <td><input type="text" name="price_source[]" value="{{ .PriceSource }}" class="edit-control"></td>
                                                     <td><input type="text" name="notes[]" value="{{ .Notes }}" class="edit-control"></td>

@@ -12,7 +12,7 @@ type PurchaseOrder struct {
 	StoreName          string
 	DivisionID         int
 	DivisionName       string
-	TotalAmount        float64
+	TotalAmount        Money
 	TotalAmountDisplay string
 	Status             string
 	StatusLabel        string
@@ -31,9 +31,9 @@ type PurchaseOrderItem struct {
 	Qty              float64
 	QtyDisplay       string
 	UOM              string
-	UnitPrice        float64
+	UnitPrice        Money
 	UnitPriceDisplay string
-	Total            float64
+	Total            Money
 	TotalDisplay     string
 }
 
@@ -45,7 +45,7 @@ type ApprovedPRForPO struct {
 	DivisionName       string
 	GLAccountName      string
 	SpendType          string
-	TotalAmount        float64
+	TotalAmount        Money
 	TotalAmountDisplay string
 	ApprovedAtDisplay  string
 }
@@ -56,11 +56,12 @@ type PurchaseOrderCreateForm struct {
 }
 
 type PurchaseOrderCreateInput struct {
-	PRID         int64
-	VendorID     int64
-	Items        []PurchaseOrderItemInput
-	AuditContext AuditContext
-	AccessScope  AccessScope
+	PRID                 int64
+	VendorID             int64
+	Items                []PurchaseOrderItemInput
+	AuditContext         AuditContext
+	AccessScope          AccessScope
+	VarianceToleranceBPS int64
 }
 
 type PurchaseOrderItemInput struct {
@@ -68,5 +69,5 @@ type PurchaseOrderItemInput struct {
 	ItemName  string
 	Qty       float64
 	UOM       string
-	UnitPrice float64
+	UnitPrice Money
 }

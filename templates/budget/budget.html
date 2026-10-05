@@ -74,7 +74,7 @@
                                                             data-store-id="{{ $budget.StoreID }}"
                                                             data-division-id="{{ $budget.DivisionID }}"
                                                             data-gl-account-id="{{ $budget.GLAccountID }}"
-                                                            data-amount="{{ printf "%.2f" $budget.Amount }}">
+                                                            data-amount="{{ $budget.Amount.DecimalString }}">
                                                             <i class="bx bx-pen text-sm"></i>Edit
                                                         </button>
                                                         {{ end }}

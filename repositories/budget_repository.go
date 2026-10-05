@@ -2,9 +2,7 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
 	"gobase-app/models"
-	"math"
 )
 
 type BudgetRepository struct {
@@ -58,7 +56,7 @@ func (r *BudgetRepository) GetAll() ([]models.Budget, error) {
 		); err != nil {
 			return nil, err
 		}
-		item.RemainingAmount = item.Amount - item.UsedAmount
+		item.RemainingAmount = item.Amount.Sub(item.UsedAmount)
 		item.AmountDisplay = formatIDR(item.Amount)
 		item.UsedAmountDisplay = formatIDR(item.UsedAmount)
 		item.RemainingDisplay = formatIDR(item.RemainingAmount)
@@ -141,20 +139,6 @@ func (r *BudgetRepository) DeleteByID(id int64) error {
 	return err
 }
 
-func formatIDR(value float64) string {
-	sign := ""
-	if value < 0 {
-		sign = "-"
-		value = math.Abs(value)
-	}
-	n := int64(math.Round(value))
-	raw := fmt.Sprintf("%d", n)
-	out := ""
-	for i, r := range raw {
-		if i > 0 && (len(raw)-i)%3 == 0 {
-			out += "."
-		}
-		out += string(r)
-	}
-	return sign + "Rp " + out
+func formatIDR(value models.Money) string {
+	return value.FormatIDR()
 }

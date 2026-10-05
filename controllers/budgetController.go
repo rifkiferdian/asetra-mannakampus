@@ -115,7 +115,7 @@ func bindBudgetCreateInput(c *gin.Context) (models.BudgetCreateInput, string) {
 	if err != nil {
 		return models.BudgetCreateInput{}, "GL account wajib dipilih"
 	}
-	amount, err := strconv.ParseFloat(strings.ReplaceAll(strings.TrimSpace(c.PostForm("amount")), ",", ""), 64)
+	amount, err := models.ParseMoney(strings.TrimSpace(c.PostForm("amount")))
 	if err != nil {
 		return models.BudgetCreateInput{}, "amount tidak valid"
 	}

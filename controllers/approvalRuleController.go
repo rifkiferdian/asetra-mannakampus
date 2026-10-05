@@ -144,7 +144,7 @@ func renderApprovalRuleFormPage(c *gin.Context, templateName, page, title string
 	}
 	selectedMaxAmount := ""
 	if detail.MaxAmount != nil {
-		selectedMaxAmount = strconv.FormatFloat(*detail.MaxAmount, 'f', -1, 64)
+		selectedMaxAmount = detail.MaxAmount.DecimalString()
 	}
 
 	data := gin.H{
@@ -166,15 +166,15 @@ func bindApprovalRuleInput(c *gin.Context) (models.ApprovalRuleCreateInput, mode
 	urgentLevel := strings.TrimSpace(c.PostForm("urgent_level"))
 	isActive := c.PostForm("is_active") != "0"
 
-	minAmount, err := strconv.ParseFloat(strings.TrimSpace(c.PostForm("min_amount")), 64)
+	minAmount, err := models.ParseMoney(strings.TrimSpace(c.PostForm("min_amount")))
 	if err != nil {
 		return models.ApprovalRuleCreateInput{}, models.ApprovalRuleDetail{}, "minimum amount harus berupa angka"
 	}
 
-	var maxAmount *float64
+	var maxAmount *models.Money
 	maxAmountStr := strings.TrimSpace(c.PostForm("max_amount"))
 	if maxAmountStr != "" {
-		val, err := strconv.ParseFloat(maxAmountStr, 64)
+		val, err := models.ParseMoney(maxAmountStr)
 		if err != nil {
 			return models.ApprovalRuleCreateInput{}, models.ApprovalRuleDetail{}, "maximum amount harus berupa angka"
 		}

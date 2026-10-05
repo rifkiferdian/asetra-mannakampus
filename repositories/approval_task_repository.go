@@ -41,7 +41,7 @@ func (r *ApprovalTaskRepository) GetInboxByUser(filter models.ApprovalTaskInboxF
 		return nil, err
 	}
 
-	var queueValue float64
+	var queueValue models.Money
 	sumArgs := append([]interface{}{}, args...)
 	if err := r.DB.QueryRow(`
 		SELECT COALESCE(SUM(pr.total_amount), 0)
@@ -105,7 +105,7 @@ func (r *ApprovalTaskRepository) GetInboxByUser(filter models.ApprovalTaskInboxF
 	for rows.Next() {
 		var (
 			item        models.ApprovalTaskInboxItem
-			totalAmount float64
+			totalAmount models.Money
 			createdAt   sql.NullTime
 			neededDate  sql.NullTime
 		)
@@ -179,7 +179,7 @@ func approvalTaskInboxWhere(filter models.ApprovalTaskInboxFilter) (string, []in
 func (r *ApprovalTaskRepository) GetDetailByID(taskID int64, userID int) (*models.ApprovalTaskDetail, error) {
 	var (
 		item        models.ApprovalTaskDetail
-		totalAmount float64
+		totalAmount models.Money
 		createdAt   sql.NullTime
 		neededDate  sql.NullTime
 	)

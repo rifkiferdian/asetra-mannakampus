@@ -1620,7 +1620,7 @@ ALTER TABLE `budgets`
 --
 ALTER TABLE `budget_usages`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_budget_ref` (`ref_type`,`ref_id`),
+  ADD UNIQUE KEY `uq_budget_usages_reference` (`ref_type`,`ref_id`),
   ADD KEY `fk_budget_usage` (`budget_id`);
 
 --
@@ -1731,6 +1731,7 @@ ALTER TABLE `permissions`
 ALTER TABLE `purchase_orders`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `po_number` (`po_number`),
+	ADD UNIQUE KEY `uq_purchase_orders_pr_id` (`pr_id`),
   ADD KEY `idx_po_store` (`store_id`),
   ADD KEY `idx_po_vendor` (`vendor_id`),
   ADD KEY `idx_po_status` (`status`),

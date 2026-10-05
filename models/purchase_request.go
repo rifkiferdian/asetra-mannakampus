@@ -31,7 +31,7 @@ type PurchaseRequest struct {
 	ExistingAssetCode          string
 	AssetLocation              string
 	AssetPIC                   string
-	TotalAmount                float64
+	TotalAmount                Money
 	TotalAmountDisplay         string
 	Status                     string
 	StatusLabel                string
@@ -59,9 +59,9 @@ type PurchaseRequestItem struct {
 	Qty                 float64
 	QtyDisplay          string
 	UOM                 string
-	EstUnitPrice        float64
+	EstUnitPrice        Money
 	EstUnitPriceDisplay string
-	EstTotal            float64
+	EstTotal            Money
 	EstTotalDisplay     string
 	Notes               string
 	Specification       string
@@ -140,23 +140,23 @@ type PurchaseRequestItemInput struct {
 	ItemName      string
 	Qty           float64
 	UOM           string
-	EstUnitPrice  float64
+	EstUnitPrice  Money
 	Notes         string
 	Specification string
 	PriceSource   string
 }
 
 type PurchaseRequestBudgetCheck struct {
-	BudgetID        int64   `json:"budget_id"`
-	PeriodLabel     string  `json:"period_label"`
-	Amount          float64 `json:"amount"`
-	UsedAmount      float64 `json:"used_amount"`
-	RemainingAmount float64 `json:"remaining_amount"`
-	PRAmount        float64 `json:"pr_amount"`
-	AfterPRAmount   float64 `json:"after_pr_amount"`
-	UtilizedPct     int     `json:"utilized_pct"`
-	Status          string  `json:"status"`
-	Message         string  `json:"message"`
+	BudgetID        int64  `json:"budget_id"`
+	PeriodLabel     string `json:"period_label"`
+	Amount          Money  `json:"amount"`
+	UsedAmount      Money  `json:"used_amount"`
+	RemainingAmount Money  `json:"remaining_amount"`
+	PRAmount        Money  `json:"pr_amount"`
+	AfterPRAmount   Money  `json:"after_pr_amount"`
+	UtilizedPct     int    `json:"utilized_pct"`
+	Status          string `json:"status"`
+	Message         string `json:"message"`
 }
 
 type PurchaseRequestApprovalPreviewStep struct {

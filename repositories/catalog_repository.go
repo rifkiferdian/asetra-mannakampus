@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"gobase-app/models"
+	"math"
 	"strconv"
-	"strings"
 )
 
 type CatalogRepository struct {
@@ -815,8 +815,11 @@ func (r *CatalogRepository) categoryParentCreatesCycle(id, parentID int64) (bool
 }
 
 func formatCatalogAmountLocal(value float64) string {
-	formatted := strings.TrimPrefix(formatAmountIDLocal(value), "IDR ")
-	return strings.ReplaceAll(formatted, ",", ".")
+	raw := strconv.FormatInt(int64(math.Round(value)), 10)
+	for index := len(raw) - 3; index > 0; index -= 3 {
+		raw = raw[:index] + "." + raw[index:]
+	}
+	return raw
 }
 
 func ensureAffected(result sql.Result, notFoundMessage string) error {

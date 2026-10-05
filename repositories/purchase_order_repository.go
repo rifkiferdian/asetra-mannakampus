@@ -2,10 +2,10 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"gobase-app/models"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -77,7 +77,7 @@ func (r *PurchaseOrderRepository) GetAll(scope models.AccessScope) ([]models.Pur
 		if createdAt.Valid {
 			po.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04")
 		}
-		po.TotalAmountDisplay = formatAmountIDLocal(po.TotalAmount)
+		po.TotalAmountDisplay = formatPOMoney(po.TotalAmount)
 		po.StatusLabel = formatPOStatusLabel(po.Status)
 		orders = append(orders, po)
 	}
@@ -142,7 +142,7 @@ func (r *PurchaseOrderRepository) GetApprovedPRReadyForPO(scope models.AccessSco
 		if updatedAt.Valid {
 			item.ApprovedAtDisplay = updatedAt.Time.Format("02 Jan 2006 15:04")
 		}
-		item.TotalAmountDisplay = formatAmountIDLocal(item.TotalAmount)
+		item.TotalAmountDisplay = formatPOMoney(item.TotalAmount)
 		items = append(items, item)
 	}
 
@@ -242,7 +242,7 @@ func (r *PurchaseOrderRepository) GetDetailByID(id int64, scope models.AccessSco
 	if createdAt.Valid {
 		po.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006 15:04")
 	}
-	po.TotalAmountDisplay = formatAmountIDLocal(po.TotalAmount)
+	po.TotalAmountDisplay = formatPOMoney(po.TotalAmount)
 	po.StatusLabel = formatPOStatusLabel(po.Status)
 
 	items, err := r.getItemsByPOID(id)
@@ -254,25 +254,31 @@ func (r *PurchaseOrderRepository) GetDetailByID(id int64, scope models.AccessSco
 	return &po, nil
 }
 
-func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateInput, totalAmount float64) (int64, error) {
+func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateInput, totalAmount models.Money) (int64, error) {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return 0, err
 	}
 
 	var (
-		status      string
-		storeID     int
-		divisionID  sql.NullInt64
-		prNumber    string
-		requesterID int
+		status          string
+		storeID         int
+		divisionID      sql.NullInt64
+		prNumber        string
+		requesterID     int
+		glAccountID     int
+		neededDate      sql.NullTime
+		prAmount        models.Money
+		budgetException sql.NullString
 	)
 	err = tx.QueryRow(`
-		SELECT pr.status, pr.store_id, pr.division_id, pr.pr_number, pr.requester_user_id
+		SELECT pr.status, pr.store_id, pr.division_id, pr.pr_number, pr.requester_user_id,
+		       pr.gl_account_id, pr.needed_date, pr.total_amount, pr.budget_exception_reason
 		FROM purchase_requests pr
 		WHERE pr.id = ?
 		FOR UPDATE
-	`, input.PRID).Scan(&status, &storeID, &divisionID, &prNumber, &requesterID)
+	`, input.PRID).Scan(&status, &storeID, &divisionID, &prNumber, &requesterID,
+		&glAccountID, &neededDate, &prAmount, &budgetException)
 	if err == sql.ErrNoRows {
 		tx.Rollback()
 		return 0, fmt.Errorf("purchase request tidak ditemukan")
@@ -288,6 +294,10 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 	if !input.AccessScope.AllowsOwnerOrStore(requesterID, storeID) {
 		tx.Rollback()
 		return 0, fmt.Errorf("purchase request tidak ditemukan atau akses ditolak")
+	}
+	if models.ExceedsVariance(totalAmount, prAmount, input.VarianceToleranceBPS) {
+		tx.Rollback()
+		return 0, fmt.Errorf("nilai PO %s melebihi toleransi terhadap nilai PR %s; lakukan approval ulang", totalAmount.FormatIDR(), prAmount.FormatIDR())
 	}
 
 	var existing int
@@ -311,6 +321,14 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 	if vendorActive != 1 {
 		tx.Rollback()
 		return 0, fmt.Errorf("vendor tidak aktif")
+	}
+
+	budgetID, budgetExceptionUsed, err := lockAndValidatePOBudgetTx(
+		tx, storeID, divisionID, glAccountID, neededDate, totalAmount, budgetException.String,
+	)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
 	}
 
 	poNumber, err := r.nextPONumberTx(tx, storeID)
@@ -338,6 +356,15 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 		tx.Rollback()
 		return 0, err
 	}
+	if budgetID > 0 {
+		if _, err := tx.Exec(`
+			INSERT INTO budget_usages (budget_id, ref_type, ref_id, used_amount, note)
+			VALUES (?, 'PO', ?, ?, ?)
+		`, budgetID, poID, totalAmount, fmt.Sprintf("Pemakaian budget untuk %s", poNumber)); err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+	}
 
 	if _, err := tx.Exec(`UPDATE purchase_requests SET status = 'CONVERTED_TO_PO' WHERE id = ?`, input.PRID); err != nil {
 		tx.Rollback()
@@ -348,9 +375,25 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 		tx.Rollback()
 		return 0, err
 	}
+	approvalDetail := fmt.Sprintf("PO %s disetujui", poNumber)
+	if budgetID > 0 {
+		approvalDetail += fmt.Sprintf(" dan budget dikomit sebesar %s", totalAmount.FormatIDR())
+	} else {
+		approvalDetail += " tanpa budget menggunakan pengecualian PR"
+	}
+	if err := insertAuditLogTx(tx, "PO", poID, "APPROVE", approvalDetail, input.AuditContext); err != nil {
+		tx.Rollback()
+		return 0, err
+	}
 	if err := insertAuditLogTx(tx, "PR", input.PRID, "CONVERT_TO_PO", fmt.Sprintf("PR dikonversi menjadi PO %s", poNumber), input.AuditContext); err != nil {
 		tx.Rollback()
 		return 0, err
+	}
+	if budgetExceptionUsed {
+		if err := insertAuditLogTx(tx, "PO", poID, "BUDGET_EXCEPTION", "PO dibuat menggunakan alasan pengecualian budget dari PR", input.AuditContext); err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -359,6 +402,56 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 	}
 
 	return poID, nil
+}
+
+func lockAndValidatePOBudgetTx(tx *sql.Tx, storeID int, divisionID sql.NullInt64, glAccountID int, neededDate sql.NullTime, poAmount models.Money, exceptionReason string) (int64, bool, error) {
+	checkDate := time.Now()
+	if neededDate.Valid {
+		checkDate = neededDate.Time
+	}
+	monthKey := checkDate.Format("2006-01")
+	yearKey := checkDate.Format("2006")
+	quarterKey := fmt.Sprintf("%d-Q%d", checkDate.Year(), (int(checkDate.Month())-1)/3+1)
+
+	var budgetID int64
+	var budgetAmount models.Money
+	err := tx.QueryRow(`
+		SELECT b.id, b.amount
+		FROM budgets b
+		WHERE b.fiscal_year = ?
+		  AND b.gl_account_id = ?
+		  AND (b.store_id IS NULL OR b.store_id = ?)
+		  AND (b.division_id IS NULL OR b.division_id = ?)
+		  AND ((b.period_type = 'MONTHLY' AND b.period_key = ?)
+		    OR (b.period_type = 'QUARTERLY' AND b.period_key = ?)
+		    OR (b.period_type = 'YEARLY' AND b.period_key = ?))
+		ORDER BY (b.store_id IS NOT NULL) DESC, (b.division_id IS NOT NULL) DESC,
+		  FIELD(b.period_type, 'MONTHLY', 'QUARTERLY', 'YEARLY') ASC, b.id DESC
+		LIMIT 1
+		FOR UPDATE
+	`, checkDate.Year(), glAccountID, storeID, divisionID.Int64, monthKey, quarterKey, yearKey).Scan(&budgetID, &budgetAmount)
+	if err == sql.ErrNoRows {
+		if strings.TrimSpace(exceptionReason) == "" {
+			return 0, false, errors.New("budget final tidak tersedia; PO tidak dapat disetujui")
+		}
+		return 0, true, nil
+	}
+	if err != nil {
+		return 0, false, err
+	}
+
+	var usedAmount models.Money
+	if err := tx.QueryRow(`SELECT COALESCE(SUM(used_amount), 0) FROM budget_usages WHERE budget_id = ?`, budgetID).Scan(&usedAmount); err != nil {
+		return 0, false, err
+	}
+	remaining := budgetAmount.Sub(usedAmount)
+	if poAmount > remaining {
+		if strings.TrimSpace(exceptionReason) == "" {
+			return 0, false, fmt.Errorf("budget final tidak mencukupi: sisa %s, nilai PO %s", remaining.FormatIDR(), poAmount.FormatIDR())
+		}
+		return budgetID, true, nil
+	}
+	return budgetID, false, nil
 }
 
 func (r *PurchaseOrderRepository) getItemsByPOID(poID int64) ([]models.PurchaseOrderItem, error) {
@@ -380,8 +473,8 @@ func (r *PurchaseOrderRepository) getItemsByPOID(poID int64) ([]models.PurchaseO
 			return nil, err
 		}
 		item.QtyDisplay = formatQtyLocal(item.Qty)
-		item.UnitPriceDisplay = formatAmountIDLocal(item.UnitPrice)
-		item.TotalDisplay = formatAmountIDLocal(item.Total)
+		item.UnitPriceDisplay = formatPOMoney(item.UnitPrice)
+		item.TotalDisplay = formatPOMoney(item.Total)
 		items = append(items, item)
 	}
 
@@ -390,7 +483,8 @@ func (r *PurchaseOrderRepository) getItemsByPOID(poID int64) ([]models.PurchaseO
 
 func (r *PurchaseOrderRepository) nextPONumberTx(tx *sql.Tx, storeID int) (string, error) {
 	var storeCode string
-	if err := tx.QueryRow(`SELECT store_code FROM stores WHERE store_id = ?`, storeID).Scan(&storeCode); err != nil {
+	// Lock the store row so sequence allocation is serialized per store.
+	if err := tx.QueryRow(`SELECT store_code FROM stores WHERE store_id = ? FOR UPDATE`, storeID).Scan(&storeCode); err != nil {
 		return "", err
 	}
 
@@ -430,7 +524,10 @@ func insertPOItemsTx(tx *sql.Tx, poID int64, items []models.PurchaseOrderItemInp
 	defer stmt.Close()
 
 	for _, item := range items {
-		total := item.Qty * item.UnitPrice
+		total, err := models.MultiplyMoneyByQuantity(item.UnitPrice, item.Qty)
+		if err != nil {
+			return err
+		}
 		if _, err := stmt.Exec(poID, item.ItemName, item.Qty, item.UOM, item.UnitPrice, total); err != nil {
 			return err
 		}
@@ -464,18 +561,8 @@ func purchaseOrderScopePredicate(alias string, scope models.AccessScope) (string
 	return alias + ".store_id IN (" + strings.Join(placeholders, ",") + ")", args
 }
 
-func formatAmountIDLocal(value float64) string {
-	rounded := int64(math.Round(value))
-	raw := strconv.FormatInt(rounded, 10)
-	var parts []string
-	for len(raw) > 3 {
-		parts = append([]string{raw[len(raw)-3:]}, parts...)
-		raw = raw[:len(raw)-3]
-	}
-	if raw != "" {
-		parts = append([]string{raw}, parts...)
-	}
-	return "IDR " + strings.Join(parts, ",")
+func formatPOMoney(value models.Money) string {
+	return value.FormatIDR()
 }
 
 func formatQtyLocal(value float64) string {

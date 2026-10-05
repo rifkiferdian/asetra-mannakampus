@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"gobase-app/config"
 	"gobase-app/models"
 	"gobase-app/repositories"
@@ -160,14 +159,8 @@ func buildApprovalTaskService() *services.ApprovalTaskService {
 	}
 }
 
-func formatQueueValue(value float64) string {
-	if value >= 1000000000 {
-		return fmt.Sprintf("Rp %.1f M", value/1000000000)
-	}
-	if value >= 1000000 {
-		return fmt.Sprintf("Rp %.1f jt", value/1000000)
-	}
-	return fmt.Sprintf("Rp %.0f", value)
+func formatQueueValue(value models.Money) string {
+	return value.FormatIDR()
 }
 
 func parsePositiveInt(value string, fallback int) int {

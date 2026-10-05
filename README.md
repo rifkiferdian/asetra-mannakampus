@@ -83,6 +83,7 @@ APP_PORT=8083
 # BASE_URL=http://localhost:8083
 APP_SECURE_COOKIE=false
 SESSION_SECRET=ganti-dengan-random-secret-minimal-32-karakter
+PO_VARIANCE_TOLERANCE_PERCENT=10.00
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -104,11 +105,17 @@ Untuk production, `SESSION_SECRET` wajib minimal 32 karakter dan
 diisi saat development, aplikasi membuat secret sementara dan sesi akan tidak
 berlaku setelah restart.
 
+`PO_VARIANCE_TOLERANCE_PERCENT` menentukan batas kenaikan nilai PO terhadap PR.
+Nilai di atas batas ini ditolak dan harus melalui approval ulang.
+
 ## Setup Database
 
 1. Buat database MySQL, misalnya `asetra_manna_kampus`.
 2. Import file [gobase_app.sql](gobase_app.sql:1).
 3. Sesuaikan `.env` agar mengarah ke database tersebut.
+
+Untuk database lama, jalankan file SQL di `database/migrations` sesuai urutan
+nama file sebelum menjalankan versi aplikasi terbaru.
 
 Contoh:
 

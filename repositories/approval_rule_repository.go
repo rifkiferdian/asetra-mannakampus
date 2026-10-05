@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
 	"gobase-app/models"
 )
 
@@ -38,7 +37,7 @@ func (r *ApprovalRuleRepository) GetAll() ([]models.ApprovalRule, error) {
 		var (
 			item      models.ApprovalRule
 			isActive  int
-			maxAmount sql.NullFloat64
+			maxAmount models.NullMoney
 			createdAt sql.NullTime
 		)
 		if err := rows.Scan(
@@ -63,7 +62,7 @@ func (r *ApprovalRuleRepository) GetAll() ([]models.ApprovalRule, error) {
 			item.IsActiveLabel = "Non Aktif"
 		}
 		if maxAmount.Valid {
-			value := maxAmount.Float64
+			value := maxAmount.Money
 			item.MaxAmount = &value
 			item.MaxAmountLabel = formatMoney(value)
 		} else {
@@ -86,7 +85,7 @@ func (r *ApprovalRuleRepository) GetByID(id int64) (*models.ApprovalRuleDetail, 
 	var (
 		detail    models.ApprovalRuleDetail
 		isActive  int
-		maxAmount sql.NullFloat64
+		maxAmount models.NullMoney
 	)
 
 	err := r.DB.QueryRow(`
@@ -108,7 +107,7 @@ func (r *ApprovalRuleRepository) GetByID(id int64) (*models.ApprovalRuleDetail, 
 	}
 	detail.IsActive = isActive == 1
 	if maxAmount.Valid {
-		value := maxAmount.Float64
+		value := maxAmount.Money
 		detail.MaxAmount = &value
 	}
 
@@ -292,6 +291,6 @@ func insertApprovalRuleSteps(tx *sql.Tx, ruleID int64, steps []models.ApprovalRu
 	return nil
 }
 
-func formatMoney(value float64) string {
-	return fmt.Sprintf("%.0f", value)
+func formatMoney(value models.Money) string {
+	return value.FormatIDR()
 }

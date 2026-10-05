@@ -799,7 +799,7 @@
                 var singleSourceReason = document.getElementById('single-source-reason');
                 var singleSourceBox = document.getElementById('single-source-box');
                 var formCheckTimer;
-                var rupiahFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+                var rupiahFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 });
 
                 function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); }
                 function openSidebar() { if (!sidebar) return; sidebar.classList.remove('-translate-x-full'); if (overlay) overlay.classList.remove('hidden'); }
@@ -812,7 +812,7 @@
                     var totalInput = row.querySelector('.item-total');
                     var qty = parseFloat(qtyInput.value || '0');
                     var price = parseFloat(priceInput.value || '0');
-                    var total = qty * price;
+                    var total = Math.round((qty * price + Number.EPSILON) * 100) / 100;
                     totalInput.value = total > 0 ? 'Rp ' + rupiahFormatter.format(total) : '';
                     return total;
                 }
@@ -820,7 +820,7 @@
                 function updateGrandTotal() {
                     var grandTotal = 0;
                     itemRows.querySelectorAll('.pr-item-row').forEach(function (row) {
-                        grandTotal += updateRowTotal(row);
+                        grandTotal = Math.round((grandTotal + updateRowTotal(row) + Number.EPSILON) * 100) / 100;
                     });
                     var formattedTotal = 'Rp ' + rupiahFormatter.format(grandTotal);
                     grandTotalDisplay.value = formattedTotal;
@@ -917,9 +917,10 @@
                 function getGrandTotal() {
                     var total = 0;
                     itemRows.querySelectorAll('.pr-item-row').forEach(function (row) {
-                        total += (parseFloat(row.querySelector('.item-qty').value || '0') * parseFloat(row.querySelector('.item-price').value || '0'));
+                        var line = parseFloat(row.querySelector('.item-qty').value || '0') * parseFloat(row.querySelector('.item-price').value || '0');
+                        total = Math.round((total + line + Number.EPSILON) * 100) / 100;
                     });
-                    return total;
+                    return total.toFixed(2);
                 }
 
                 function scheduleFormCheck() {
@@ -939,7 +940,7 @@
                         division_id: divisionSelect.value || '0',
                         gl_account_id: glAccountSelect.value,
                         needed_date: neededDateInput.value || '',
-                        amount: String(getGrandTotal()),
+                        amount: getGrandTotal(),
                         urgent_level: urgency ? urgency.value : 'NORMAL'
                     });
                     fetch('/purchase-requests/form-check?' + params.toString(), { headers: { 'Accept': 'application/json' } })

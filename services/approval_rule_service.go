@@ -113,7 +113,7 @@ func (s *ApprovalRuleService) DeleteApprovalRule(id int64) error {
 	return s.Repo.DeleteByID(id)
 }
 
-func (s *ApprovalRuleService) validateRuleInput(name string, minAmount float64, maxAmount *float64, locationScope, spendType, urgentLevel string, steps []models.ApprovalRuleStepInput, currentID int64) error {
+func (s *ApprovalRuleService) validateRuleInput(name string, minAmount models.Money, maxAmount *models.Money, locationScope, spendType, urgentLevel string, steps []models.ApprovalRuleStepInput, currentID int64) error {
 	name = strings.TrimSpace(name)
 	locationScope = strings.ToUpper(strings.TrimSpace(locationScope))
 	spendType = strings.ToUpper(strings.TrimSpace(spendType))
@@ -165,7 +165,7 @@ func (s *ApprovalRuleService) validateRuleInput(name string, minAmount float64, 
 	return nil
 }
 
-func (s *ApprovalRuleService) normalizeInput(name string, isActive bool, minAmount float64, maxAmount *float64, locationScope, spendType, urgentLevel string, steps []models.ApprovalRuleStepInput) (models.ApprovalRuleCreateInput, error) {
+func (s *ApprovalRuleService) normalizeInput(name string, isActive bool, minAmount models.Money, maxAmount *models.Money, locationScope, spendType, urgentLevel string, steps []models.ApprovalRuleStepInput) (models.ApprovalRuleCreateInput, error) {
 	normalizedSteps := make([]models.ApprovalRuleStepInput, 0, len(steps))
 	for _, step := range steps {
 		normalizedSteps = append(normalizedSteps, models.ApprovalRuleStepInput{

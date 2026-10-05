@@ -159,7 +159,7 @@
                                                         <td>
                                                             <div class="po-price-field">
                                                                 <span class="po-price-prefix">$</span>
-                                                                <input type="number" step="0.01" min="0" name="unit_price[]" value="{{ printf "%.2f" .EstUnitPrice }}" class="po-price-input" data-price-input required>
+                                                                <input type="number" step="0.01" min="0" name="unit_price[]" value="{{ .EstUnitPrice.DecimalString }}" class="po-price-input" data-price-input required>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -260,7 +260,7 @@
                 }
 
                 function formatIDR(value) {
-                    return 'IDR ' + Math.round(value || 0).toLocaleString('en-US');
+                    return 'IDR ' + Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
                 }
 
                 function recalc() {
@@ -270,7 +270,8 @@
                         var qtyEl = row ? row.querySelector('[data-qty]') : null;
                         var qty = parseFloat((qtyEl && qtyEl.getAttribute('data-qty')) || '0');
                         var price = parseFloat(input.value || '0');
-                        subtotal += qty * price;
+                        var lineTotal = Math.round((qty * price + Number.EPSILON) * 100) / 100;
+                        subtotal = Math.round((subtotal + lineTotal + Number.EPSILON) * 100) / 100;
                     });
 
                     var tax = 0;

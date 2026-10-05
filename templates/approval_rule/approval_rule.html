@@ -75,7 +75,7 @@
                                         <tr class="hover:bg-slate-50/70">
                                             <td class="px-3 py-3 text-slate-500">{{ no $i 1 }}</td>
                                             <td class="px-3 py-3 font-semibold text-slate-700">{{ $rule.Name }}</td>
-                                            <td class="px-3 py-3 text-slate-600">Min {{ printf "%.0f" $rule.MinAmount }} / Max {{ $rule.MaxAmountLabel }}</td>
+                                            <td class="px-3 py-3 text-slate-600">Min {{ $rule.MinAmount.FormatIDR }} / Max {{ $rule.MaxAmountLabel }}</td>
                                             <td class="px-3 py-3 text-slate-600">{{ $rule.LocationScope }}</td>
                                             <td class="px-3 py-3 text-slate-600">{{ $rule.SpendType }}</td>
                                             <td class="px-3 py-3 text-slate-600">{{ $rule.UrgentLevel }}</td>

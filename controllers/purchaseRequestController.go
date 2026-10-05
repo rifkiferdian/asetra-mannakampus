@@ -71,7 +71,7 @@ func PurchaseRequestFormCheck(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "GL account wajib dipilih"})
 		return
 	}
-	amount, err := strconv.ParseFloat(strings.TrimSpace(c.DefaultQuery("amount", "0")), 64)
+	amount, err := models.ParseMoney(strings.TrimSpace(c.DefaultQuery("amount", "0")))
 	if err != nil || amount < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nilai PR tidak valid"})
 		return
@@ -231,7 +231,7 @@ func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRe
 		if err != nil {
 			return models.PurchaseRequestUpdateInput{}, fmt.Sprintf("qty item baris %d tidak valid", i+1)
 		}
-		price, err := strconv.ParseFloat(strings.TrimSpace(priceVals[i]), 64)
+		price, err := models.ParseMoney(strings.TrimSpace(priceVals[i]))
 		if err != nil {
 			return models.PurchaseRequestUpdateInput{}, fmt.Sprintf("estimasi harga item baris %d tidak valid", i+1)
 		}
@@ -409,7 +409,7 @@ func bindPurchaseRequestInput(c *gin.Context) (models.PurchaseRequestCreateInput
 		if err != nil {
 			return models.PurchaseRequestCreateInput{}, nil, fmt.Sprintf("qty item baris %d tidak valid", i+1)
 		}
-		price, err := strconv.ParseFloat(strings.TrimSpace(priceVals[i]), 64)
+		price, err := models.ParseMoney(strings.TrimSpace(priceVals[i]))
 		if err != nil {
 			return models.PurchaseRequestCreateInput{}, nil, fmt.Sprintf("estimasi harga item baris %d tidak valid", i+1)
 		}

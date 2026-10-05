@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"gobase-app/models"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -435,7 +434,7 @@ func (r *PurchaseRequestRepository) getAttachmentsByRef(refType string, refID in
 	return attachments, rows.Err()
 }
 
-func (r *PurchaseRequestRepository) Create(input models.PurchaseRequestCreateInput, totalAmount float64) (int64, error) {
+func (r *PurchaseRequestRepository) Create(input models.PurchaseRequestCreateInput, totalAmount models.Money) (int64, error) {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return 0, err
@@ -542,7 +541,7 @@ func (r *PurchaseRequestRepository) RegenerateApprovalFlow(prID int64, scope mod
 		storeID     int
 		spendType   string
 		urgentLevel string
-		totalAmount float64
+		totalAmount models.Money
 		requesterID int
 	)
 	err = tx.QueryRow(`
@@ -617,7 +616,7 @@ func (r *PurchaseRequestRepository) RegenerateApprovalFlow(prID int64, scope mod
 	return nil
 }
 
-func (r *PurchaseRequestRepository) UpdateEditable(input models.PurchaseRequestUpdateInput, totalAmount float64) error {
+func (r *PurchaseRequestRepository) UpdateEditable(input models.PurchaseRequestUpdateInput, totalAmount models.Money) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
@@ -801,7 +800,8 @@ func purchaseRequestScopePredicate(alias string, scope models.AccessScope, inclu
 
 func (r *PurchaseRequestRepository) nextPRNumberTx(tx *sql.Tx, storeID int) (string, error) {
 	var storeCode string
-	if err := tx.QueryRow(`SELECT store_code FROM stores WHERE store_id = ?`, storeID).Scan(&storeCode); err != nil {
+	// Lock the store row so sequence allocation is serialized per store.
+	if err := tx.QueryRow(`SELECT store_code FROM stores WHERE store_id = ? FOR UPDATE`, storeID).Scan(&storeCode); err != nil {
 		return "", err
 	}
 
@@ -841,7 +841,10 @@ func insertPRItems(tx *sql.Tx, prID int64, items []models.PurchaseRequestItemInp
 	defer stmt.Close()
 
 	for _, item := range items {
-		total := item.Qty * item.EstUnitPrice
+		total, err := models.MultiplyMoneyByQuantity(item.EstUnitPrice, item.Qty)
+		if err != nil {
+			return err
+		}
 		if _, err := stmt.Exec(prID, item.ItemName, nullableString(item.Specification), item.Qty, item.UOM, item.EstUnitPrice, total, nullableString(item.PriceSource), nullableString(item.Notes)); err != nil {
 			return err
 		}
@@ -870,7 +873,7 @@ func insertPRAttachments(tx *sql.Tx, prID int64, uploadedBy int, attachments []m
 	return nil
 }
 
-func (r *PurchaseRequestRepository) GetFormCheck(storeID, divisionID, glAccountID int, neededDate string, prAmount float64, urgentLevel string) (*models.PurchaseRequestFormCheck, error) {
+func (r *PurchaseRequestRepository) GetFormCheck(storeID, divisionID, glAccountID int, neededDate string, prAmount models.Money, urgentLevel string) (*models.PurchaseRequestFormCheck, error) {
 	spendType, err := r.GLAccountSpendType(glAccountID)
 	if err != nil {
 		return nil, err
@@ -891,7 +894,7 @@ func (r *PurchaseRequestRepository) GetFormCheck(storeID, divisionID, glAccountI
 	}, nil
 }
 
-func (r *PurchaseRequestRepository) GetBudgetCheck(storeID, divisionID, glAccountID int, neededDate string, prAmount float64) (*models.PurchaseRequestBudgetCheck, error) {
+func (r *PurchaseRequestRepository) GetBudgetCheck(storeID, divisionID, glAccountID int, neededDate string, prAmount models.Money) (*models.PurchaseRequestBudgetCheck, error) {
 	checkDate := time.Now()
 	if strings.TrimSpace(neededDate) != "" {
 		parsed, err := time.Parse("2006-01-02", neededDate)
@@ -935,10 +938,10 @@ func (r *PurchaseRequestRepository) GetBudgetCheck(storeID, divisionID, glAccoun
 	}
 
 	result.PeriodLabel = periodType + " " + periodKey
-	result.RemainingAmount = result.Amount - result.UsedAmount
-	result.AfterPRAmount = result.RemainingAmount - prAmount
+	result.RemainingAmount = result.Amount.Sub(result.UsedAmount)
+	result.AfterPRAmount = result.RemainingAmount.Sub(prAmount)
 	if result.Amount > 0 {
-		result.UtilizedPct = int(math.Round(((result.UsedAmount + prAmount) / result.Amount) * 100))
+		result.UtilizedPct = models.PercentageRounded(result.UsedAmount.Add(prAmount), result.Amount)
 	}
 	switch {
 	case result.AfterPRAmount < 0:
@@ -954,7 +957,7 @@ func (r *PurchaseRequestRepository) GetBudgetCheck(storeID, divisionID, glAccoun
 	return &result, nil
 }
 
-func (r *PurchaseRequestRepository) getApprovalPreview(storeID int, spendType, urgentLevel string, totalAmount float64) (string, []models.PurchaseRequestApprovalPreviewStep, error) {
+func (r *PurchaseRequestRepository) getApprovalPreview(storeID int, spendType, urgentLevel string, totalAmount models.Money) (string, []models.PurchaseRequestApprovalPreviewStep, error) {
 	var ruleID int64
 	var ruleName string
 	err := r.DB.QueryRow(`
@@ -1016,7 +1019,7 @@ func (r *PurchaseRequestRepository) getApprovalPreview(storeID int, spendType, u
 	return ruleName, steps, nil
 }
 
-func (r *PurchaseRequestRepository) buildApprovalFlowTx(tx *sql.Tx, prID int64, storeID int, spendType, urgentLevel string, totalAmount float64, actorUserID int) (*approvalRuleMatch, []approvalRuleStepResolved, error) {
+func (r *PurchaseRequestRepository) buildApprovalFlowTx(tx *sql.Tx, prID int64, storeID int, spendType, urgentLevel string, totalAmount models.Money, actorUserID int) (*approvalRuleMatch, []approvalRuleStepResolved, error) {
 	var rule approvalRuleMatch
 	err := tx.QueryRow(`
 		SELECT id, name
@@ -1211,18 +1214,8 @@ func nullableDate(value string) interface{} {
 	return value
 }
 
-func formatAmountID(value float64) string {
-	rounded := int64(math.Round(value))
-	raw := strconv.FormatInt(rounded, 10)
-	var parts []string
-	for len(raw) > 3 {
-		parts = append([]string{raw[len(raw)-3:]}, parts...)
-		raw = raw[:len(raw)-3]
-	}
-	if raw != "" {
-		parts = append([]string{raw}, parts...)
-	}
-	return "IDR " + strings.Join(parts, ",")
+func formatAmountID(value models.Money) string {
+	return value.FormatIDR()
 }
 
 func formatStatusLabel(status string) string {

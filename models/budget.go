@@ -11,11 +11,11 @@ type Budget struct {
 	DivisionName      string
 	GLAccountID       int
 	GLAccountName     string
-	Amount            float64
+	Amount            Money
 	AmountDisplay     string
-	UsedAmount        float64
+	UsedAmount        Money
 	UsedAmountDisplay string
-	RemainingAmount   float64
+	RemainingAmount   Money
 	RemainingDisplay  string
 	CreatedAt         string
 	CreatedAtDisplay  string
@@ -30,7 +30,7 @@ type BudgetCreateInput struct {
 	StoreID     int
 	DivisionID  int
 	GLAccountID int
-	Amount      float64
+	Amount      Money
 }
 
 type BudgetUpdateInput struct {
@@ -41,5 +41,5 @@ type BudgetUpdateInput struct {
 	StoreID     int
 	DivisionID  int
 	GLAccountID int
-	Amount      float64
+	Amount      Money
 }
