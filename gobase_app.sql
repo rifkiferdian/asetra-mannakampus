@@ -938,6 +938,8 @@ INSERT INTO `purchase_order_items` (`id`, `po_id`, `item_name`, `qty`, `uom`, `u
 CREATE TABLE `purchase_requests` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `pr_number` varchar(30) NOT NULL,
+  `request_title` varchar(200) NOT NULL DEFAULT '',
+  `request_category` enum('GOODS','SERVICE','MAINTENANCE','RENTAL','PROJECT','ASSET_REPLACEMENT') NOT NULL DEFAULT 'GOODS',
   `requester_user_id` int(11) NOT NULL,
   `store_id` int(11) DEFAULT NULL,
   `division_id` int(11) DEFAULT NULL,
@@ -945,7 +947,19 @@ CREATE TABLE `purchase_requests` (
   `spend_type` enum('OPEX','CAPEX') NOT NULL,
   `urgent_level` enum('NORMAL','URGENT','EMERGENCY') NOT NULL DEFAULT 'NORMAL',
   `needed_date` date DEFAULT NULL,
+  `delivery_location` varchar(200) DEFAULT NULL,
   `justification` text DEFAULT NULL,
+  `impact_if_not_approved` text DEFAULT NULL,
+  `urgency_reason` text DEFAULT NULL,
+  `recommended_vendor_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `vendor_recommendation_reason` varchar(500) DEFAULT NULL,
+  `is_single_source` tinyint(1) NOT NULL DEFAULT 0,
+  `single_source_reason` varchar(500) DEFAULT NULL,
+  `budget_exception_reason` varchar(500) DEFAULT NULL,
+  `asset_request_type` enum('NEW','REPLACEMENT') DEFAULT NULL,
+  `existing_asset_code` varchar(100) DEFAULT NULL,
+  `asset_location` varchar(200) DEFAULT NULL,
+  `asset_pic` varchar(150) DEFAULT NULL,
   `total_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
   `status` enum('DRAFT','SUBMITTED','IN_APPROVAL','REJECTED','APPROVED','CONVERTED_TO_PO','CLOSED') NOT NULL DEFAULT 'DRAFT',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -960,6 +974,13 @@ INSERT INTO `purchase_requests` (`id`, `pr_number`, `requester_user_id`, `store_
 (1, 'PR-MK4-2026-0001', 1, 4, 1, 2, 'OPEX', 'NORMAL', '2026-03-30', 'AC kasir tidak dingin, mengganggu operasional. Perlu service + tambah freon.', 4000000.00, 'SUBMITTED', '2026-04-10 08:41:22', '2026-04-10 08:41:22'),
 (2, 'PR-MK4-2026-0002', 1, 4, 1, 3, 'CAPEX', 'NORMAL', '2026-04-05', 'Penambahan 1 unit kasir karena antrian tinggi. Butuh PC kasir baru + printer thermal + UPS.', 5500000.00, 'IN_APPROVAL', '2026-04-10 08:41:50', '2026-06-27 04:53:23');
 
+UPDATE purchase_requests
+SET request_title = CASE id
+  WHEN 1 THEN 'Service AC Kasir MK4'
+  WHEN 2 THEN 'Penambahan Perangkat Kasir MK4'
+  ELSE CONCAT('Purchase Request ', pr_number)
+END;
+
 -- --------------------------------------------------------
 
 --
@@ -972,10 +993,12 @@ CREATE TABLE `purchase_request_items` (
   `vendor_id` bigint(20) UNSIGNED DEFAULT NULL,
   `vendor_note` varchar(255) DEFAULT NULL,
   `item_name` varchar(200) NOT NULL,
+  `specification` text DEFAULT NULL,
   `qty` decimal(18,2) NOT NULL DEFAULT 1.00,
   `uom` varchar(20) NOT NULL DEFAULT 'pcs',
   `est_unit_price` decimal(18,2) NOT NULL DEFAULT 0.00,
   `est_total` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `price_source` varchar(100) DEFAULT NULL,
   `notes` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -1730,6 +1753,7 @@ ALTER TABLE `purchase_requests`
   ADD KEY `idx_pr_store` (`store_id`),
   ADD KEY `idx_pr_div` (`division_id`),
   ADD KEY `idx_pr_gl` (`gl_account_id`),
+  ADD KEY `idx_pr_recommended_vendor` (`recommended_vendor_id`),
   ADD KEY `idx_pr_status` (`status`);
 
 --
@@ -2191,6 +2215,7 @@ ALTER TABLE `purchase_order_items`
 ALTER TABLE `purchase_requests`
   ADD CONSTRAINT `fk_pr_div` FOREIGN KEY (`division_id`) REFERENCES `divisions` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_pr_gl` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`),
+  ADD CONSTRAINT `fk_pr_recommended_vendor` FOREIGN KEY (`recommended_vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_pr_store` FOREIGN KEY (`store_id`) REFERENCES `stores` (`store_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_pr_user` FOREIGN KEY (`requester_user_id`) REFERENCES `users` (`id`);
 

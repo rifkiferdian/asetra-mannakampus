@@ -54,6 +54,35 @@ func PurchaseRequestFormIndex(c *gin.Context) {
 	renderPurchaseRequestForm(c, "", nil)
 }
 
+func PurchaseRequestFormCheck(c *gin.Context) {
+	storeID, err := strconv.Atoi(strings.TrimSpace(c.Query("store_id")))
+	if err != nil || storeID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "store wajib dipilih"})
+		return
+	}
+	if !sessionAllowsStore(sessions.Default(c), storeID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "store di luar akses user"})
+		return
+	}
+	divisionID, _ := strconv.Atoi(strings.TrimSpace(c.Query("division_id")))
+	glAccountID, err := strconv.Atoi(strings.TrimSpace(c.Query("gl_account_id")))
+	if err != nil || glAccountID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "GL account wajib dipilih"})
+		return
+	}
+	amount, err := strconv.ParseFloat(strings.TrimSpace(c.DefaultQuery("amount", "0")), 64)
+	if err != nil || amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "nilai PR tidak valid"})
+		return
+	}
+	result, err := buildPurchaseRequestService().GetFormCheck(storeID, divisionID, glAccountID, c.Query("needed_date"), amount, c.Query("urgent_level"))
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
 func PurchaseRequestDetailIndex(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
@@ -89,6 +118,12 @@ func PurchaseRequestDetailIndex(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	vendorRepo := &repositories.VendorRepository{DB: config.DB}
+	vendors, err := vendorRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	canEditPR := (detail.Status == "DRAFT" || detail.Status == "SUBMITTED") && len(detail.ApprovalSteps) == 0
 	Render(c, "purchase_request_detail.html", gin.H{
@@ -98,6 +133,7 @@ func PurchaseRequestDetailIndex(c *gin.Context) {
 		"Stores":                stores,
 		"Divisions":             divisions,
 		"GLAccounts":            glAccounts,
+		"Vendors":               vendors,
 		"Error":                 strings.TrimSpace(c.Query("error")),
 		"Success":               strings.TrimSpace(c.Query("success")),
 		"CanRegenerateApproval": canEditPR && detail.Status == "SUBMITTED",
@@ -162,6 +198,9 @@ func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRe
 	if err != nil {
 		return models.PurchaseRequestUpdateInput{}, "store wajib dipilih"
 	}
+	if !sessionAllowsStore(session, storeID) {
+		return models.PurchaseRequestUpdateInput{}, "store di luar akses user"
+	}
 
 	divisionID := 0
 	if val := strings.TrimSpace(c.PostForm("division_id")); val != "" {
@@ -181,8 +220,10 @@ func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRe
 	uoms := c.PostFormArray("uom[]")
 	priceVals := c.PostFormArray("est_unit_price[]")
 	notesVals := c.PostFormArray("notes[]")
+	specificationVals := c.PostFormArray("specification[]")
+	priceSourceVals := c.PostFormArray("price_source[]")
 
-	if len(itemNames) == 0 || len(itemNames) != len(qtyVals) || len(itemNames) != len(uoms) || len(itemNames) != len(priceVals) || len(itemNames) != len(notesVals) {
+	if len(itemNames) == 0 || len(itemNames) != len(qtyVals) || len(itemNames) != len(uoms) || len(itemNames) != len(priceVals) || len(itemNames) != len(notesVals) || len(itemNames) != len(specificationVals) || len(itemNames) != len(priceSourceVals) {
 		return models.PurchaseRequestUpdateInput{}, "data item PR tidak lengkap"
 	}
 
@@ -197,24 +238,40 @@ func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRe
 			return models.PurchaseRequestUpdateInput{}, fmt.Sprintf("estimasi harga item baris %d tidak valid", i+1)
 		}
 		items = append(items, models.PurchaseRequestItemInput{
-			ItemName:     strings.TrimSpace(itemNames[i]),
-			Qty:          qty,
-			UOM:          strings.TrimSpace(uoms[i]),
-			EstUnitPrice: price,
-			Notes:        strings.TrimSpace(notesVals[i]),
+			ItemName:      strings.TrimSpace(itemNames[i]),
+			Qty:           qty,
+			UOM:           strings.TrimSpace(uoms[i]),
+			EstUnitPrice:  price,
+			Notes:         strings.TrimSpace(notesVals[i]),
+			Specification: strings.TrimSpace(specificationVals[i]),
+			PriceSource:   strings.TrimSpace(priceSourceVals[i]),
 		})
 	}
 
 	return models.PurchaseRequestUpdateInput{
-		ID:            id,
-		StoreID:       storeID,
-		DivisionID:    divisionID,
-		GLAccountID:   glAccountID,
-		SpendType:     strings.ToUpper(strings.TrimSpace(c.PostForm("spend_type"))),
-		UrgentLevel:   strings.ToUpper(strings.TrimSpace(c.PostForm("urgent_level"))),
-		NeededDate:    strings.TrimSpace(c.PostForm("needed_date")),
-		Justification: strings.TrimSpace(c.PostForm("justification")),
-		Items:         items,
+		ID:                         id,
+		RequestTitle:               strings.TrimSpace(c.PostForm("request_title")),
+		RequestCategory:            strings.ToUpper(strings.TrimSpace(c.PostForm("request_category"))),
+		StoreID:                    storeID,
+		DivisionID:                 divisionID,
+		GLAccountID:                glAccountID,
+		SpendType:                  strings.ToUpper(strings.TrimSpace(c.PostForm("spend_type"))),
+		UrgentLevel:                strings.ToUpper(strings.TrimSpace(c.PostForm("urgent_level"))),
+		NeededDate:                 strings.TrimSpace(c.PostForm("needed_date")),
+		Justification:              strings.TrimSpace(c.PostForm("justification")),
+		DeliveryLocation:           strings.TrimSpace(c.PostForm("delivery_location")),
+		ImpactIfNotApproved:        strings.TrimSpace(c.PostForm("impact_if_not_approved")),
+		UrgencyReason:              strings.TrimSpace(c.PostForm("urgency_reason")),
+		RecommendedVendorID:        parseOptionalInt64(c.PostForm("recommended_vendor_id")),
+		VendorRecommendationReason: strings.TrimSpace(c.PostForm("vendor_recommendation_reason")),
+		IsSingleSource:             c.PostForm("is_single_source") == "1",
+		SingleSourceReason:         strings.TrimSpace(c.PostForm("single_source_reason")),
+		BudgetExceptionReason:      strings.TrimSpace(c.PostForm("budget_exception_reason")),
+		AssetRequestType:           strings.ToUpper(strings.TrimSpace(c.PostForm("asset_request_type"))),
+		ExistingAssetCode:          strings.TrimSpace(c.PostForm("existing_asset_code")),
+		AssetLocation:              strings.TrimSpace(c.PostForm("asset_location")),
+		AssetPIC:                   strings.TrimSpace(c.PostForm("asset_pic")),
+		Items:                      items,
 		AuditContext: models.AuditContext{
 			ActorUserID: userID,
 			IPAddress:   c.ClientIP(),
@@ -271,6 +328,12 @@ func renderPurchaseRequestForm(c *gin.Context, message string, persisted gin.H) 
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	vendorRepo := &repositories.VendorRepository{DB: config.DB}
+	vendors, err := vendorRepo.GetAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	data := gin.H{
 		"Title":      "Form Purchase Request",
@@ -278,6 +341,7 @@ func renderPurchaseRequestForm(c *gin.Context, message string, persisted gin.H) 
 		"Stores":     stores,
 		"Divisions":  divisions,
 		"GLAccounts": glAccounts,
+		"Vendors":    vendors,
 		"Error":      message,
 	}
 	if persisted != nil {
@@ -309,6 +373,9 @@ func bindPurchaseRequestInput(c *gin.Context) (models.PurchaseRequestCreateInput
 	if err != nil {
 		return models.PurchaseRequestCreateInput{}, nil, "store wajib dipilih"
 	}
+	if !sessionAllowsStore(session, storeID) {
+		return models.PurchaseRequestCreateInput{}, nil, "store di luar akses user"
+	}
 
 	divisionID := 0
 	if val := strings.TrimSpace(c.PostForm("division_id")); val != "" {
@@ -328,8 +395,10 @@ func bindPurchaseRequestInput(c *gin.Context) (models.PurchaseRequestCreateInput
 	uoms := c.PostFormArray("uom[]")
 	priceVals := c.PostFormArray("est_unit_price[]")
 	notesVals := c.PostFormArray("notes[]")
+	specificationVals := c.PostFormArray("specification[]")
+	priceSourceVals := c.PostFormArray("price_source[]")
 
-	if len(itemNames) == 0 || len(itemNames) != len(qtyVals) || len(itemNames) != len(uoms) || len(itemNames) != len(priceVals) || len(itemNames) != len(notesVals) {
+	if len(itemNames) == 0 || len(itemNames) != len(qtyVals) || len(itemNames) != len(uoms) || len(itemNames) != len(priceVals) || len(itemNames) != len(notesVals) || len(itemNames) != len(specificationVals) || len(itemNames) != len(priceSourceVals) {
 		return models.PurchaseRequestCreateInput{}, nil, "data item PR tidak lengkap"
 	}
 
@@ -344,11 +413,13 @@ func bindPurchaseRequestInput(c *gin.Context) (models.PurchaseRequestCreateInput
 			return models.PurchaseRequestCreateInput{}, nil, fmt.Sprintf("estimasi harga item baris %d tidak valid", i+1)
 		}
 		item := models.PurchaseRequestItemInput{
-			ItemName:     strings.TrimSpace(itemNames[i]),
-			Qty:          qty,
-			UOM:          strings.TrimSpace(uoms[i]),
-			EstUnitPrice: price,
-			Notes:        strings.TrimSpace(notesVals[i]),
+			ItemName:      strings.TrimSpace(itemNames[i]),
+			Qty:           qty,
+			UOM:           strings.TrimSpace(uoms[i]),
+			EstUnitPrice:  price,
+			Notes:         strings.TrimSpace(notesVals[i]),
+			Specification: strings.TrimSpace(specificationVals[i]),
+			PriceSource:   strings.TrimSpace(priceSourceVals[i]),
 		}
 		items = append(items, item)
 	}
@@ -359,17 +430,31 @@ func bindPurchaseRequestInput(c *gin.Context) (models.PurchaseRequestCreateInput
 	}
 
 	input := models.PurchaseRequestCreateInput{
-		RequesterUserID: userID,
-		StoreID:         storeID,
-		DivisionID:      divisionID,
-		GLAccountID:     glAccountID,
-		SpendType:       strings.ToUpper(strings.TrimSpace(c.PostForm("spend_type"))),
-		UrgentLevel:     strings.ToUpper(strings.TrimSpace(c.PostForm("urgent_level"))),
-		NeededDate:      strings.TrimSpace(c.PostForm("needed_date")),
-		Justification:   strings.TrimSpace(c.PostForm("justification")),
-		Action:          strings.ToLower(strings.TrimSpace(c.PostForm("action"))),
-		Items:           items,
-		Attachments:     attachments,
+		RequesterUserID:            userID,
+		RequestTitle:               strings.TrimSpace(c.PostForm("request_title")),
+		RequestCategory:            strings.ToUpper(strings.TrimSpace(c.PostForm("request_category"))),
+		StoreID:                    storeID,
+		DivisionID:                 divisionID,
+		GLAccountID:                glAccountID,
+		SpendType:                  strings.ToUpper(strings.TrimSpace(c.PostForm("spend_type"))),
+		UrgentLevel:                strings.ToUpper(strings.TrimSpace(c.PostForm("urgent_level"))),
+		NeededDate:                 strings.TrimSpace(c.PostForm("needed_date")),
+		Justification:              strings.TrimSpace(c.PostForm("justification")),
+		DeliveryLocation:           strings.TrimSpace(c.PostForm("delivery_location")),
+		ImpactIfNotApproved:        strings.TrimSpace(c.PostForm("impact_if_not_approved")),
+		UrgencyReason:              strings.TrimSpace(c.PostForm("urgency_reason")),
+		RecommendedVendorID:        parseOptionalInt64(c.PostForm("recommended_vendor_id")),
+		VendorRecommendationReason: strings.TrimSpace(c.PostForm("vendor_recommendation_reason")),
+		IsSingleSource:             c.PostForm("is_single_source") == "1",
+		SingleSourceReason:         strings.TrimSpace(c.PostForm("single_source_reason")),
+		BudgetExceptionReason:      strings.TrimSpace(c.PostForm("budget_exception_reason")),
+		AssetRequestType:           strings.ToUpper(strings.TrimSpace(c.PostForm("asset_request_type"))),
+		ExistingAssetCode:          strings.TrimSpace(c.PostForm("existing_asset_code")),
+		AssetLocation:              strings.TrimSpace(c.PostForm("asset_location")),
+		AssetPIC:                   strings.TrimSpace(c.PostForm("asset_pic")),
+		Action:                     strings.ToLower(strings.TrimSpace(c.PostForm("action"))),
+		Items:                      items,
+		Attachments:                attachments,
 		AuditContext: models.AuditContext{
 			ActorUserID: userID,
 			IPAddress:   c.ClientIP(),
@@ -408,6 +493,15 @@ func savePRAttachments(c *gin.Context) ([]models.AttachmentFileInput, []string, 
 	for _, file := range form.File["attachments"] {
 		if file == nil || strings.TrimSpace(file.Filename) == "" {
 			continue
+		}
+		if file.Size > 5*1024*1024 {
+			cleanupUploadedFiles(cleanupPaths)
+			return nil, cleanupPaths, fmt.Errorf("file %s melebihi batas 5 MB", file.Filename)
+		}
+		ext := strings.ToLower(filepath.Ext(file.Filename))
+		if ext != ".pdf" && ext != ".png" && ext != ".jpg" && ext != ".jpeg" {
+			cleanupUploadedFiles(cleanupPaths)
+			return nil, cleanupPaths, fmt.Errorf("format file %s tidak didukung; gunakan PDF, PNG, atau JPG", file.Filename)
 		}
 		safeName := sanitizeFileName(file.Filename)
 		fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), safeName)
@@ -498,6 +592,19 @@ func splitCSVToInts(value string) []int {
 	return ids
 }
 
+func sessionAllowsStore(session sessions.Session, storeID int) bool {
+	allowed := parseSessionStoreIDs(session)
+	if len(allowed) == 0 {
+		return true
+	}
+	for _, id := range allowed {
+		if id == storeID {
+			return true
+		}
+	}
+	return false
+}
+
 func sessionUserID(session sessions.Session) int {
 	if value := session.Get("user_id"); value != nil {
 		switch id := value.(type) {
@@ -545,4 +652,9 @@ func normalizeSessionUserID(value interface{}) int {
 	default:
 		return 0
 	}
+}
+
+func parseOptionalInt64(value string) int64 {
+	id, _ := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+	return id
 }

@@ -77,6 +77,74 @@
                 font-size: 0.84rem;
                 color: #64748b;
             }
+            .vendor-panel {
+                overflow: hidden;
+                padding: 0;
+            }
+            .vendor-panel-header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 1rem;
+                border-bottom: 1px solid #e2e8f0;
+                background: linear-gradient(135deg, #f8fbff 0%, #ffffff 68%);
+                padding: 1.25rem 1.4rem;
+            }
+            .vendor-panel-icon {
+                display: inline-flex;
+                height: 2.55rem;
+                width: 2.55rem;
+                flex: 0 0 auto;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.8rem;
+                background: #e8f0ff;
+                color: #0f3b8f;
+                font-size: 1.35rem;
+            }
+            .vendor-optional-badge {
+                border: 1px solid #cbd5e1;
+                border-radius: 999px;
+                background: #fff;
+                padding: 0.28rem 0.65rem;
+                color: #64748b;
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+            .vendor-panel-body {
+                padding: 1.35rem 1.4rem;
+            }
+            .vendor-policy-box {
+                border: 1px solid #e2e8f0;
+                border-radius: 0.85rem;
+                background: #f8fafc;
+                padding: 1rem;
+                transition: border-color 0.15s ease, background 0.15s ease;
+            }
+            .vendor-policy-box.is-active {
+                border-color: #f59e0b;
+                background: #fffbeb;
+            }
+            .vendor-policy-check {
+                height: 1.05rem;
+                width: 1.05rem;
+                flex: 0 0 auto;
+                accent-color: #0f3b8f;
+            }
+            .vendor-price-hint {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.65rem;
+                border-radius: 0.7rem;
+                background: #eff6ff;
+                padding: 0.8rem 0.9rem;
+                color: #1e3a8a;
+                font-size: 0.76rem;
+                line-height: 1.25rem;
+            }
             .pr-spend-button {
                 display: flex;
                 min-height: 2.15rem;
@@ -343,6 +411,9 @@
                 .pr-support-grid {
                     grid-template-columns: 1fr 1fr;
                 }
+                .vendor-panel.is-wide {
+                    grid-column: 1 / -1;
+                }
             }
             @media (min-width: 1280px) {
                 .pr-top-grid {
@@ -391,9 +462,24 @@
                                 <div class="pr-top-grid">
                                     <div>
                                         <div class="grid gap-4 md:grid-cols-2">
+                                            <div class="pr-field-span-2">
+                                                <label class="pr-label">Judul Purchase Request</label>
+                                                <input type="text" name="request_title" class="pr-control" maxlength="200" placeholder="Contoh: Penggantian AC Ruang Kasir MK4" required>
+                                            </div>
+                                            <div>
+                                                <label class="pr-label">Kategori Kebutuhan</label>
+                                                <select name="request_category" class="pr-control" required>
+                                                    <option value="GOODS">Barang</option>
+                                                    <option value="SERVICE">Jasa</option>
+                                                    <option value="MAINTENANCE">Perbaikan / Maintenance</option>
+                                                    <option value="RENTAL">Sewa</option>
+                                                    <option value="PROJECT">Proyek</option>
+                                                    <option value="ASSET_REPLACEMENT">Penggantian Asset</option>
+                                                </select>
+                                            </div>
                                             <div>
                                                 <label class="pr-label">Store Location</label>
-                                                <select name="store_id" class="pr-control" required>
+                                                <select name="store_id" id="store-select" class="pr-control" required>
                                                     <option value="">Pilih store</option>
                                                     {{ range .Stores }}
                                                     <option value="{{ .StoreID }}">{{ .StoreCode }} - {{ .StoreName }}</option>
@@ -402,7 +488,7 @@
                                             </div>
                                             <div>
                                                 <label class="pr-label">Division</label>
-                                                <select name="division_id" class="pr-control">
+                                                <select name="division_id" id="division-select" class="pr-control">
                                                     <option value="">Pilih division</option>
                                                     {{ range .Divisions }}
                                                     <option value="{{ .ID }}">{{ .DivisionName }}</option>
@@ -420,11 +506,19 @@
                                             </div>
                                             <div>
                                                 <label class="pr-label">Needed Date</label>
-                                                <input type="date" name="needed_date" class="pr-control">
+                                                <input type="date" name="needed_date" id="needed-date" class="pr-control">
+                                            </div>
+                                            <div>
+                                                <label class="pr-label">Lokasi Penggunaan / Pengiriman</label>
+                                                <input type="text" name="delivery_location" class="pr-control" maxlength="200" placeholder="Store, ruangan, atau alamat tujuan">
                                             </div>
                                             <div class="pr-field-span-2">
                                                 <label class="pr-label">Justification / Remarks</label>
                                                 <textarea name="justification" class="pr-textarea" placeholder="Provide a brief explanation for this purchase request..."></textarea>
+                                            </div>
+                                            <div class="pr-field-span-2">
+                                                <label class="pr-label">Dampak Jika Tidak Disetujui</label>
+                                                <textarea name="impact_if_not_approved" class="pr-textarea" placeholder="Jelaskan risiko, gangguan operasional, atau dampak finansial..."></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -433,10 +527,11 @@
                                         <div>
                                             <label class="pr-spend-label">Spend Type</label>
                                             <input type="hidden" name="spend_type" id="spend-type-select" value="OPEX">
-                                            <div class="pr-spend-toggle">
-                                                <button type="button" class="pr-spend-button spend-type-button transition" data-value="OPEX">OPEX</button>
-                                                <button type="button" class="pr-spend-button spend-type-button transition" data-value="CAPEX">CAPEX</button>
+                                            <div class="pr-spend-toggle" title="Ditentukan otomatis dari GL Account">
+                                                <span class="pr-spend-button spend-type-button transition" data-value="OPEX">OPEX</span>
+                                                <span class="pr-spend-button spend-type-button transition" data-value="CAPEX">CAPEX</span>
                                             </div>
+                                            <p class="mt-2 text-xs text-slate-500">Otomatis mengikuti GL Account.</p>
                                         </div>
 
                                         <div style="margin-top: 2.25rem;">
@@ -465,8 +560,90 @@
                                                 </label>
                                             </div>
                                         </div>
+                                        <div id="urgency-reason-wrap" class="mt-4 hidden">
+                                            <label class="pr-label">Alasan Urgent / Emergency</label>
+                                            <textarea name="urgency_reason" id="urgency-reason" class="pr-textarea" placeholder="Jelaskan kejadian, dampak, dan mengapa tidak dapat mengikuti lead time normal"></textarea>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="grid gap-5 lg:grid-cols-2">
+                                <section class="pr-panel vendor-panel is-wide" id="vendor-reference-section">
+                                    <div class="vendor-panel-header">
+                                        <div class="flex items-start gap-3">
+                                            <span class="vendor-panel-icon"><i class="bx bx-store-alt"></i></span>
+                                            <div>
+                                                <h2 class="pr-section-title">Referensi Vendor & Harga</h2>
+                                                <p class="pr-section-note">Berikan referensi untuk membantu procurement melakukan evaluasi.</p>
+                                            </div>
+                                        </div>
+                                        <span class="vendor-optional-badge">Opsional</span>
+                                    </div>
+                                    <div class="vendor-panel-body">
+                                        <div class="grid gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label class="pr-label">Vendor Rekomendasi</label>
+                                            <select name="recommended_vendor_id" id="recommended-vendor" class="pr-control">
+                                                <option value="">Pilih vendor jika sudah ada referensi</option>
+                                                {{ range .Vendors }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}{{ end }}
+                                            </select>
+                                            <p class="mt-2 text-xs leading-5 text-slate-500">Pilihan ini tidak mengunci vendor pada Purchase Order.</p>
+                                        </div>
+                                        <div>
+                                            <label class="pr-label">Alasan Rekomendasi</label>
+                                            <textarea name="vendor_recommendation_reason" class="pr-textarea" maxlength="500" rows="3" placeholder="Contoh: harga kompetitif, kompatibel dengan perangkat existing, dan SLA layanan baik"></textarea>
+                                        </div>
+                                        </div>
+
+                                        <div class="vendor-price-hint mt-4">
+                                            <i class="bx bx-info-circle mt-0.5 text-base"></i>
+                                            <p>Estimasi harga dan sumbernya dicatat pada setiap baris item. Lampirkan quotation bila tersedia agar procurement dapat memverifikasi harga.</p>
+                                        </div>
+
+                                        <div class="vendor-policy-box mt-4" id="single-source-box">
+                                            <label class="flex cursor-pointer items-start gap-3">
+                                                <input type="checkbox" name="is_single_source" id="single-source" value="1" class="vendor-policy-check mt-0.5">
+                                                <span>
+                                                    <span class="block text-sm font-bold text-slate-800">Pengadaan Single Source</span>
+                                                    <span class="mt-1 block text-xs leading-5 text-slate-500">Aktifkan hanya jika barang atau jasa secara objektif hanya dapat dipenuhi oleh satu vendor.</span>
+                                                </span>
+                                            </label>
+                                            <div id="single-source-reason-wrap" class="mt-4 hidden border-t border-amber-200 pt-4">
+                                                <label class="pr-label">Alasan Single Source <span class="text-red-500">*</span></label>
+                                                <textarea name="single_source_reason" id="single-source-reason" class="pr-textarea" maxlength="500" placeholder="Jelaskan eksklusivitas produk, kompatibilitas teknis, hak distribusi, atau kondisi khusus lainnya"></textarea>
+                                                <p class="mt-2 text-xs leading-5 text-amber-700">Vendor rekomendasi dan alasan ini wajib diisi ketika Single Source diaktifkan.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="pr-panel hidden p-5" id="capex-section">
+                                    <h2 class="pr-section-title">Informasi Asset CAPEX</h2>
+                                    <p class="pr-section-note">Digunakan untuk pembentukan asset setelah barang diterima.</p>
+                                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label class="pr-label">Jenis Permintaan Asset</label>
+                                            <select name="asset_request_type" id="asset-request-type" class="pr-control">
+                                                <option value="">Pilih jenis</option>
+                                                <option value="NEW">Asset Baru</option>
+                                                <option value="REPLACEMENT">Penggantian Asset</option>
+                                            </select>
+                                        </div>
+                                        <div id="existing-asset-wrap" class="hidden">
+                                            <label class="pr-label">Kode Asset Lama</label>
+                                            <input type="text" name="existing_asset_code" id="existing-asset-code" class="pr-control" maxlength="100">
+                                        </div>
+                                        <div>
+                                            <label class="pr-label">Lokasi Asset</label>
+                                            <input type="text" name="asset_location" class="pr-control" maxlength="200">
+                                        </div>
+                                        <div>
+                                            <label class="pr-label">PIC / Custodian</label>
+                                            <input type="text" name="asset_pic" class="pr-control" maxlength="150">
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
 
                             <div class="pr-items-panel">
@@ -482,17 +659,19 @@
                                     <table class="pr-table text-sm">
                                         <thead>
                                             <tr>
-                                                <th>Item Name / Description</th>
+                                                <th>Item & Spesifikasi</th>
                                                 <th>Qty</th>
                                                 <th>UOM</th>
                                                 <th>Est. Unit Price</th>
                                                 <th>Est. Total</th>
+                                                <th>Sumber Harga</th>
+                                                <th>Catatan</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
                                         <tbody id="pr-item-rows">
                                             <tr class="pr-item-row">
-                                                <td><input type="text" name="item_name[]" class="pr-cell-input pr-item-name" placeholder="Item name / description" required><input type="hidden" name="notes[]" value=""></td>
+                                                <td class="space-y-2"><input type="text" name="item_name[]" class="pr-cell-input pr-item-name" placeholder="Nama item / jasa" required><textarea name="specification[]" class="pr-cell-input" rows="2" placeholder="Spesifikasi teknis"></textarea></td>
                                                 <td><input type="number" step="0.01" min="0.01" name="qty[]" class="pr-cell-input pr-item-qty item-qty" required></td>
                                                 <td>
                                                     <select name="uom[]" class="pr-cell-input pr-item-uom pr-uom-select" required>
@@ -507,6 +686,8 @@
                                                 </td>
                                                 <td><div class="pr-price-wrap"><span class="pr-price-prefix">Rp</span><input type="number" step="0.01" min="0" name="est_unit_price[]" class="pr-cell-input item-price" required></div></td>
                                                 <td><input type="text" class="pr-cell-input pr-cell-readonly item-total" readonly></td>
+                                                <td><input type="text" name="price_source[]" class="pr-cell-input" placeholder="Quotation / katalog / histori"></td>
+                                                <td><input type="text" name="notes[]" class="pr-cell-input" placeholder="Catatan item"></td>
                                                 <td class="text-right"><button type="button" class="pr-delete-button remove-item-button" aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>
                                             </tr>
                                         </tbody>
@@ -514,7 +695,7 @@
                                             <tr class="pr-grand-row">
                                                 <td colspan="4" class="pr-grand-label">GRAND TOTAL (ESTIMATED)</td>
                                                 <td><input type="text" id="grand-total-display" class="pr-total-box" readonly></td>
-                                                <td></td>
+                                                <td colspan="3"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -539,29 +720,38 @@
                                     <h2 class="text-base font-medium text-[#0f3b8f]">Real-time Budget Check</h2>
                                     <div class="mt-5 space-y-4">
                                         <div class="pr-budget-row">
-                                            <span>Monthly Budget Amount</span>
-                                            <span class="pr-budget-value">Rp 150.000.000</span>
+                                            <span id="budget-period-label">Budget Amount</span>
+                                            <span class="pr-budget-value" id="budget-amount">-</span>
                                         </div>
                                         <div class="pr-budget-row">
                                             <span>Currently Used/Committed</span>
-                                            <span class="pr-budget-value">Rp 82.300.000</span>
+                                            <span class="pr-budget-value" id="budget-used">-</span>
                                         </div>
-                                        <div class="pr-budget-progress"><span></span></div>
+                                        <div class="pr-budget-progress"><span id="budget-progress" style="width: 0%"></span></div>
                                         <div class="pr-budget-divider"></div>
                                         <div class="pr-budget-row">
                                             <span>Remaining Available</span>
-                                            <span class="font-semibold text-emerald-700">Rp 67.700.000</span>
+                                            <span class="font-semibold text-emerald-700" id="budget-remaining">-</span>
                                         </div>
                                         <div class="pr-budget-row">
                                             <span>Estimated PR Amount</span>
                                             <span class="font-semibold text-[#0f3b8f]" id="budget-pr-amount-display">Rp 0</span>
                                         </div>
-                                        <div class="pr-budget-ok">
+                                        <div class="pr-budget-ok" id="budget-status-box">
                                             <i class="bx bx-check-circle"></i>
                                             <div>
-                                                <p class="font-medium">Status: Budget OK</p>
-                                                <p class="text-xs text-slate-700">This request is within the allocated budget threshold.</p>
+                                                <p class="font-medium" id="budget-status">Pilih store, GL, dan tanggal kebutuhan</p>
+                                                <p class="text-xs text-slate-700" id="budget-message">Data budget akan dihitung otomatis.</p>
                                             </div>
+                                        </div>
+                                        <div id="budget-exception-wrap" class="hidden">
+                                            <label class="pr-label">Alasan Pengecualian Budget</label>
+                                            <textarea name="budget_exception_reason" id="budget-exception-reason" class="pr-textarea" placeholder="Wajib untuk budget tidak tersedia atau tidak mencukupi"></textarea>
+                                        </div>
+                                        <div class="rounded-lg border border-slate-200 p-4">
+                                            <p class="pr-label">Preview Approval Route</p>
+                                            <p class="text-sm font-semibold text-slate-800" id="approval-rule-name">Belum dapat ditentukan</p>
+                                            <ol class="mt-2 space-y-2 text-xs text-slate-600" id="approval-preview"></ol>
                                         </div>
                                     </div>
                                 </div>
@@ -593,6 +783,22 @@
                 var spendTypeSelect = document.getElementById('spend-type-select');
                 var spendTypeButtons = document.querySelectorAll('.spend-type-button');
                 var urgencyOptions = document.querySelectorAll('.urgency-option');
+                var storeSelect = document.getElementById('store-select');
+                var divisionSelect = document.getElementById('division-select');
+                var neededDateInput = document.getElementById('needed-date');
+                var urgencyReasonWrap = document.getElementById('urgency-reason-wrap');
+                var urgencyReason = document.getElementById('urgency-reason');
+                var capexSection = document.getElementById('capex-section');
+                var vendorReferenceSection = document.getElementById('vendor-reference-section');
+                var recommendedVendor = document.getElementById('recommended-vendor');
+                var assetRequestType = document.getElementById('asset-request-type');
+                var existingAssetWrap = document.getElementById('existing-asset-wrap');
+                var existingAssetCode = document.getElementById('existing-asset-code');
+                var singleSource = document.getElementById('single-source');
+                var singleSourceReasonWrap = document.getElementById('single-source-reason-wrap');
+                var singleSourceReason = document.getElementById('single-source-reason');
+                var singleSourceBox = document.getElementById('single-source-box');
+                var formCheckTimer;
                 var rupiahFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
                 function closeSidebar() { if (!sidebar) return; sidebar.classList.add('-translate-x-full'); if (overlay) overlay.classList.add('hidden'); }
@@ -621,6 +827,7 @@
                     if (budgetPrAmountDisplay) {
                         budgetPrAmountDisplay.textContent = formattedTotal;
                     }
+                    scheduleFormCheck();
                 }
 
                 function bindRowEvents() {
@@ -645,26 +852,40 @@
                     });
                 }
 
+                function updateSpendSections(value) {
+                    var isCapex = value === 'CAPEX';
+                    capexSection.classList.toggle('hidden', !isCapex);
+                    vendorReferenceSection.classList.toggle('is-wide', !isCapex);
+                }
+
                 function updateUrgencyOptions() {
+                    var selectedUrgency = 'NORMAL';
                     urgencyOptions.forEach(function (option) {
                         var input = option.querySelector('input[type="radio"]');
                         var indicator = option.querySelector('.urgency-indicator');
                         option.classList.toggle('is-active', !!(input && input.checked));
+                        if (input && input.checked) selectedUrgency = input.value;
                         if (indicator) {
                             indicator.classList.toggle('hidden', !input.checked);
                         }
                     });
+                    var needsReason = selectedUrgency !== 'NORMAL';
+                    urgencyReasonWrap.classList.toggle('hidden', !needsReason);
+                    urgencyReason.required = needsReason && prActionInput.value === 'submit';
+                    scheduleFormCheck();
                 }
 
                 addItemButton.addEventListener('click', function () {
                     var row = document.createElement('tr');
                     row.className = 'pr-item-row';
                     row.innerHTML = '' +
-                        '<td><input type="text" name="item_name[]" class="pr-cell-input pr-item-name" placeholder="Item name / description" required><input type="hidden" name="notes[]" value=""></td>' +
+                        '<td class="space-y-2"><input type="text" name="item_name[]" class="pr-cell-input pr-item-name" placeholder="Nama item / jasa" required><textarea name="specification[]" class="pr-cell-input" rows="2" placeholder="Spesifikasi teknis"></textarea></td>' +
                         '<td><input type="number" step="0.01" min="0.01" name="qty[]" class="pr-cell-input pr-item-qty item-qty" required></td>' +
                         '<td><select name="uom[]" class="pr-cell-input pr-item-uom pr-uom-select" required><option value="Unit">Unit</option><option value="pcs">pcs</option><option value="box">box</option><option value="pack">pack</option><option value="meter">meter</option><option value="kg">kg</option><option value="liter">liter</option></select></td>' +
                         '<td><div class="pr-price-wrap"><span class="pr-price-prefix">Rp</span><input type="number" step="0.01" min="0" name="est_unit_price[]" class="pr-cell-input item-price" required></div></td>' +
                         '<td><input type="text" class="pr-cell-input pr-cell-readonly item-total" readonly></td>' +
+                        '<td><input type="text" name="price_source[]" class="pr-cell-input" placeholder="Quotation / katalog / histori"></td>' +
+                        '<td><input type="text" name="notes[]" class="pr-cell-input" placeholder="Catatan item"></td>' +
                         '<td class="text-right"><button type="button" class="pr-delete-button remove-item-button" aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>';
                     itemRows.appendChild(row);
                     bindRowEvents();
@@ -678,17 +899,11 @@
                         if (spendType) {
                             spendTypeSelect.value = spendType;
                             updateSpendTypeButtons(spendType);
+                            updateSpendSections(spendType);
                         }
+                        scheduleFormCheck();
                     });
                 }
-
-                spendTypeButtons.forEach(function (button) {
-                    button.addEventListener('click', function () {
-                        var value = button.getAttribute('data-value') || '';
-                        spendTypeSelect.value = value;
-                        updateSpendTypeButtons(value);
-                    });
-                });
 
                 urgencyOptions.forEach(function (option) {
                     option.addEventListener('click', function () {
@@ -699,12 +914,104 @@
                     });
                 });
 
-                saveDraftButton.addEventListener('click', function () { prActionInput.value = 'draft'; });
-                submitPrButton.addEventListener('click', function () { prActionInput.value = 'submit'; });
+                function getGrandTotal() {
+                    var total = 0;
+                    itemRows.querySelectorAll('.pr-item-row').forEach(function (row) {
+                        total += (parseFloat(row.querySelector('.item-qty').value || '0') * parseFloat(row.querySelector('.item-price').value || '0'));
+                    });
+                    return total;
+                }
+
+                function scheduleFormCheck() {
+                    clearTimeout(formCheckTimer);
+                    formCheckTimer = setTimeout(loadFormCheck, 250);
+                }
+
+                function formatIDR(value) {
+                    return 'Rp ' + rupiahFormatter.format(Number(value || 0));
+                }
+
+                function loadFormCheck() {
+                    if (!storeSelect.value || !glAccountSelect.value) return;
+                    var urgency = document.querySelector('input[name="urgent_level"]:checked');
+                    var params = new URLSearchParams({
+                        store_id: storeSelect.value,
+                        division_id: divisionSelect.value || '0',
+                        gl_account_id: glAccountSelect.value,
+                        needed_date: neededDateInput.value || '',
+                        amount: String(getGrandTotal()),
+                        urgent_level: urgency ? urgency.value : 'NORMAL'
+                    });
+                    fetch('/purchase-requests/form-check?' + params.toString(), { headers: { 'Accept': 'application/json' } })
+                        .then(function (response) { if (!response.ok) throw new Error('Gagal memeriksa budget'); return response.json(); })
+                        .then(function (data) {
+                            spendTypeSelect.value = data.spend_type || '';
+                            updateSpendTypeButtons(spendTypeSelect.value);
+                            updateSpendSections(spendTypeSelect.value);
+                            var budget = data.budget || {};
+                            document.getElementById('budget-period-label').textContent = budget.period_label ? 'Budget ' + budget.period_label : 'Budget Amount';
+                            document.getElementById('budget-amount').textContent = budget.budget_id ? formatIDR(budget.amount) : '-';
+                            document.getElementById('budget-used').textContent = budget.budget_id ? formatIDR(budget.used_amount) : '-';
+                            document.getElementById('budget-remaining').textContent = budget.budget_id ? formatIDR(budget.remaining_amount) : '-';
+                            document.getElementById('budget-progress').style.width = Math.min(Math.max(budget.utilized_pct || 0, 0), 100) + '%';
+                            document.getElementById('budget-status').textContent = 'Status: ' + (budget.status || 'UNKNOWN');
+                            document.getElementById('budget-message').textContent = budget.message || '';
+                            var needsException = budget.status === 'INSUFFICIENT' || budget.status === 'UNBUDGETED';
+                            document.getElementById('budget-exception-wrap').classList.toggle('hidden', !needsException);
+                            document.getElementById('budget-exception-reason').required = needsException && prActionInput.value === 'submit';
+                            document.getElementById('approval-rule-name').textContent = data.approval_rule || 'Tidak ada approval rule yang cocok';
+                            var preview = document.getElementById('approval-preview');
+                            preview.innerHTML = '';
+                            (data.approval_steps || []).forEach(function (step) {
+                                var li = document.createElement('li');
+                                li.textContent = step.step_order + '. ' + step.role_name + (step.approver_name ? ' — ' + step.approver_name : ' — approver belum tersedia');
+                                preview.appendChild(li);
+                            });
+                        })
+                        .catch(function () {
+                            document.getElementById('budget-status').textContent = 'Status: CHECK FAILED';
+                            document.getElementById('budget-message').textContent = 'Budget belum dapat diperiksa. Coba ubah pilihan GL atau muat ulang halaman.';
+                        });
+                }
+
+                [storeSelect, divisionSelect, neededDateInput].forEach(function (input) { input.addEventListener('change', scheduleFormCheck); });
+                singleSource.addEventListener('change', function () {
+                    singleSourceReasonWrap.classList.toggle('hidden', !singleSource.checked);
+                    singleSourceBox.classList.toggle('is-active', singleSource.checked);
+                    singleSourceReason.required = singleSource.checked && prActionInput.value === 'submit';
+                    recommendedVendor.required = singleSource.checked && prActionInput.value === 'submit';
+                });
+                assetRequestType.addEventListener('change', function () {
+                    var replacement = assetRequestType.value === 'REPLACEMENT';
+                    existingAssetWrap.classList.toggle('hidden', !replacement);
+                    existingAssetCode.required = replacement && prActionInput.value === 'submit';
+                });
+
+                function setSubmitRequirements(enabled) {
+                    ['needed_date', 'delivery_location', 'justification', 'impact_if_not_approved'].forEach(function (name) {
+                        var field = document.querySelector('[name="' + name + '"]');
+                        if (field) field.required = enabled;
+                    });
+                    document.querySelectorAll('[name="price_source[]"]').forEach(function (field) { field.required = enabled; });
+                    var isCapex = spendTypeSelect.value === 'CAPEX';
+                    assetRequestType.required = enabled && isCapex;
+                    document.querySelector('[name="asset_location"]').required = enabled && isCapex;
+                    document.querySelector('[name="asset_pic"]').required = enabled && isCapex;
+                    urgencyReason.required = enabled && document.querySelector('input[name="urgent_level"]:checked').value !== 'NORMAL';
+                    singleSourceReason.required = enabled && singleSource.checked;
+                    recommendedVendor.required = enabled && singleSource.checked;
+                    existingAssetCode.required = enabled && isCapex && assetRequestType.value === 'REPLACEMENT';
+                    var budgetExceptionWrap = document.getElementById('budget-exception-wrap');
+                    document.getElementById('budget-exception-reason').required = enabled && !budgetExceptionWrap.classList.contains('hidden');
+                }
+
+                saveDraftButton.addEventListener('click', function () { prActionInput.value = 'draft'; setSubmitRequirements(false); });
+                submitPrButton.addEventListener('click', function () { prActionInput.value = 'submit'; setSubmitRequirements(true); updateUrgencyOptions(); scheduleFormCheck(); });
 
                 bindRowEvents();
                 updateGrandTotal();
                 updateSpendTypeButtons(spendTypeSelect.value || 'OPEX');
+                updateSpendSections(spendTypeSelect.value || 'OPEX');
                 updateUrgencyOptions();
             });
         </script>

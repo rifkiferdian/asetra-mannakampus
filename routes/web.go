@@ -28,6 +28,7 @@ func RegisterWebRoutes(r *gin.Engine) {
 		auth.POST("/approval-tasks/:id/reject", middleware.RequirePermission("approval_task_reject"), controllers.ApprovalTaskReject)
 		auth.GET("/purchase-requests", middleware.RequirePermission("purchase_request_management_access"), controllers.PurchaseRequestIndex)
 		auth.GET("/purchase-requests/form", middleware.RequirePermission("purchase_request_create"), controllers.PurchaseRequestFormIndex)
+		auth.GET("/purchase-requests/form-check", middleware.RequirePermission("purchase_request_create"), controllers.PurchaseRequestFormCheck)
 		auth.GET("/purchase-requests/:id", middleware.RequirePermission("purchase_request_view"), controllers.PurchaseRequestDetailIndex)
 		auth.POST("/purchase-requests/:id/update", middleware.RequirePermission("purchase_request_edit"), controllers.PurchaseRequestUpdate)
 		auth.POST("/purchase-requests/:id/regenerate-approval", middleware.RequirePermission("purchase_request_management_access"), controllers.PurchaseRequestRegenerateApproval)

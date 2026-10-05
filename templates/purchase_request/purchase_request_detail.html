@@ -141,6 +141,21 @@
 
                             <form method="post" action="/purchase-requests/{{ $pr.ID }}/update" class="space-y-5" data-edit-pr-form>
                                 <div class="edit-grid">
+                                    <div class="edit-span-2">
+                                        <label class="edit-label">Judul Purchase Request</label>
+                                        <input type="text" name="request_title" value="{{ $pr.RequestTitle }}" class="edit-control" required>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Kategori Kebutuhan</label>
+                                        <select name="request_category" class="edit-control" required>
+                                            <option value="GOODS" {{ if eq $pr.RequestCategory "GOODS" }}selected{{ end }}>Barang</option>
+                                            <option value="SERVICE" {{ if eq $pr.RequestCategory "SERVICE" }}selected{{ end }}>Jasa</option>
+                                            <option value="MAINTENANCE" {{ if eq $pr.RequestCategory "MAINTENANCE" }}selected{{ end }}>Maintenance</option>
+                                            <option value="RENTAL" {{ if eq $pr.RequestCategory "RENTAL" }}selected{{ end }}>Sewa</option>
+                                            <option value="PROJECT" {{ if eq $pr.RequestCategory "PROJECT" }}selected{{ end }}>Proyek</option>
+                                            <option value="ASSET_REPLACEMENT" {{ if eq $pr.RequestCategory "ASSET_REPLACEMENT" }}selected{{ end }}>Penggantian Asset</option>
+                                        </select>
+                                    </div>
                                     <div>
                                         <label class="edit-label">Store Location</label>
                                         <select name="store_id" class="edit-control" required>
@@ -170,10 +185,11 @@
                                     </div>
                                     <div>
                                         <label class="edit-label">Spend Type</label>
-                                        <select name="spend_type" class="edit-control" data-edit-spend-type required>
+                                        <select name="spend_type" class="edit-control" data-edit-spend-type disabled>
                                             <option value="OPEX" {{ if eq $pr.SpendType "OPEX" }}selected{{ end }}>OPEX</option>
                                             <option value="CAPEX" {{ if eq $pr.SpendType "CAPEX" }}selected{{ end }}>CAPEX</option>
                                         </select>
+                                        <input type="hidden" name="spend_type" value="{{ $pr.SpendType }}" data-edit-spend-type-hidden>
                                     </div>
                                     <div>
                                         <label class="edit-label">Needed Date</label>
@@ -187,10 +203,52 @@
                                             <option value="EMERGENCY" {{ if eq $pr.UrgentLevel "EMERGENCY" }}selected{{ end }}>Emergency</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label class="edit-label">Lokasi Penggunaan / Pengiriman</label>
+                                        <input type="text" name="delivery_location" value="{{ $pr.DeliveryLocation }}" class="edit-control">
+                                    </div>
                                     <div class="edit-span-2">
                                         <label class="edit-label">Justification / Remarks</label>
                                         <textarea name="justification" class="detail-textarea">{{ $pr.Justification }}</textarea>
                                     </div>
+                                    <div class="edit-span-2">
+                                        <label class="edit-label">Dampak Jika Tidak Disetujui</label>
+                                        <textarea name="impact_if_not_approved" class="detail-textarea">{{ $pr.ImpactIfNotApproved }}</textarea>
+                                    </div>
+                                    <div class="edit-span-2">
+                                        <label class="edit-label">Alasan Urgency</label>
+                                        <textarea name="urgency_reason" class="detail-textarea">{{ $pr.UrgencyReason }}</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Vendor Rekomendasi</label>
+                                        <select name="recommended_vendor_id" class="edit-control">
+                                            <option value="">Belum ditentukan</option>
+                                            {{ range .Vendors }}<option value="{{ .ID }}" {{ if eq .ID $pr.RecommendedVendorID }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Alasan Rekomendasi Vendor</label>
+                                        <input type="text" name="vendor_recommendation_reason" value="{{ $pr.VendorRecommendationReason }}" class="edit-control">
+                                    </div>
+                                    <div class="edit-span-2">
+                                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_single_source" value="1" {{ if $pr.IsSingleSource }}checked{{ end }}> Single source</label>
+                                        <textarea name="single_source_reason" class="detail-textarea mt-2" placeholder="Alasan single source">{{ $pr.SingleSourceReason }}</textarea>
+                                    </div>
+                                    <div class="edit-span-2">
+                                        <label class="edit-label">Alasan Pengecualian Budget</label>
+                                        <textarea name="budget_exception_reason" class="detail-textarea">{{ $pr.BudgetExceptionReason }}</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="edit-label">Jenis Permintaan Asset</label>
+                                        <select name="asset_request_type" class="edit-control">
+                                            <option value="">Bukan / belum ditentukan</option>
+                                            <option value="NEW" {{ if eq $pr.AssetRequestType "NEW" }}selected{{ end }}>Asset Baru</option>
+                                            <option value="REPLACEMENT" {{ if eq $pr.AssetRequestType "REPLACEMENT" }}selected{{ end }}>Penggantian</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="edit-label">Kode Asset Lama</label><input type="text" name="existing_asset_code" value="{{ $pr.ExistingAssetCode }}" class="edit-control"></div>
+                                    <div><label class="edit-label">Lokasi Asset</label><input type="text" name="asset_location" value="{{ $pr.AssetLocation }}" class="edit-control"></div>
+                                    <div><label class="edit-label">PIC Asset</label><input type="text" name="asset_pic" value="{{ $pr.AssetPIC }}" class="edit-control"></div>
                                 </div>
                                 <br>
                                 <div>
@@ -205,18 +263,20 @@
                                         <table class="edit-table">
                                             <thead>
                                                 <tr>
-                                                    <th>Item Name</th>
+                                                    <th>Item & Spesifikasi</th>
                                                     <th>Qty</th>
                                                     <th>UOM</th>
                                                     <th>Est. Unit Price</th>
                                                     <th>Est. Total</th>
+                                                    <th>Sumber Harga</th>
+                                                    <th>Catatan</th>
                                                     <th></th>
                                                 </tr>
                                             </thead>
                                             <tbody data-edit-item-rows>
                                                 {{ range $pr.Items }}
                                                 <tr data-edit-item-row>
-                                                    <td><input type="text" name="item_name[]" value="{{ .ItemName }}" class="edit-control" required><input type="hidden" name="notes[]" value="{{ .Notes }}"></td>
+                                                    <td><input type="text" name="item_name[]" value="{{ .ItemName }}" class="edit-control" required><textarea name="specification[]" class="detail-textarea mt-2" placeholder="Spesifikasi">{{ .Specification }}</textarea></td>
                                                     <td><input type="number" step="0.01" min="0.01" name="qty[]" value="{{ .Qty }}" class="edit-control" data-edit-qty required></td>
                                                     <td>
                                                         <select name="uom[]" class="edit-control" required>
@@ -231,6 +291,8 @@
                                                     </td>
                                                     <td><input type="number" step="0.01" min="0" name="est_unit_price[]" value="{{ printf "%.0f" .EstUnitPrice }}" class="edit-control" data-edit-price required></td>
                                                     <td><input type="text" class="edit-control edit-row-total" data-edit-total readonly></td>
+                                                    <td><input type="text" name="price_source[]" value="{{ .PriceSource }}" class="edit-control"></td>
+                                                    <td><input type="text" name="notes[]" value="{{ .Notes }}" class="edit-control"></td>
                                                     <td class="text-right"><button type="button" class="text-red-600" data-edit-remove-item aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>
                                                 </tr>
                                                 {{ end }}
@@ -239,7 +301,7 @@
                                                 <tr>
                                                     <td colspan="4" class="px-3 py-3 text-right font-extrabold">Grand Total</td>
                                                     <td class="px-3 py-3"><input type="text" class="edit-control edit-row-total" data-edit-grand-total readonly></td>
-                                                    <td></td>
+                                                    <td colspan="3"></td>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -262,8 +324,9 @@
                                 <section class="detail-card detail-card-pad">
                                     <div class="flex items-start justify-between gap-6">
                                         <div>
-                                            <h1 class="detail-title">{{ $pr.PRNumber }}</h1>
-                                            <p class="detail-subtitle">{{ if $pr.Justification }}{{ $pr.Justification }}{{ else }}Purchase request detail{{ end }}</p>
+                                            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $pr.PRNumber }}</p>
+                                            <h1 class="detail-title">{{ if $pr.RequestTitle }}{{ $pr.RequestTitle }}{{ else }}Purchase Request{{ end }}</h1>
+                                            <p class="detail-subtitle">{{ $pr.RequestCategory }} · {{ $pr.SpendType }}</p>
                                         </div>
                                         <div class="text-right">
                                             <div class="detail-amount-label">Total Amount</div>
@@ -287,7 +350,33 @@
                                             <div class="detail-label">Expected Delivery</div>
                                             <div class="detail-value">{{ if $pr.NeededDate }}{{ $pr.NeededDate }}{{ else }}-{{ end }}</div>
                                         </div>
+                                        <div>
+                                            <div class="detail-label">Delivery / Usage Location</div>
+                                            <div class="detail-value">{{ if $pr.DeliveryLocation }}{{ $pr.DeliveryLocation }}{{ else }}-{{ end }}</div>
+                                        </div>
                                     </div>
+                                </section>
+
+                                <section class="detail-card detail-card-pad">
+                                    <h2 class="detail-section-title">Business Justification</h2>
+                                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                                        <div><div class="detail-label">Tujuan / Alasan Pembelian</div><p class="mt-1 text-sm leading-6 text-slate-700">{{ if $pr.Justification }}{{ $pr.Justification }}{{ else }}-{{ end }}</p></div>
+                                        <div><div class="detail-label">Dampak Jika Tidak Disetujui</div><p class="mt-1 text-sm leading-6 text-slate-700">{{ if $pr.ImpactIfNotApproved }}{{ $pr.ImpactIfNotApproved }}{{ else }}-{{ end }}</p></div>
+                                        {{ if $pr.UrgencyReason }}<div><div class="detail-label">Alasan Urgency</div><p class="mt-1 text-sm leading-6 text-slate-700">{{ $pr.UrgencyReason }}</p></div>{{ end }}
+                                        <div><div class="detail-label">Vendor Rekomendasi</div><p class="mt-1 text-sm font-bold text-slate-800">{{ if $pr.RecommendedVendorName }}{{ $pr.RecommendedVendorName }}{{ else }}Belum ditentukan{{ end }}</p>{{ if $pr.VendorRecommendationReason }}<p class="mt-1 text-xs text-slate-500">{{ $pr.VendorRecommendationReason }}</p>{{ end }}{{ if $pr.IsSingleSource }}<p class="mt-2 text-xs font-bold text-orange-700">Single source: {{ $pr.SingleSourceReason }}</p>{{ end }}</div>
+                                    </div>
+                                    {{ if eq $pr.SpendType "CAPEX" }}
+                                    <div class="mt-5 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                                        <div class="detail-label text-blue-700">Informasi Asset CAPEX</div>
+                                        <div class="mt-2 grid gap-3 text-sm md:grid-cols-4">
+                                            <div><span class="text-slate-500">Jenis</span><div class="font-bold">{{ if $pr.AssetRequestType }}{{ $pr.AssetRequestType }}{{ else }}-{{ end }}</div></div>
+                                            <div><span class="text-slate-500">Asset lama</span><div class="font-bold">{{ if $pr.ExistingAssetCode }}{{ $pr.ExistingAssetCode }}{{ else }}-{{ end }}</div></div>
+                                            <div><span class="text-slate-500">Lokasi</span><div class="font-bold">{{ if $pr.AssetLocation }}{{ $pr.AssetLocation }}{{ else }}-{{ end }}</div></div>
+                                            <div><span class="text-slate-500">PIC</span><div class="font-bold">{{ if $pr.AssetPIC }}{{ $pr.AssetPIC }}{{ else }}-{{ end }}</div></div>
+                                        </div>
+                                    </div>
+                                    {{ end }}
+                                    {{ if $pr.BudgetExceptionReason }}<div class="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800"><strong>Budget exception:</strong> {{ $pr.BudgetExceptionReason }}</div>{{ end }}
                                 </section>
 
                                 <section class="detail-card">
@@ -309,6 +398,8 @@
                                                 <tr>
                                                     <td>
                                                         <div class="font-extrabold text-slate-950">{{ .ItemName }}</div>
+                                                        {{ if .Specification }}<div class="mt-1 text-[10px] leading-4 text-slate-600"><strong>Spesifikasi:</strong> {{ .Specification }}</div>{{ end }}
+                                                        {{ if .PriceSource }}<div class="mt-1 text-[10px] leading-4 text-slate-500"><strong>Sumber harga:</strong> {{ .PriceSource }}</div>{{ end }}
                                                         {{ if .Notes }}<div class="mt-1 text-[10px] leading-4 text-slate-500">{{ .Notes }}</div>{{ end }}
                                                     </td>
                                                     <td>{{ .QtyDisplay }} {{ .UOM }}</td>
@@ -448,6 +539,7 @@
                 var editGrandTotal = document.querySelector('[data-edit-grand-total]');
                 var editGlAccount = document.querySelector('[data-edit-gl-account]');
                 var editSpendType = document.querySelector('[data-edit-spend-type]');
+                var editSpendTypeHidden = document.querySelector('[data-edit-spend-type-hidden]');
                 var rupiahFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
                 function openEditPanel() {
@@ -504,11 +596,13 @@
                     var row = document.createElement('tr');
                     row.setAttribute('data-edit-item-row', '');
                     row.innerHTML = '' +
-                        '<td><input type="text" name="item_name[]" class="edit-control" required><input type="hidden" name="notes[]" value=""></td>' +
+                        '<td><input type="text" name="item_name[]" class="edit-control" required><textarea name="specification[]" class="detail-textarea mt-2" placeholder="Spesifikasi"></textarea></td>' +
                         '<td><input type="number" step="0.01" min="0.01" name="qty[]" class="edit-control" data-edit-qty required></td>' +
                         '<td><select name="uom[]" class="edit-control" required><option value="Unit">Unit</option><option value="pcs">pcs</option><option value="box">box</option><option value="pack">pack</option><option value="meter">meter</option><option value="kg">kg</option><option value="liter">liter</option></select></td>' +
                         '<td><input type="number" step="0.01" min="0" name="est_unit_price[]" class="edit-control" data-edit-price required></td>' +
                         '<td><input type="text" class="edit-control edit-row-total" data-edit-total readonly></td>' +
+                        '<td><input type="text" name="price_source[]" class="edit-control" placeholder="Sumber harga"></td>' +
+                        '<td><input type="text" name="notes[]" class="edit-control" placeholder="Catatan"></td>' +
                         '<td class="text-right"><button type="button" class="text-red-600" data-edit-remove-item aria-label="Remove item"><i class="bx bx-trash text-xl"></i></button></td>';
                     editRows.appendChild(row);
                     bindEditRows();
@@ -524,7 +618,10 @@
                     editGlAccount.addEventListener('change', function () {
                         var selected = editGlAccount.options[editGlAccount.selectedIndex];
                         var spendType = selected ? selected.getAttribute('data-spend-type') : '';
-                        if (spendType) editSpendType.value = spendType;
+                        if (spendType) {
+                            editSpendType.value = spendType;
+                            if (editSpendTypeHidden) editSpendTypeHidden.value = spendType;
+                        }
                     });
                 }
                 bindEditRows();

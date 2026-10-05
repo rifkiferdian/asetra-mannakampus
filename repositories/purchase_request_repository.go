@@ -132,10 +132,11 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 
 func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models.PurchaseRequestDetail, error) {
 	var (
-		item       models.PurchaseRequestDetail
-		divisionID sql.NullInt64
-		neededDate sql.NullTime
-		createdAt  sql.NullTime
+		item           models.PurchaseRequestDetail
+		divisionID     sql.NullInt64
+		neededDate     sql.NullTime
+		createdAt      sql.NullTime
+		isSingleSource int
 	)
 	err := r.DB.QueryRow(`
 		SELECT
@@ -154,6 +155,21 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 			pr.urgent_level,
 			pr.needed_date,
 			COALESCE(pr.justification, ''),
+			COALESCE(pr.request_title, ''),
+			COALESCE(pr.request_category, ''),
+			COALESCE(pr.delivery_location, ''),
+			COALESCE(pr.impact_if_not_approved, ''),
+			COALESCE(pr.urgency_reason, ''),
+			COALESCE(pr.recommended_vendor_id, 0),
+			COALESCE(v.name, ''),
+			COALESCE(pr.vendor_recommendation_reason, ''),
+			pr.is_single_source,
+			COALESCE(pr.single_source_reason, ''),
+			COALESCE(pr.budget_exception_reason, ''),
+			COALESCE(pr.asset_request_type, ''),
+			COALESCE(pr.existing_asset_code, ''),
+			COALESCE(pr.asset_location, ''),
+			COALESCE(pr.asset_pic, ''),
 			pr.total_amount,
 			pr.status,
 			pr.created_at,
@@ -163,6 +179,7 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 		LEFT JOIN stores s ON s.store_id = pr.store_id
 		LEFT JOIN divisions d ON d.id = pr.division_id
 		LEFT JOIN gl_accounts ga ON ga.id = pr.gl_account_id
+		LEFT JOIN vendors v ON v.id = pr.recommended_vendor_id
 		LEFT JOIN (
 			SELECT
 				a.ref_id,
@@ -196,6 +213,21 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 		&item.UrgentLevel,
 		&neededDate,
 		&item.Justification,
+		&item.RequestTitle,
+		&item.RequestCategory,
+		&item.DeliveryLocation,
+		&item.ImpactIfNotApproved,
+		&item.UrgencyReason,
+		&item.RecommendedVendorID,
+		&item.RecommendedVendorName,
+		&item.VendorRecommendationReason,
+		&isSingleSource,
+		&item.SingleSourceReason,
+		&item.BudgetExceptionReason,
+		&item.AssetRequestType,
+		&item.ExistingAssetCode,
+		&item.AssetLocation,
+		&item.AssetPIC,
 		&item.TotalAmount,
 		&item.Status,
 		&createdAt,
@@ -214,15 +246,21 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 	if createdAt.Valid {
 		item.CreatedAtDisplay = createdAt.Time.Format("02 Jan 2006")
 	}
+	item.IsSingleSource = isSingleSource == 1
 	item.TotalAmountDisplay = formatAmountID(item.TotalAmount)
 	item.StatusLabel = formatStatusLabel(item.Status)
 	if item.CurrentStep == "" {
 		item.CurrentStep = defaultCurrentStep(item.Status)
 	}
 	item.SLALabel, item.SLAState = formatSLALabel(item.Status, item.NeededDate)
+	budgetCheck, budgetErr := r.GetBudgetCheck(item.StoreID, item.DivisionID, item.GLAccountID, item.NeededDate, item.TotalAmount)
 	item.BudgetImpactLabel = buildBudgetImpactLabel(item.DivisionName, item.GLAccountName)
-	item.BudgetUtilizedPct = 75
-	item.BudgetMessage = "This request will consume 10% of the remaining budget. Post-approval, the total utilization will reach 75%."
+	if budgetErr == nil {
+		item.BudgetUtilizedPct = budgetCheck.UtilizedPct
+		item.BudgetMessage = budgetCheck.Message
+	} else {
+		item.BudgetMessage = "Budget belum dapat dihitung."
+	}
 
 	items, err := r.getItemsByPRID(id)
 	if err != nil {
@@ -253,7 +291,7 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 
 func (r *PurchaseRequestRepository) getItemsByPRID(prID int64) ([]models.PurchaseRequestItem, error) {
 	rows, err := r.DB.Query(`
-		SELECT id, pr_id, item_name, qty, uom, est_unit_price, est_total, COALESCE(notes, '')
+		SELECT id, pr_id, item_name, COALESCE(specification, ''), qty, uom, est_unit_price, est_total, COALESCE(price_source, ''), COALESCE(notes, '')
 		FROM purchase_request_items
 		WHERE pr_id = ?
 		ORDER BY id ASC
@@ -266,7 +304,7 @@ func (r *PurchaseRequestRepository) getItemsByPRID(prID int64) ([]models.Purchas
 	var items []models.PurchaseRequestItem
 	for rows.Next() {
 		var item models.PurchaseRequestItem
-		if err := rows.Scan(&item.ID, &item.PRID, &item.ItemName, &item.Qty, &item.UOM, &item.EstUnitPrice, &item.EstTotal, &item.Notes); err != nil {
+		if err := rows.Scan(&item.ID, &item.PRID, &item.ItemName, &item.Specification, &item.Qty, &item.UOM, &item.EstUnitPrice, &item.EstTotal, &item.PriceSource, &item.Notes); err != nil {
 			return nil, err
 		}
 		item.QtyDisplay = formatQty(item.Qty)
@@ -399,9 +437,17 @@ func (r *PurchaseRequestRepository) Create(input models.PurchaseRequestCreateInp
 
 	res, err := tx.Exec(`
 		INSERT INTO purchase_requests (
-			pr_number, requester_user_id, store_id, division_id, gl_account_id, spend_type, urgent_level, needed_date, justification, total_amount, status
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, prNumber, input.RequesterUserID, input.StoreID, nullableInt(input.DivisionID), input.GLAccountID, input.SpendType, input.UrgentLevel, nullableDate(input.NeededDate), nullableString(input.Justification), totalAmount, status)
+			pr_number, request_title, request_category, requester_user_id, store_id, division_id, gl_account_id, spend_type, urgent_level,
+			needed_date, delivery_location, justification, impact_if_not_approved, urgency_reason, recommended_vendor_id,
+			vendor_recommendation_reason, is_single_source, single_source_reason, budget_exception_reason,
+			asset_request_type, existing_asset_code, asset_location, asset_pic, total_amount, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, prNumber, input.RequestTitle, input.RequestCategory, input.RequesterUserID, input.StoreID, nullableInt(input.DivisionID), input.GLAccountID,
+		input.SpendType, input.UrgentLevel, nullableDate(input.NeededDate), nullableString(input.DeliveryLocation), nullableString(input.Justification),
+		nullableString(input.ImpactIfNotApproved), nullableString(input.UrgencyReason), nullableInt64(input.RecommendedVendorID),
+		nullableString(input.VendorRecommendationReason), boolToInt(input.IsSingleSource), nullableString(input.SingleSourceReason),
+		nullableString(input.BudgetExceptionReason), nullableString(input.AssetRequestType), nullableString(input.ExistingAssetCode),
+		nullableString(input.AssetLocation), nullableString(input.AssetPIC), totalAmount, status)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -582,16 +628,35 @@ func (r *PurchaseRequestRepository) UpdateEditable(input models.PurchaseRequestU
 
 	_, err = tx.Exec(`
 		UPDATE purchase_requests
-		SET store_id = ?,
+		SET request_title = ?,
+			request_category = ?,
+			store_id = ?,
 			division_id = ?,
 			gl_account_id = ?,
 			spend_type = ?,
 			urgent_level = ?,
 			needed_date = ?,
+			delivery_location = ?,
 			justification = ?,
+			impact_if_not_approved = ?,
+			urgency_reason = ?,
+			recommended_vendor_id = ?,
+			vendor_recommendation_reason = ?,
+			is_single_source = ?,
+			single_source_reason = ?,
+			budget_exception_reason = ?,
+			asset_request_type = ?,
+			existing_asset_code = ?,
+			asset_location = ?,
+			asset_pic = ?,
 			total_amount = ?
 		WHERE id = ?
-	`, input.StoreID, nullableInt(input.DivisionID), input.GLAccountID, input.SpendType, input.UrgentLevel, nullableDate(input.NeededDate), nullableString(input.Justification), totalAmount, input.ID)
+	`, input.RequestTitle, input.RequestCategory, input.StoreID, nullableInt(input.DivisionID), input.GLAccountID, input.SpendType,
+		input.UrgentLevel, nullableDate(input.NeededDate), nullableString(input.DeliveryLocation), nullableString(input.Justification),
+		nullableString(input.ImpactIfNotApproved), nullableString(input.UrgencyReason), nullableInt64(input.RecommendedVendorID),
+		nullableString(input.VendorRecommendationReason), boolToInt(input.IsSingleSource), nullableString(input.SingleSourceReason),
+		nullableString(input.BudgetExceptionReason), nullableString(input.AssetRequestType), nullableString(input.ExistingAssetCode),
+		nullableString(input.AssetLocation), nullableString(input.AssetPIC), totalAmount, input.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -652,6 +717,12 @@ func (r *PurchaseRequestRepository) UserExists(userID int) (bool, error) {
 	return count > 0, err
 }
 
+func (r *PurchaseRequestRepository) VendorExists(vendorID int64) (bool, error) {
+	var count int
+	err := r.DB.QueryRow(`SELECT COUNT(1) FROM vendors WHERE id = ? AND is_active = 1`, vendorID).Scan(&count)
+	return count > 0, err
+}
+
 func (r *PurchaseRequestRepository) nextPRNumberTx(tx *sql.Tx, storeID int) (string, error) {
 	var storeCode string
 	if err := tx.QueryRow(`SELECT store_code FROM stores WHERE store_id = ?`, storeID).Scan(&storeCode); err != nil {
@@ -685,8 +756,8 @@ func (r *PurchaseRequestRepository) nextPRNumberTx(tx *sql.Tx, storeID int) (str
 
 func insertPRItems(tx *sql.Tx, prID int64, items []models.PurchaseRequestItemInput) error {
 	stmt, err := tx.Prepare(`
-		INSERT INTO purchase_request_items (pr_id, item_name, qty, uom, est_unit_price, est_total, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO purchase_request_items (pr_id, item_name, specification, qty, uom, est_unit_price, est_total, price_source, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		return err
@@ -695,7 +766,7 @@ func insertPRItems(tx *sql.Tx, prID int64, items []models.PurchaseRequestItemInp
 
 	for _, item := range items {
 		total := item.Qty * item.EstUnitPrice
-		if _, err := stmt.Exec(prID, item.ItemName, item.Qty, item.UOM, item.EstUnitPrice, total, nullableString(item.Notes)); err != nil {
+		if _, err := stmt.Exec(prID, item.ItemName, nullableString(item.Specification), item.Qty, item.UOM, item.EstUnitPrice, total, nullableString(item.PriceSource), nullableString(item.Notes)); err != nil {
 			return err
 		}
 	}
@@ -721,6 +792,152 @@ func insertPRAttachments(tx *sql.Tx, prID int64, uploadedBy int, attachments []m
 		}
 	}
 	return nil
+}
+
+func (r *PurchaseRequestRepository) GetFormCheck(storeID, divisionID, glAccountID int, neededDate string, prAmount float64, urgentLevel string) (*models.PurchaseRequestFormCheck, error) {
+	spendType, err := r.GLAccountSpendType(glAccountID)
+	if err != nil {
+		return nil, err
+	}
+	budget, err := r.GetBudgetCheck(storeID, divisionID, glAccountID, neededDate, prAmount)
+	if err != nil {
+		return nil, err
+	}
+	ruleName, steps, err := r.getApprovalPreview(storeID, spendType, urgentLevel, prAmount)
+	if err != nil {
+		return nil, err
+	}
+	return &models.PurchaseRequestFormCheck{
+		SpendType:     strings.ToUpper(spendType),
+		Budget:        *budget,
+		ApprovalRule:  ruleName,
+		ApprovalSteps: steps,
+	}, nil
+}
+
+func (r *PurchaseRequestRepository) GetBudgetCheck(storeID, divisionID, glAccountID int, neededDate string, prAmount float64) (*models.PurchaseRequestBudgetCheck, error) {
+	checkDate := time.Now()
+	if strings.TrimSpace(neededDate) != "" {
+		parsed, err := time.Parse("2006-01-02", neededDate)
+		if err != nil {
+			return nil, fmt.Errorf("needed date tidak valid")
+		}
+		checkDate = parsed
+	}
+	monthKey := checkDate.Format("2006-01")
+	yearKey := checkDate.Format("2006")
+	quarterKey := fmt.Sprintf("%d-Q%d", checkDate.Year(), (int(checkDate.Month())-1)/3+1)
+
+	var result models.PurchaseRequestBudgetCheck
+	var periodType, periodKey string
+	err := r.DB.QueryRow(`
+		SELECT b.id, b.period_type, b.period_key, b.amount, COALESCE(SUM(bu.used_amount), 0)
+		FROM budgets b
+		LEFT JOIN budget_usages bu ON bu.budget_id = b.id
+		WHERE b.fiscal_year = ?
+		  AND b.gl_account_id = ?
+		  AND (b.store_id IS NULL OR b.store_id = ?)
+		  AND (b.division_id IS NULL OR b.division_id = ?)
+		  AND ((b.period_type = 'MONTHLY' AND b.period_key = ?)
+		    OR (b.period_type = 'QUARTERLY' AND b.period_key = ?)
+		    OR (b.period_type = 'YEARLY' AND b.period_key = ?))
+		GROUP BY b.id, b.period_type, b.period_key, b.amount, b.store_id, b.division_id
+		ORDER BY (b.store_id IS NOT NULL) DESC, (b.division_id IS NOT NULL) DESC,
+		  FIELD(b.period_type, 'MONTHLY', 'QUARTERLY', 'YEARLY') ASC, b.id DESC
+		LIMIT 1
+	`, checkDate.Year(), glAccountID, storeID, divisionID, monthKey, quarterKey, yearKey).Scan(
+		&result.BudgetID, &periodType, &periodKey, &result.Amount, &result.UsedAmount,
+	)
+	result.PRAmount = prAmount
+	if err == sql.ErrNoRows {
+		result.Status = "UNBUDGETED"
+		result.Message = "Budget yang sesuai dengan store, divisi, GL, dan periode belum tersedia."
+		return &result, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	result.PeriodLabel = periodType + " " + periodKey
+	result.RemainingAmount = result.Amount - result.UsedAmount
+	result.AfterPRAmount = result.RemainingAmount - prAmount
+	if result.Amount > 0 {
+		result.UtilizedPct = int(math.Round(((result.UsedAmount + prAmount) / result.Amount) * 100))
+	}
+	switch {
+	case result.AfterPRAmount < 0:
+		result.Status = "INSUFFICIENT"
+		result.Message = "Estimasi PR melebihi sisa budget. Alasan pengecualian budget wajib diisi sebelum submit."
+	case result.UtilizedPct >= 90:
+		result.Status = "WARNING"
+		result.Message = "Budget tersedia, tetapi utilisasi setelah PR mencapai sedikitnya 90%."
+	default:
+		result.Status = "AVAILABLE"
+		result.Message = "Estimasi PR masih berada dalam budget yang tersedia."
+	}
+	return &result, nil
+}
+
+func (r *PurchaseRequestRepository) getApprovalPreview(storeID int, spendType, urgentLevel string, totalAmount float64) (string, []models.PurchaseRequestApprovalPreviewStep, error) {
+	var ruleID int64
+	var ruleName string
+	err := r.DB.QueryRow(`
+		SELECT id, name FROM approval_rules
+		WHERE is_active = 1
+		  AND location_scope IN ('ANY', 'STORE')
+		  AND spend_type IN ('ANY', ?)
+		  AND urgent_level IN ('ANY', ?)
+		  AND min_amount <= ?
+		  AND (max_amount IS NULL OR max_amount >= ?)
+		ORDER BY min_amount DESC, id ASC LIMIT 1
+	`, spendType, urgentLevel, totalAmount, totalAmount).Scan(&ruleID, &ruleName)
+	if err == sql.ErrNoRows {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, err
+	}
+	rows, err := r.DB.Query(`
+		SELECT ars.step_order, ars.role_id, ars.scope, COALESCE(role.name, '')
+		FROM approval_rule_steps ars
+		LEFT JOIN roles role ON role.id = ars.role_id
+		WHERE ars.rule_id = ? ORDER BY ars.step_order, ars.id
+	`, ruleID)
+	if err != nil {
+		return "", nil, err
+	}
+	type previewAssignment struct {
+		step   models.PurchaseRequestApprovalPreviewStep
+		roleID int64
+		scope  string
+	}
+	var assignments []previewAssignment
+	for rows.Next() {
+		var assignment previewAssignment
+		if err := rows.Scan(&assignment.step.StepOrder, &assignment.roleID, &assignment.scope, &assignment.step.RoleName); err != nil {
+			rows.Close()
+			return "", nil, err
+		}
+		assignments = append(assignments, assignment)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return "", nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return "", nil, err
+	}
+	var steps []models.PurchaseRequestApprovalPreviewStep
+	for _, assignment := range assignments {
+		step := assignment.step
+		if assignment.scope == "STORE" {
+			_ = r.DB.QueryRow(`SELECT COALESCE(u.name, '') FROM store_approvers sa JOIN users u ON u.id = sa.user_id WHERE sa.store_id = ? AND sa.role_id = ? AND sa.is_active = 1 ORDER BY sa.id LIMIT 1`, storeID, assignment.roleID).Scan(&step.ApproverName)
+		} else {
+			_ = r.DB.QueryRow(`SELECT COALESCE(u.name, '') FROM users u JOIN model_has_roles mhr ON mhr.model_id = u.id AND mhr.model_type = 'Models\\User' WHERE mhr.role_id = ? AND u.status = 'active' ORDER BY u.id LIMIT 1`, assignment.roleID).Scan(&step.ApproverName)
+		}
+		steps = append(steps, step)
+	}
+	return ruleName, steps, nil
 }
 
 func (r *PurchaseRequestRepository) buildApprovalFlowTx(tx *sql.Tx, prID int64, storeID int, spendType, urgentLevel string, totalAmount float64, actorUserID int) (*approvalRuleMatch, []approvalRuleStepResolved, error) {
@@ -898,6 +1115,13 @@ func insertAuditLogTx(tx *sql.Tx, refType string, refID int64, action, message s
 }
 
 func nullableInt(value int) interface{} {
+	if value <= 0 {
+		return nil
+	}
+	return value
+}
+
+func nullableInt64(value int64) interface{} {
 	if value <= 0 {
 		return nil
 	}
