@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"net/http"
 	"gobase-app/models"
+	"net/http"
 
 	helpers "gobase-app/helper"
 
@@ -77,7 +77,9 @@ func Render(c *gin.Context, name string, data gin.H) {
 
 	// inject global data (biar semua halaman dapat)
 	data["Permissions"] = perms
+	if csrfToken, ok := c.Get("CSRFToken"); ok {
+		data["CSRFToken"] = csrfToken
+	}
 
 	c.HTML(http.StatusOK, name, data)
 }
-

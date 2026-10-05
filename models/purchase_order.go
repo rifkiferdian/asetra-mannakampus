@@ -60,6 +60,7 @@ type PurchaseOrderCreateInput struct {
 	VendorID     int64
 	Items        []PurchaseOrderItemInput
 	AuditContext AuditContext
+	AccessScope  AccessScope
 }
 
 type PurchaseOrderItemInput struct {

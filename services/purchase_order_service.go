@@ -13,26 +13,32 @@ type PurchaseOrderService struct {
 	VendorRepo *repositories.VendorRepository
 }
 
-func (s *PurchaseOrderService) GetPurchaseOrders() ([]models.PurchaseOrder, error) {
-	return s.Repo.GetAll()
+func (s *PurchaseOrderService) GetPurchaseOrders(scope models.AccessScope) ([]models.PurchaseOrder, error) {
+	if scope.UserID <= 0 {
+		return nil, errors.New("user login tidak valid")
+	}
+	return s.Repo.GetAll(scope)
 }
 
-func (s *PurchaseOrderService) GetApprovedPRReadyForPO() ([]models.ApprovedPRForPO, error) {
-	return s.Repo.GetApprovedPRReadyForPO()
+func (s *PurchaseOrderService) GetApprovedPRReadyForPO(scope models.AccessScope) ([]models.ApprovedPRForPO, error) {
+	if scope.UserID <= 0 {
+		return nil, errors.New("user login tidak valid")
+	}
+	return s.Repo.GetApprovedPRReadyForPO(scope)
 }
 
-func (s *PurchaseOrderService) GetCreateForm(prID int64, userID int) (*models.PurchaseOrderCreateForm, error) {
+func (s *PurchaseOrderService) GetCreateForm(prID int64, scope models.AccessScope) (*models.PurchaseOrderCreateForm, error) {
 	if prID <= 0 {
 		return nil, errors.New("purchase request tidak valid")
 	}
-	return s.Repo.GetCreateFormByPRID(prID, userID)
+	return s.Repo.GetCreateFormByPRID(prID, scope)
 }
 
-func (s *PurchaseOrderService) GetPurchaseOrderDetail(id int64) (*models.PurchaseOrderDetail, error) {
+func (s *PurchaseOrderService) GetPurchaseOrderDetail(id int64, scope models.AccessScope) (*models.PurchaseOrderDetail, error) {
 	if id <= 0 {
 		return nil, errors.New("purchase order tidak valid")
 	}
-	return s.Repo.GetDetailByID(id)
+	return s.Repo.GetDetailByID(id, scope)
 }
 
 func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInput) (int64, error) {
@@ -45,6 +51,9 @@ func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInpu
 	if input.AuditContext.ActorUserID <= 0 {
 		return 0, errors.New("user login tidak valid")
 	}
+	if input.AccessScope.UserID != input.AuditContext.ActorUserID {
+		return 0, errors.New("scope akses user tidak valid")
+	}
 
 	exists, err := s.VendorRepo.ExistsByID(input.VendorID)
 	if err != nil {
@@ -54,7 +63,7 @@ func (s *PurchaseOrderService) CreateFromPR(input models.PurchaseOrderCreateInpu
 		return 0, errors.New("vendor tidak ditemukan")
 	}
 
-	form, err := s.Repo.GetCreateFormByPRID(input.PRID, 0)
+	form, err := s.Repo.GetCreateFormByPRID(input.PRID, input.AccessScope)
 	if err != nil {
 		return 0, err
 	}

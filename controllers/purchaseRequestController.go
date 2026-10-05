@@ -21,7 +21,8 @@ import (
 
 func PurchaseRequestIndex(c *gin.Context) {
 	service := buildPurchaseRequestService()
-	items, err := service.GetPurchaseRequests()
+	scope := currentAccessScope(c)
+	items, err := service.GetPurchaseRequests(scope)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -60,7 +61,7 @@ func PurchaseRequestFormCheck(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "store wajib dipilih"})
 		return
 	}
-	if !sessionAllowsStore(sessions.Default(c), storeID) {
+	if !currentAccessScope(c).AllowsStore(storeID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "store di luar akses user"})
 		return
 	}
@@ -90,11 +91,8 @@ func PurchaseRequestDetailIndex(c *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(c)
-	userID := sessionUserID(session)
-
 	service := buildPurchaseRequestService()
-	detail, err := service.GetPurchaseRequestDetail(id, userID)
+	detail, err := service.GetPurchaseRequestDetail(id, currentAccessScope(c))
 	if err != nil {
 		c.String(http.StatusNotFound, err.Error())
 		return
@@ -174,7 +172,7 @@ func PurchaseRequestRegenerateApproval(c *gin.Context) {
 	userID := sessionUserID(session)
 
 	service := buildPurchaseRequestService()
-	err = service.RegenerateApprovalFlow(id, models.AuditContext{
+	err = service.RegenerateApprovalFlow(id, currentAccessScope(c), models.AuditContext{
 		ActorUserID: userID,
 		IPAddress:   c.ClientIP(),
 		UserAgent:   c.Request.UserAgent(),
@@ -198,7 +196,7 @@ func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRe
 	if err != nil {
 		return models.PurchaseRequestUpdateInput{}, "store wajib dipilih"
 	}
-	if !sessionAllowsStore(session, storeID) {
+	if !currentAccessScope(c).AllowsStore(storeID) {
 		return models.PurchaseRequestUpdateInput{}, "store di luar akses user"
 	}
 
@@ -277,6 +275,7 @@ func bindPurchaseRequestUpdateInput(c *gin.Context, id int64) (models.PurchaseRe
 			IPAddress:   c.ClientIP(),
 			UserAgent:   c.Request.UserAgent(),
 		},
+		AccessScope: currentAccessScope(c),
 	}, ""
 }
 
@@ -305,12 +304,14 @@ func renderPurchaseRequestForm(c *gin.Context, message string, persisted gin.H) 
 		return
 	}
 
-	session := sessions.Default(c)
-	allowedStoreIDs := parseSessionStoreIDs(session)
-	stores := allStores
-	if len(allowedStoreIDs) > 0 {
+	scope := currentAccessScope(c)
+	allowedStoreIDs := scope.StoreIDs
+	stores := []models.Store{}
+	if scope.CanViewAll {
+		stores = allStores
+	} else if len(allowedStoreIDs) > 0 {
 		filtered, err := storeRepo.GetByIDs(allowedStoreIDs)
-		if err == nil && len(filtered) > 0 {
+		if err == nil {
 			stores = filtered
 		}
 	}
@@ -373,7 +374,7 @@ func bindPurchaseRequestInput(c *gin.Context) (models.PurchaseRequestCreateInput
 	if err != nil {
 		return models.PurchaseRequestCreateInput{}, nil, "store wajib dipilih"
 	}
-	if !sessionAllowsStore(session, storeID) {
+	if !currentAccessScope(c).AllowsStore(storeID) {
 		return models.PurchaseRequestCreateInput{}, nil, "store di luar akses user"
 	}
 
@@ -592,17 +593,47 @@ func splitCSVToInts(value string) []int {
 	return ids
 }
 
-func sessionAllowsStore(session sessions.Session, storeID int) bool {
-	allowed := parseSessionStoreIDs(session)
-	if len(allowed) == 0 {
-		return true
+func sessionAccessScope(session sessions.Session) models.AccessScope {
+	scope := models.AccessScope{
+		UserID:   sessionUserID(session),
+		StoreIDs: parseSessionStoreIDs(session),
 	}
-	for _, id := range allowed {
-		if id == storeID {
-			return true
+
+	var roles string
+	if raw := session.Get("user"); raw != nil {
+		switch value := raw.(type) {
+		case models.SessionUser:
+			roles = value.Role
+		case map[string]interface{}:
+			roles, _ = value["role"].(string)
+			if roles == "" {
+				roles, _ = value["Role"].(string)
+			}
+		case gin.H:
+			roles, _ = value["role"].(string)
+			if roles == "" {
+				roles, _ = value["Role"].(string)
+			}
 		}
 	}
-	return false
+
+	for _, role := range strings.Split(roles, ",") {
+		switch strings.ToLower(strings.TrimSpace(role)) {
+		case "super-admin", "admin", "procurement", "finance-manager", "gm":
+			scope.CanViewAll = true
+			return scope
+		}
+	}
+	return scope
+}
+
+func currentAccessScope(c *gin.Context) models.AccessScope {
+	if raw, ok := c.Get("AccessScope"); ok {
+		if scope, valid := raw.(models.AccessScope); valid {
+			return scope
+		}
+	}
+	return sessionAccessScope(sessions.Default(c))
 }
 
 func sessionUserID(session sessions.Session) int {

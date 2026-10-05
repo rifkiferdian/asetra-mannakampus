@@ -158,7 +158,7 @@
                     btn.addEventListener('click', function (event) {
                         event.preventDefault();
                         Swal.fire({ title: 'Hapus budget ini?', text: 'Budget ' + (btn.getAttribute('data-name') || 'ini') + ' akan dihapus.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal' }).then(function (result) {
-                            if (result.isConfirmed) window.location.href = btn.getAttribute('data-url');
+                            if (result.isConfirmed) window.asetraSubmitPost(btn.getAttribute('data-url'));
                         });
                     });
                 });

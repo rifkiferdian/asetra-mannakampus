@@ -199,7 +199,7 @@
                             confirmButtonText: 'Ya, hapus',
                             cancelButtonText: 'Batal'
                         }).then(function (result) {
-                            if (result.isConfirmed) window.location.href = btn.getAttribute('data-url');
+                            if (result.isConfirmed) window.asetraSubmitPost(btn.getAttribute('data-url'));
                         });
                     });
                 });

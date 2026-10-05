@@ -393,7 +393,7 @@
                             cancelButtonText: 'Batal'
                         }).then(function (result) {
                             if (result.isConfirmed && targetUrl) {
-                                window.location.href = targetUrl;
+                                window.asetraSubmitPost(targetUrl);
                             }
                         });
                     });

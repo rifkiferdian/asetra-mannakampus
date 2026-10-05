@@ -157,7 +157,7 @@
                                                     <button type="button" class="text-[#06143a] transition hover:text-[#07317f]" title="Edit" data-edit data-id="{{ .ID }}" data-code="{{ .LocationCode }}" data-name="{{ .LocationName }}" data-store="{{ .StoreID }}" data-parent="{{ .ParentID }}" data-type="{{ .LocationType }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}"><i class="bx bx-pencil text-base"></i></button>
                                                     {{ end }}
                                                     {{ if index $.Permissions "asset_location_delete" }}
-                                                    <a href="/asset-locations/delete/{{ .ID }}" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus lokasi {{ .LocationCode }}?"><i class="bx bx-trash text-base"></i></a>
+                                                    <form method="post" action="/asset-locations/delete/{{ .ID }}" class="inline"><button type="submit" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus lokasi {{ .LocationCode }}?"><i class="bx bx-trash text-base"></i></button></form>
                                                     {{ end }}
                                                 </div>
                                             </td>

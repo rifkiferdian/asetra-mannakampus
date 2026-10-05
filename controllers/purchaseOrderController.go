@@ -17,14 +17,15 @@ import (
 
 func PurchaseOrderIndex(c *gin.Context) {
 	service := buildPurchaseOrderService()
+	scope := currentAccessScope(c)
 
-	orders, err := service.GetPurchaseOrders()
+	orders, err := service.GetPurchaseOrders(scope)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	readyPRs, err := service.GetApprovedPRReadyForPO()
+	readyPRs, err := service.GetApprovedPRReadyForPO(scope)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -49,11 +50,8 @@ func PurchaseOrderCreateFromPR(c *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(c)
-	userID := sessionUserID(session)
-
 	service := buildPurchaseOrderService()
-	form, err := service.GetCreateForm(prID, userID)
+	form, err := service.GetCreateForm(prID, currentAccessScope(c))
 	if err != nil {
 		c.Redirect(http.StatusSeeOther, "/purchase-orders?error="+url.QueryEscape(err.Error()))
 		return
@@ -92,7 +90,7 @@ func PurchaseOrderDetailIndex(c *gin.Context) {
 	}
 
 	service := buildPurchaseOrderService()
-	detail, err := service.GetPurchaseOrderDetail(id)
+	detail, err := service.GetPurchaseOrderDetail(id, currentAccessScope(c))
 	if err != nil {
 		c.Redirect(http.StatusSeeOther, "/purchase-orders?error="+url.QueryEscape(err.Error()))
 		return
@@ -154,6 +152,7 @@ func bindPurchaseOrderCreateInput(c *gin.Context) (models.PurchaseOrderCreateInp
 			IPAddress:   c.ClientIP(),
 			UserAgent:   c.Request.UserAgent(),
 		},
+		AccessScope: currentAccessScope(c),
 	}, ""
 }
 

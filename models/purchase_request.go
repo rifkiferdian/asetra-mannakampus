@@ -133,6 +133,7 @@ type PurchaseRequestUpdateInput struct {
 	AssetPIC                   string
 	Items                      []PurchaseRequestItemInput
 	AuditContext               AuditContext
+	AccessScope                AccessScope
 }
 
 type PurchaseRequestItemInput struct {

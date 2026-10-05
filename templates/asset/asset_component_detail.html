@@ -129,7 +129,9 @@
                                 <button type="button" class="cd-btn cd-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Edit</button>
                                 {{ end }}
                                 {{ if index .Permissions "asset_component_delete" }}
-                                <a href="/asset-components/delete/{{ .Component.ID }}" class="cd-btn cd-btn-danger" data-confirm="Hapus komponen {{ .Component.ComponentCode }}?"><i class="bx bx-trash"></i>Delete</a>
+                                <form method="post" action="/asset-components/delete/{{ .Component.ID }}" class="inline">
+                                    <button type="submit" class="cd-btn cd-btn-danger" data-confirm="Hapus komponen {{ .Component.ComponentCode }}?"><i class="bx bx-trash"></i>Delete</button>
+                                </form>
                                 {{ end }}
                             </div>
                         </div>

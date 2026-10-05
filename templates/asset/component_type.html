@@ -190,7 +190,7 @@
                                                     <button type="button" class="ct-btn ct-btn-secondary" data-edit data-id="{{ .ID }}" data-code="{{ .Code }}" data-name="{{ .Name }}" data-description="{{ .Description }}" data-active="{{ if .IsActive }}1{{ else }}0{{ end }}"><i class="bx bx-pencil"></i>Edit</button>
                                                     {{ end }}
                                                     {{ if index $.Permissions "component_type_delete" }}
-                                                    <a class="ct-btn ct-btn-secondary text-rose-700" href="/component-types/delete/{{ .ID }}" data-confirm="Hapus component type {{ .Code }}?"><i class="bx bx-trash"></i>Del</a>
+                                                    <form method="post" action="/component-types/delete/{{ .ID }}" class="inline"><button type="submit" class="ct-btn ct-btn-secondary text-rose-700" data-confirm="Hapus component type {{ .Code }}?"><i class="bx bx-trash"></i>Del</button></form>
                                                     {{ end }}
                                                 </div>
                                             </td>

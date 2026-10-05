@@ -1,4 +1,5 @@
 {{ define "header" }}
+<script src="/assets/js/security/csrf.js" defer></script>
 <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
     <div class="relative flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-8">
         <div class="flex min-w-0 items-center gap-3">
@@ -96,10 +97,12 @@
                         <i class="bx bx-user text-base"></i>
                         <span key="t-profile">Profile</span>
                     </a>
-                    <a class="flex items-center gap-2 rounded-xl px-3 py-2 text-rose-600 transition hover:bg-rose-50" href="/logout">
+                    <form method="post" action="/logout">
+                    <button type="submit" class="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-rose-600 transition hover:bg-rose-50">
                         <i class="bx bx-power-off text-base"></i>
                         <span key="t-logout">Logout</span>
-                    </a>
+                    </button>
+                    </form>
                 </div>
             </details>
         </div>

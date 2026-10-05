@@ -163,7 +163,9 @@
                                 <button type="button" class="detail-btn detail-btn-secondary"><i class="bx bx-wrench"></i>Ajukan Perawatan</button>
                                 <button type="button" class="detail-btn detail-btn-danger"><i class="bx bx-archive"></i>Nonaktifkan Aset</button>
                                 {{ if index .Permissions "asset_delete" }}
-                                <a href="/asset-register/delete/{{ .Asset.ID }}" class="detail-btn detail-btn-danger" data-confirm="Hapus aset {{ .Asset.AssetCode }}?"><i class="bx bx-trash"></i>Hapus Aset</a>
+                                <form method="post" action="/asset-register/delete/{{ .Asset.ID }}" class="inline">
+                                    <button type="submit" class="detail-btn detail-btn-danger" data-confirm="Hapus aset {{ .Asset.AssetCode }}?"><i class="bx bx-trash"></i>Hapus Aset</button>
+                                </form>
                                 {{ end }}
                                 {{ if index .Permissions "asset_edit" }}
                                 <button type="button" class="detail-btn detail-btn-primary" data-open-modal="editModal"><i class="bx bx-pencil"></i>Ubah Aset</button>

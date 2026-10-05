@@ -3,15 +3,16 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
+	"gobase-app/config"
+	"gobase-app/middleware"
+	"gobase-app/models"
+	"gobase-app/repositories"
+	"gobase-app/routes"
+	"gobase-app/services"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"gobase-app/config"
-	"gobase-app/models"
-	"gobase-app/routes"
-	"gobase-app/repositories"
-	"gobase-app/services"
 	"strings"
 
 	"github.com/gin-contrib/sessions"
@@ -61,13 +62,17 @@ func main() {
 	r.LoadHTMLGlob("templates/**/*")
 	r.Static("/assets", "./assets")
 
-	useSecureCookie := strings.ToLower(os.Getenv("APP_SECURE_COOKIE")) == "true"
+	useSecureCookie := strings.EqualFold(os.Getenv("APP_SECURE_COOKIE"), "true") || strings.EqualFold(os.Getenv("APP_ENV"), "production")
 
 	// Register custom session payload for gob encoder used by cookie store.
 	gob.Register(models.SessionUser{})
 
 	// SESSION - must be registered BEFORE routes that use sessions
-	store := cookie.NewStore([]byte("secret-key"))
+	sessionSecret, err := config.SessionSecret()
+	if err != nil {
+		log.Fatalf("invalid session configuration: %v", err)
+	}
+	store := cookie.NewStore(sessionSecret)
 	store.Options(sessions.Options{
 		Path:     "/",
 		MaxAge:   60 * 60 * 8, // 8 jam
@@ -77,6 +82,7 @@ func main() {
 		SameSite: http.SameSiteLaxMode,
 	})
 	r.Use(sessions.Sessions("mysession", store))
+	r.Use(middleware.CSRFProtection(useSecureCookie))
 
 	// Register application routes
 	routes.RegisterWebRoutes(r)
@@ -107,4 +113,3 @@ func main() {
 		log.Fatalf("failed to run server: %v", err)
 	}
 }
-

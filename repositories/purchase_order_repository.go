@@ -14,8 +14,8 @@ type PurchaseOrderRepository struct {
 	DB *sql.DB
 }
 
-func (r *PurchaseOrderRepository) GetAll() ([]models.PurchaseOrder, error) {
-	rows, err := r.DB.Query(`
+func (r *PurchaseOrderRepository) GetAll(scope models.AccessScope) ([]models.PurchaseOrder, error) {
+	query := `
 		SELECT
 			po.id,
 			po.po_number,
@@ -36,8 +36,15 @@ func (r *PurchaseOrderRepository) GetAll() ([]models.PurchaseOrder, error) {
 		LEFT JOIN vendors v ON v.id = po.vendor_id
 		LEFT JOIN stores s ON s.store_id = po.store_id
 		LEFT JOIN divisions d ON d.id = po.division_id
-		ORDER BY po.id DESC
-	`)
+	`
+	args := make([]interface{}, 0)
+	if !scope.CanViewAll {
+		predicate, predicateArgs := purchaseOrderScopePredicate("po", scope)
+		query += " WHERE " + predicate
+		args = append(args, predicateArgs...)
+	}
+	query += " ORDER BY po.id DESC"
+	rows, err := r.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +85,8 @@ func (r *PurchaseOrderRepository) GetAll() ([]models.PurchaseOrder, error) {
 	return orders, rows.Err()
 }
 
-func (r *PurchaseOrderRepository) GetApprovedPRReadyForPO() ([]models.ApprovedPRForPO, error) {
-	rows, err := r.DB.Query(`
+func (r *PurchaseOrderRepository) GetApprovedPRReadyForPO(scope models.AccessScope) ([]models.ApprovedPRForPO, error) {
+	query := `
 		SELECT
 			pr.id,
 			pr.pr_number,
@@ -99,8 +106,15 @@ func (r *PurchaseOrderRepository) GetApprovedPRReadyForPO() ([]models.ApprovedPR
 		AND NOT EXISTS (
 			SELECT 1 FROM purchase_orders po WHERE po.pr_id = pr.id
 		)
-		ORDER BY pr.updated_at DESC, pr.id DESC
-	`)
+	`
+	args := make([]interface{}, 0)
+	if !scope.CanViewAll {
+		predicate, predicateArgs := purchaseRequestScopePredicate("pr", scope, false)
+		query += " AND " + predicate
+		args = append(args, predicateArgs...)
+	}
+	query += " ORDER BY pr.updated_at DESC, pr.id DESC"
+	rows, err := r.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +149,9 @@ func (r *PurchaseOrderRepository) GetApprovedPRReadyForPO() ([]models.ApprovedPR
 	return items, rows.Err()
 }
 
-func (r *PurchaseOrderRepository) GetCreateFormByPRID(prID int64, userID int) (*models.PurchaseOrderCreateForm, error) {
+func (r *PurchaseOrderRepository) GetCreateFormByPRID(prID int64, scope models.AccessScope) (*models.PurchaseOrderCreateForm, error) {
 	prRepo := &PurchaseRequestRepository{DB: r.DB}
-	pr, err := prRepo.GetDetailByID(prID, userID)
+	pr, err := prRepo.GetDetailByID(prID, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +186,12 @@ func (r *PurchaseOrderRepository) GetCreateFormByPRID(prID int64, userID int) (*
 	}, nil
 }
 
-func (r *PurchaseOrderRepository) GetDetailByID(id int64) (*models.PurchaseOrderDetail, error) {
+func (r *PurchaseOrderRepository) GetDetailByID(id int64, scope models.AccessScope) (*models.PurchaseOrderDetail, error) {
 	var (
 		po        models.PurchaseOrderDetail
 		createdAt sql.NullTime
 	)
-	err := r.DB.QueryRow(`
+	query := `
 		SELECT
 			po.id,
 			po.po_number,
@@ -199,7 +213,14 @@ func (r *PurchaseOrderRepository) GetDetailByID(id int64) (*models.PurchaseOrder
 		LEFT JOIN stores s ON s.store_id = po.store_id
 		LEFT JOIN divisions d ON d.id = po.division_id
 		WHERE po.id = ?
-	`, id).Scan(
+	`
+	args := []interface{}{id}
+	if !scope.CanViewAll {
+		predicate, predicateArgs := purchaseOrderScopePredicate("po", scope)
+		query += " AND " + predicate
+		args = append(args, predicateArgs...)
+	}
+	err := r.DB.QueryRow(query, args...).Scan(
 		&po.ID,
 		&po.PONumber,
 		&po.PRID,
@@ -240,17 +261,18 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 	}
 
 	var (
-		status     string
-		storeID    int
-		divisionID sql.NullInt64
-		prNumber   string
+		status      string
+		storeID     int
+		divisionID  sql.NullInt64
+		prNumber    string
+		requesterID int
 	)
 	err = tx.QueryRow(`
-		SELECT status, store_id, division_id, pr_number
-		FROM purchase_requests
-		WHERE id = ?
+		SELECT pr.status, pr.store_id, pr.division_id, pr.pr_number, pr.requester_user_id
+		FROM purchase_requests pr
+		WHERE pr.id = ?
 		FOR UPDATE
-	`, input.PRID).Scan(&status, &storeID, &divisionID, &prNumber)
+	`, input.PRID).Scan(&status, &storeID, &divisionID, &prNumber, &requesterID)
 	if err == sql.ErrNoRows {
 		tx.Rollback()
 		return 0, fmt.Errorf("purchase request tidak ditemukan")
@@ -262,6 +284,10 @@ func (r *PurchaseOrderRepository) CreateFromPR(input models.PurchaseOrderCreateI
 	if status != "APPROVED" {
 		tx.Rollback()
 		return 0, fmt.Errorf("PR %s harus APPROVED sebelum dibuat PO", prNumber)
+	}
+	if !input.AccessScope.AllowsOwnerOrStore(requesterID, storeID) {
+		tx.Rollback()
+		return 0, fmt.Errorf("purchase request tidak ditemukan atau akses ditolak")
 	}
 
 	var existing int
@@ -417,6 +443,25 @@ func nullableSQLInt64(value sql.NullInt64) interface{} {
 		return nil
 	}
 	return value.Int64
+}
+
+func purchaseOrderScopePredicate(alias string, scope models.AccessScope) (string, []interface{}) {
+	if len(scope.StoreIDs) == 0 {
+		return "1 = 0", nil
+	}
+	placeholders := make([]string, 0, len(scope.StoreIDs))
+	args := make([]interface{}, 0, len(scope.StoreIDs))
+	for _, storeID := range scope.StoreIDs {
+		if storeID <= 0 {
+			continue
+		}
+		placeholders = append(placeholders, "?")
+		args = append(args, storeID)
+	}
+	if len(placeholders) == 0 {
+		return "1 = 0", nil
+	}
+	return alias + ".store_id IN (" + strings.Join(placeholders, ",") + ")", args
 }
 
 func formatAmountIDLocal(value float64) string {

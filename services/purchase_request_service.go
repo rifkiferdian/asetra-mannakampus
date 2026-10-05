@@ -16,15 +16,21 @@ type PurchaseRequestService struct {
 	GlRepo       *repositories.GLAccountRepository
 }
 
-func (s *PurchaseRequestService) GetPurchaseRequests() ([]models.PurchaseRequest, error) {
-	return s.Repo.GetAll()
+func (s *PurchaseRequestService) GetPurchaseRequests(scope models.AccessScope) ([]models.PurchaseRequest, error) {
+	if scope.UserID <= 0 {
+		return nil, errors.New("user login tidak valid")
+	}
+	return s.Repo.GetAll(scope)
 }
 
-func (s *PurchaseRequestService) GetPurchaseRequestDetail(id int64, userID int) (*models.PurchaseRequestDetail, error) {
+func (s *PurchaseRequestService) GetPurchaseRequestDetail(id int64, scope models.AccessScope) (*models.PurchaseRequestDetail, error) {
 	if id <= 0 {
 		return nil, errors.New("purchase request tidak valid")
 	}
-	return s.Repo.GetDetailByID(id, userID)
+	if scope.UserID <= 0 {
+		return nil, errors.New("user login tidak valid")
+	}
+	return s.Repo.GetDetailByID(id, scope)
 }
 
 func (s *PurchaseRequestService) CreatePurchaseRequest(input models.PurchaseRequestCreateInput) error {
@@ -57,19 +63,25 @@ func (s *PurchaseRequestService) GetFormCheck(storeID, divisionID, glAccountID i
 	return s.Repo.GetFormCheck(storeID, divisionID, glAccountID, neededDate, amount, urgentLevel)
 }
 
-func (s *PurchaseRequestService) RegenerateApprovalFlow(prID int64, auditCtx models.AuditContext) error {
+func (s *PurchaseRequestService) RegenerateApprovalFlow(prID int64, scope models.AccessScope, auditCtx models.AuditContext) error {
 	if prID <= 0 {
 		return errors.New("purchase request tidak valid")
 	}
 	if auditCtx.ActorUserID <= 0 {
 		return errors.New("user login tidak valid")
 	}
-	return s.Repo.RegenerateApprovalFlow(prID, auditCtx)
+	if scope.UserID != auditCtx.ActorUserID {
+		return errors.New("scope akses user tidak valid")
+	}
+	return s.Repo.RegenerateApprovalFlow(prID, scope, auditCtx)
 }
 
 func (s *PurchaseRequestService) UpdatePurchaseRequest(input models.PurchaseRequestUpdateInput) error {
 	if input.ID <= 0 {
 		return errors.New("purchase request tidak valid")
+	}
+	if input.AccessScope.UserID <= 0 || input.AccessScope.UserID != input.AuditContext.ActorUserID {
+		return errors.New("scope akses user tidak valid")
 	}
 
 	createLike := models.PurchaseRequestCreateInput{

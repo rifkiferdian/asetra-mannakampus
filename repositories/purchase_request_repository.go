@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"gobase-app/models"
 	"math"
@@ -28,8 +29,8 @@ type approvalRuleStepResolved struct {
 	AssignedUserID int
 }
 
-func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
-	rows, err := r.DB.Query(`
+func (r *PurchaseRequestRepository) GetAll(scope models.AccessScope) ([]models.PurchaseRequest, error) {
+	query := `
 		SELECT
 			pr.id,
 			pr.pr_number,
@@ -71,8 +72,16 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 				LIMIT 1
 			)
 		) cur_step ON cur_step.ref_id = pr.id
-		ORDER BY pr.id DESC
-	`)
+	`
+	args := make([]interface{}, 0)
+	if !scope.CanViewAll {
+		predicate, predicateArgs := purchaseRequestScopePredicate("pr", scope, true)
+		query += " WHERE " + predicate
+		args = append(args, predicateArgs...)
+	}
+	query += " ORDER BY pr.id DESC"
+
+	rows, err := r.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +139,15 @@ func (r *PurchaseRequestRepository) GetAll() ([]models.PurchaseRequest, error) {
 	return items, rows.Err()
 }
 
-func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models.PurchaseRequestDetail, error) {
+func (r *PurchaseRequestRepository) GetDetailByID(id int64, scope models.AccessScope) (*models.PurchaseRequestDetail, error) {
+	allowed, err := r.canViewPurchaseRequest(id, scope)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, errors.New("purchase request tidak ditemukan atau akses ditolak")
+	}
+
 	var (
 		item           models.PurchaseRequestDetail
 		divisionID     sql.NullInt64
@@ -138,7 +155,7 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 		createdAt      sql.NullTime
 		isSingleSource int
 	)
-	err := r.DB.QueryRow(`
+	err = r.DB.QueryRow(`
 		SELECT
 			pr.id,
 			pr.pr_number,
@@ -274,7 +291,7 @@ func (r *PurchaseRequestRepository) GetDetailByID(id int64, userID int) (*models
 	}
 	item.ApprovalSteps = steps
 
-	taskID, err := r.getCurrentUserTaskID(id, userID)
+	taskID, err := r.getCurrentUserTaskID(id, scope.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -514,7 +531,7 @@ func (r *PurchaseRequestRepository) Create(input models.PurchaseRequestCreateInp
 	return prID, nil
 }
 
-func (r *PurchaseRequestRepository) RegenerateApprovalFlow(prID int64, auditCtx models.AuditContext) error {
+func (r *PurchaseRequestRepository) RegenerateApprovalFlow(prID int64, scope models.AccessScope, auditCtx models.AuditContext) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
@@ -541,6 +558,10 @@ func (r *PurchaseRequestRepository) RegenerateApprovalFlow(prID int64, auditCtx 
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+	if !scope.AllowsOwnerOrStore(requesterID, storeID) {
+		tx.Rollback()
+		return errors.New("purchase request tidak ditemukan atau akses ditolak")
 	}
 
 	if status != "SUBMITTED" {
@@ -602,13 +623,21 @@ func (r *PurchaseRequestRepository) UpdateEditable(input models.PurchaseRequestU
 		return err
 	}
 
-	var status string
-	if err := tx.QueryRow(`SELECT status FROM purchase_requests WHERE id = ? FOR UPDATE`, input.ID).Scan(&status); err != nil {
+	var (
+		status         string
+		requesterID    int
+		currentStoreID int
+	)
+	if err := tx.QueryRow(`SELECT status, requester_user_id, store_id FROM purchase_requests WHERE id = ? FOR UPDATE`, input.ID).Scan(&status, &requesterID, &currentStoreID); err != nil {
 		tx.Rollback()
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("purchase request tidak ditemukan")
 		}
 		return err
+	}
+	if !input.AccessScope.AllowsOwnerOrStore(requesterID, currentStoreID) || !input.AccessScope.AllowsStore(input.StoreID) {
+		tx.Rollback()
+		return errors.New("purchase request tidak ditemukan atau akses ditolak")
 	}
 
 	if status != "DRAFT" && status != "SUBMITTED" {
@@ -721,6 +750,53 @@ func (r *PurchaseRequestRepository) VendorExists(vendorID int64) (bool, error) {
 	var count int
 	err := r.DB.QueryRow(`SELECT COUNT(1) FROM vendors WHERE id = ? AND is_active = 1`, vendorID).Scan(&count)
 	return count > 0, err
+}
+
+func (r *PurchaseRequestRepository) canViewPurchaseRequest(id int64, scope models.AccessScope) (bool, error) {
+	if id <= 0 || scope.UserID <= 0 {
+		return false, nil
+	}
+	query := "SELECT COUNT(1) FROM purchase_requests pr WHERE pr.id = ?"
+	args := []interface{}{id}
+	if !scope.CanViewAll {
+		predicate, predicateArgs := purchaseRequestScopePredicate("pr", scope, true)
+		query += " AND (" + predicate + ")"
+		args = append(args, predicateArgs...)
+	}
+	var count int
+	if err := r.DB.QueryRow(query, args...).Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func purchaseRequestScopePredicate(alias string, scope models.AccessScope, includeAssignedApproval bool) (string, []interface{}) {
+	clauses := []string{alias + ".requester_user_id = ?"}
+	args := []interface{}{scope.UserID}
+	if len(scope.StoreIDs) > 0 {
+		placeholders := make([]string, 0, len(scope.StoreIDs))
+		for _, storeID := range scope.StoreIDs {
+			if storeID <= 0 {
+				continue
+			}
+			placeholders = append(placeholders, "?")
+			args = append(args, storeID)
+		}
+		if len(placeholders) > 0 {
+			clauses = append(clauses, alias+".store_id IN ("+strings.Join(placeholders, ",")+")")
+		}
+	}
+	if includeAssignedApproval {
+		clauses = append(clauses, `EXISTS (
+			SELECT 1 FROM approvals scope_approval
+			JOIN approval_tasks scope_task ON scope_task.approval_id = scope_approval.id
+			WHERE scope_approval.ref_type = 'PR'
+			AND scope_approval.ref_id = `+alias+`.id
+			AND scope_task.assigned_user_id = ?
+		)`)
+		args = append(args, scope.UserID)
+	}
+	return "(" + strings.Join(clauses, " OR ") + ")", args
 }
 
 func (r *PurchaseRequestRepository) nextPRNumberTx(tx *sql.Tx, storeID int) (string, error) {

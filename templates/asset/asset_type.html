@@ -188,9 +188,9 @@
                                                     </button>
                                                     {{ end }}
                                                     {{ if index $.Permissions "asset_type_delete" }}
-                                                    <a href="/asset-types/delete/{{ .ID }}" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus asset type {{ .Code }}?">
+                                                    <form method="post" action="/asset-types/delete/{{ .ID }}" class="inline"><button type="submit" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus asset type {{ .Code }}?">
                                                         <i class="bx bx-trash text-base"></i>
-                                                    </a>
+                                                    </button></form>
                                                     {{ end }}
                                                 </div>
                                             </td>

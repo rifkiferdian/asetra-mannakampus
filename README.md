@@ -70,14 +70,19 @@ Skema database contoh untuk domain PO dan asset sudah tersedia di [gobase_app.sq
 
 ## Konfigurasi Environment
 
-Aplikasi membaca konfigurasi dari file `.env` menggunakan `godotenv`.
+Aplikasi membaca konfigurasi lokal dari file `.env` menggunakan `godotenv`. File
+ini diabaikan Git; gunakan `.env.example` sebagai template dan jangan commit
+credential asli.
 
 Contoh konfigurasi:
 
 ```env
 APP_NAME=Asetra
+APP_ENV=development
 APP_PORT=8083
 # BASE_URL=http://localhost:8083
+APP_SECURE_COOKIE=false
+SESSION_SECRET=ganti-dengan-random-secret-minimal-32-karakter
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -93,6 +98,11 @@ Variabel database yang dipakai aplikasi saat ini didefinisikan di [config/db.go]
 - `DB_USER`
 - `DB_PASS`
 - `DB_NAME`
+
+Untuk production, `SESSION_SECRET` wajib minimal 32 karakter dan
+`APP_ENV=production` otomatis mengaktifkan cookie `Secure`. Jika secret tidak
+diisi saat development, aplikasi membuat secret sementara dan sesi akan tidak
+berlaku setelah restart.
 
 ## Setup Database
 
@@ -160,7 +170,7 @@ Endpoint yang sudah aktif saat ini:
 - `GET /` atau `GET /login`
 - `POST /login`
 - `POST /register`
-- `GET /logout`
+- `POST /logout`
 - `GET /dashboard`
 - `GET /stores`
 - `GET /users`
@@ -177,7 +187,9 @@ Catatan penting:
 - nama session: `mysession`
 - cookie `HttpOnly` aktif
 - `Secure` cookie mengikuti `APP_SECURE_COOKIE=true`
-- secret session masih hard-coded di [main.go](main.go:1) dan sebaiknya dipindahkan ke environment untuk production
+- semua request yang mengubah data dilindungi token CSRF
+- logout dan operasi delete menggunakan `POST`, bukan `GET`
+- role dan mapping store dimuat ulang dari database pada setiap request terautentikasi
 
 Untuk modul approval, invoice, payment, dan audit trail, aturan bisnis targetnya mengacu ke dokumen [AGENTS.md](AGENTS.md:1).
 

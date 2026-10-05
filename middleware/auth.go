@@ -1,9 +1,12 @@
 package middleware
 
 import (
-	"net/http"
+	"errors"
+	"gobase-app/config"
 	"gobase-app/models"
+	"gobase-app/repositories"
 	"gobase-app/services"
+	"net/http"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -20,6 +23,26 @@ func AuthRequired() gin.HandlerFunc {
 			return
 		}
 
+		c.Next()
+	}
+}
+
+func AccessScopeContext() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		userID := extractUserID(session)
+		scope, err := (&repositories.AccessRepository{DB: config.DB}).GetByUserID(userID)
+		if err != nil {
+			if errors.Is(err, repositories.ErrAccessUserInactive) {
+				session.Clear()
+				_ = session.Save()
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		c.Set("AccessScope", scope)
 		c.Next()
 	}
 }
@@ -151,6 +174,3 @@ func PermissionContext() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-
-

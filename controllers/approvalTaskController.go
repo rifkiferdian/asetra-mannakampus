@@ -91,7 +91,7 @@ func ApprovalTaskDetail(c *gin.Context) {
 
 	if task.RefType == "PR" {
 		prService := buildPurchaseRequestService()
-		prDetail, err := prService.GetPurchaseRequestDetail(task.RefID, userID)
+		prDetail, err := prService.GetPurchaseRequestDetail(task.RefID, currentAccessScope(c))
 		if err != nil {
 			c.Redirect(http.StatusSeeOther, "/approval-tasks?error="+url.QueryEscape(err.Error()))
 			return
