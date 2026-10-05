@@ -22,7 +22,7 @@ func LoginPage(c *gin.Context) {
 		return
 	}
 	c.HTML(http.StatusOK, "login.html", gin.H{
-		"Title": "Login User",
+		"Title": "Masuk",
 	})
 }
 
@@ -67,7 +67,7 @@ func isAuthenticationError(err error) bool {
 
 func renderLogin(c *gin.Context, status int, message string) {
 	c.HTML(status, "login.html", gin.H{
-		"Title": "Login User",
+		"Title": "Masuk",
 		"Error": message,
 	})
 }

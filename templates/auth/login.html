@@ -1,124 +1,78 @@
 <!doctype html>
 <html lang="id">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>
-            {{ if .Title }}
-                {{ .Title }}
-            {{ else }}
-                Login User
-            {{ end }}
-        </title>
-
-        <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
-        <link rel="stylesheet" href="/assets/css/tailwind.css">
-        <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
-
-        <link rel="stylesheet" href="/assets/css/auth/login.css">
-    </head>
-
-    <body>
-        <div class="auth-page">
-            <header class="auth-topbar">
-                <div class="auth-topbar-inner">
-                    <div class="auth-brand">
-                        <span class="auth-brand-mark">
-                            <i class="bx bxs-store-alt"></i>
-                        </span>
-                        <span class="auth-brand-text">Manna Kampus System</span>
-                    </div>
-
-                    <a href="mailto:support@local.internal" class="auth-help">Need Help?</a>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#073b4c">
+    <title>{{ if .Title }}{{ .Title }}{{ else }}Masuk{{ end }} | Asetra Manna Kampus</title>
+    <link rel="stylesheet" href="/assets/fonts/google/plus-jakarta-sans.css">
+    <link rel="stylesheet" href="/assets/vendor/boxicons/css/boxicons.min.css">
+    <link rel="stylesheet" href="/assets/css/auth/login.css">
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="auth-showcase" aria-label="Tentang Asetra">
+            <div class="showcase-glow showcase-glow-top" aria-hidden="true"></div>
+            <div class="showcase-glow showcase-glow-bottom" aria-hidden="true"></div>
+            <div class="brand-lockup">
+                <span class="brand-mark" aria-hidden="true"><i class="bx bx-cube-alt"></i></span>
+                <div><strong>Asetra</strong><span>Manna Kampus</span></div>
+            </div>
+            <div class="showcase-content">
+                <span class="showcase-kicker"><i class="bx bx-check-shield"></i> Sistem operasional terintegrasi</span>
+                <h1>Kelola pengadaan dan aset dalam satu alur.</h1>
+                <p>Pantau proses procurement, persetujuan, penerimaan barang, hingga siklus hidup aset secara lebih tertib dan transparan.</p>
+                <div class="showcase-features" aria-label="Fitur utama">
+                    <div class="feature-item"><span><i class="bx bx-git-branch"></i></span><div><strong>Alur terpusat</strong><small>PR, PO, penerimaan, dan aset</small></div></div>
+                    <div class="feature-item"><span><i class="bx bx-fingerprint"></i></span><div><strong>Akses aman</strong><small>Hak akses sesuai peran pengguna</small></div></div>
+                    <div class="feature-item"><span><i class="bx bx-line-chart"></i></span><div><strong>Data terpantau</strong><small>Status dan aktivitas lebih transparan</small></div></div>
                 </div>
-            </header>
+            </div>
+            <p class="showcase-footer">Internal System &bull; Manna Kampus</p>
+        </section>
 
-            <main class="auth-main">
-                <section class="auth-card">
-                    <div class="auth-badge">
-                        <i class="bx bxs-store-alt"></i>
-                    </div>
-
-                    <h1 class="auth-title">Asetra <span class="auth-title-accent">Manna Kampus</span></h1>
-                    <p class="auth-subtitle">Sistem Operasional Teknis, Procurement & <br> Manajemen Aset</p>
-
-                    {{ if .Error }}
-                        <div class="auth-alert">{{ .Error }}</div>
-                    {{ end }}
-
-                    <form action="/login" method="post" class="auth-form">
-                        
-
-                        <div class="auth-field">
-                            <label class="auth-label" for="username">Username Login</label>
-                            <div class="auth-input-wrap auth-input-wrap-compact">
-                                <span class="auth-input-icon">
-                                    <i class="bx bx-user"></i>
-                                </span>
-                                <input
-                                    id="username"
-                                    name="username"
-                                    type="text"
-                                    class="auth-input"
-                                    placeholder="Masukkan username Anda"
-                                    autocomplete="username"
-                                    required
-                                >
-                            </div>
-                        </div>
-
-                        <div class="auth-field">
-                            <div class="auth-label-row">
-                                <label class="auth-label" for="password">Password</label>
-                                <button type="button" class="auth-link-button">Forgot password?</button>
-                            </div>
-                            <div class="auth-input-wrap auth-input-wrap-compact">
-                                <span class="auth-input-icon">
-                                    <i class="bx bx-lock-alt"></i>
-                                </span>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    class="auth-input"
-                                    placeholder="Masukkan password"
-                                    autocomplete="current-password"
-                                    required
-                                >
-                                <button type="button" class="auth-toggle" data-password-toggle aria-label="Tampilkan password" aria-pressed="false">
-                                    <i class="bx bx-show"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <label class="auth-remember" for="rememberSession">
-                            <input type="checkbox" id="rememberSession" name="remember">
-                            <span>Remember my login session</span>
-                        </label>
-
-                        <button type="submit" class="auth-submit">
-                            <span>Masuk</span>
-                            <i class="bx bx-log-in-circle"></i>
-                        </button>
-                    </form>
-
-                    <div class="auth-partners">
-                        <p class="auth-partners-label">Created by AhmadRifki 2026</p>
-                        <div class="auth-partners-icons" aria-hidden="true">
-                            <i class="bx bxs-check-shield"></i>
-                            <i class="bx bxs-shield"></i>
-                            <i class="bx bx-network-chart"></i>
+        <section class="auth-panel">
+            <div class="mobile-brand brand-lockup">
+                <span class="brand-mark" aria-hidden="true"><i class="bx bx-cube-alt"></i></span>
+                <div><strong>Asetra</strong><span>Manna Kampus</span></div>
+            </div>
+            <div class="auth-card">
+                <div class="auth-heading">
+                    <span class="auth-eyebrow">Selamat datang kembali</span>
+                    <h2>Masuk ke akun Anda</h2>
+                    <p>Gunakan akun internal yang telah terdaftar untuk melanjutkan.</p>
+                </div>
+                {{ if .Error }}
+                <div class="auth-alert" role="alert"><i class="bx bx-error-circle" aria-hidden="true"></i><div><strong>Gagal masuk</strong><span>{{ .Error }}</span></div></div>
+                {{ end }}
+                <form action="/login" method="post" class="auth-form" data-login-form>
+                    <div class="auth-field">
+                        <label for="username">Username</label>
+                        <div class="auth-input-wrap">
+                            <i class="bx bx-user auth-input-icon" aria-hidden="true"></i>
+                            <input id="username" name="username" type="text" placeholder="Masukkan username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
                         </div>
                     </div>
-                </section>
-            </main>
-
-            <footer class="auth-footer">
-                &copy; 2024 Retail Giant Approval Systems. All rights reserved. Highly Confidential.
-            </footer>
-        </div>
-
-        <script src="/assets/js/security/csrf.js" defer></script>
-        <script src="/assets/js/auth/login.js" defer></script>
-    </body>
+                    <div class="auth-field">
+                        <div class="auth-label-row"><label for="password">Password</label><span class="auth-hint">Rahasia &amp; terenkripsi</span></div>
+                        <div class="auth-input-wrap">
+                            <i class="bx bx-lock-alt auth-input-icon" aria-hidden="true"></i>
+                            <input id="password" name="password" type="password" placeholder="Masukkan password" autocomplete="current-password" required>
+                            <button type="button" class="auth-toggle" data-password-toggle aria-label="Tampilkan password" aria-pressed="false"><i class="bx bx-show" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-submit">
+                        <span class="submit-label">Masuk ke Asetra</span>
+                        <i class="bx bx-right-arrow-alt submit-arrow" aria-hidden="true"></i>
+                        <i class="bx bx-loader-alt submit-loader" aria-hidden="true"></i>
+                    </button>
+                </form>
+                <div class="auth-support"><i class="bx bx-help-circle" aria-hidden="true"></i><span>Kesulitan masuk? Hubungi administrator sistem.</span></div>
+            </div>
+            <footer class="auth-footer"><span>&copy; 2026 Manna Kampus</span><span class="footer-divider" aria-hidden="true"></span><span>Asset &amp; Procurement Management</span></footer>
+        </section>
+    </main>
+    <script src="/assets/js/security/csrf.js" defer></script>
+    <script src="/assets/js/auth/login.js" defer></script>
+</body>
 </html>
