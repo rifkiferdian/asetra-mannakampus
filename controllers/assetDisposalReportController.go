@@ -63,7 +63,7 @@ func AssetDisposalReportExportCSV(c *gin.Context) {
 	_, _ = c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
 	w := csv.NewWriter(c.Writer)
 	_ = w.Write([]string{
-		"Nomor Disposal", "Tanggal Disposal", "Kode Aset", "Nama Aset", "Tipe Aset", "Store",
+		"Nomor Disposal", "Tanggal Disposal", "Kode Aset", "Nama Aset", "Grup Aset", "Store",
 		"Jenis Disposal", "Pembeli", "Referensi Dokumen", "Nilai Perolehan",
 		"Akumulasi Depresiasi", "Nilai Buku", "Nilai Disposal", "Hasil", "Laba/Rugi",
 		"Status", "Tanggal Posting", "Diposting Oleh", "Alasan Reversal",

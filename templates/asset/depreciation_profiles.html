@@ -115,7 +115,7 @@
                         <section class="dpf-card">
                             <form action="/asset-depreciation/profiles" method="get" class="dpf-filter">
                                 <div><label class="dpf-label" for="profile-status">Status</label><select id="profile-status" name="status" class="dpf-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>Semua Status</option><option value="ACTIVE" {{ if eq .Filter.Status "ACTIVE" }}selected{{ end }}>Aktif</option><option value="PAUSED" {{ if eq .Filter.Status "PAUSED" }}selected{{ end }}>Dijeda</option><option value="FINISHED" {{ if eq .Filter.Status "FINISHED" }}selected{{ end }}>Selesai</option><option value="TERMINATED" {{ if eq .Filter.Status "TERMINATED" }}selected{{ end }}>Dihentikan</option></select></div>
-                                <div><label class="dpf-label" for="profile-search">Cari</label><input id="profile-search" name="search" value="{{ .Filter.Search }}" class="dpf-control" placeholder="Kode, nama, tipe aset, atau metode"></div>
+                                <div><label class="dpf-label" for="profile-search">Cari</label><input id="profile-search" name="search" value="{{ .Filter.Search }}" class="dpf-control" placeholder="Kode, nama, grup aset, atau metode"></div>
                                 <button type="submit" class="dpf-btn dpf-btn-primary"><i class="bx bx-filter-alt"></i>Terapkan Filter</button>
                             </form>
                             <div class="dpf-toolbar"><div><strong class="text-sm text-slate-900">Profil Depresiasi Aset</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} profil</p></div></div>

@@ -156,7 +156,7 @@
                                 <div><label class="dep-label" for="dep-month">Bulan</label><select id="dep-month" name="month" class="dep-control">{{ range .Months }}<option value="{{ .Value }}" {{ if eq $.Filter.Month .Value }}selected{{ end }}>{{ .Label }}</option>{{ end }}</select></div>
                                 <div><label class="dep-label" for="dep-year">Tahun</label><select id="dep-year" name="year" class="dep-control">{{ range .Years }}<option value="{{ . }}" {{ if eq $.Filter.Year . }}selected{{ end }}>{{ . }}</option>{{ end }}</select></div>
                                 <div><label class="dep-label" for="dep-status">Status</label><select id="dep-status" name="status" class="dep-control"><option value="ALL" {{ if eq .Filter.Status "ALL" }}selected{{ end }}>Semua Status</option><option value="DRAFT" {{ if eq .Filter.Status "DRAFT" }}selected{{ end }}>Draft</option><option value="POSTED" {{ if eq .Filter.Status "POSTED" }}selected{{ end }}>Diposting</option><option value="SKIPPED" {{ if eq .Filter.Status "SKIPPED" }}selected{{ end }}>Dilewati</option><option value="REVERSED" {{ if eq .Filter.Status "REVERSED" }}selected{{ end }}>Dibatalkan</option></select></div>
-                                <div><label class="dep-label" for="dep-search">Cari Aset</label><input id="dep-search" name="search" class="dep-control" value="{{ .Filter.Search }}" placeholder="Kode, nama, atau tipe aset"></div>
+                                <div><label class="dep-label" for="dep-search">Cari Aset</label><input id="dep-search" name="search" class="dep-control" value="{{ .Filter.Search }}" placeholder="Kode, nama, atau grup aset"></div>
                                 <button type="submit" class="dep-btn dep-btn-primary"><i class="bx bx-filter-alt"></i>Terapkan Filter</button>
                             </form>
 
@@ -177,7 +177,7 @@
                                         <thead>
                                             <tr>
                                                 <th>{{ if $canProcessDepreciation }}<input type="checkbox" class="dep-check" data-check-all aria-label="Pilih semua depresiasi draft">{{ end }}</th>
-                                                <th>Aset</th><th>Tipe Aset</th><th>Metode / Umur</th><th>Nilai Perolehan</th><th>Nilai Awal</th><th>Depresiasi Bulanan</th><th>Akumulasi</th><th>Nilai Akhir</th><th>Status</th><th>Waktu Tindakan</th><th>Aksi</th>
+                                                <th>Aset</th><th>Grup Aset</th><th>Metode / Umur</th><th>Nilai Perolehan</th><th>Nilai Awal</th><th>Depresiasi Bulanan</th><th>Akumulasi</th><th>Nilai Akhir</th><th>Status</th><th>Waktu Tindakan</th><th>Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>

@@ -76,10 +76,10 @@ func (s *AssetService) SaveAssetType(input models.AssetTypeInput) error {
 	input.Name = strings.TrimSpace(input.Name)
 	input.Description = strings.TrimSpace(input.Description)
 	if input.Code == "" || input.AssetPrefix == "" || input.Name == "" {
-		return errors.New("kode, prefix, dan nama asset type wajib diisi")
+		return errors.New("kode, prefix, dan nama asset group wajib diisi")
 	}
 	if !assetPrefixPattern.MatchString(input.AssetPrefix) {
-		return errors.New("prefix asset type hanya boleh berisi huruf dan angka, maksimal 10 karakter")
+		return errors.New("prefix asset group hanya boleh berisi huruf dan angka, maksimal 10 karakter")
 	}
 	if input.ID > 0 {
 		return s.Repo.UpdateAssetType(input)
@@ -89,7 +89,7 @@ func (s *AssetService) SaveAssetType(input models.AssetTypeInput) error {
 
 func (s *AssetService) DeleteAssetType(id int64) error {
 	if id <= 0 {
-		return errors.New("asset type tidak valid")
+		return errors.New("asset group tidak valid")
 	}
 	return s.Repo.DeleteAssetType(id)
 }
@@ -104,7 +104,7 @@ func (s *AssetService) SaveAssetCategory(input models.AssetCategoryInput) error 
 	input.Name = strings.TrimSpace(input.Name)
 	input.Description = strings.TrimSpace(input.Description)
 	if input.AssetTypeID <= 0 || input.Code == "" || input.CategoryPrefix == "" || input.Name == "" {
-		return errors.New("tipe aset, kode, prefix, dan nama kategori wajib diisi")
+		return errors.New("grup aset, kode, prefix, dan nama kategori wajib diisi")
 	}
 	if !assetPrefixPattern.MatchString(input.CategoryPrefix) {
 		return errors.New("prefix kategori hanya boleh berisi huruf dan angka, maksimal 10 karakter")
@@ -267,7 +267,7 @@ func (s *AssetService) SaveAsset(input models.AssetInput, scopes ...models.Acces
 		return err
 	}
 	if !validCategory {
-		return errors.New("kategori aset tidak sesuai dengan tipe aset")
+		return errors.New("kategori aset tidak sesuai dengan grup aset")
 	}
 	validLocation, err := s.Repo.LocationBelongsToStore(input.LocationID, input.StoreID)
 	if err != nil {

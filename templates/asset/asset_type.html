@@ -78,15 +78,15 @@
                                 <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
                                     <span>Settings</span>
                                     <i class="bx bx-chevron-right text-base"></i>
-                                    <span class="text-[#07317f]">Asset Types</span>
+                                    <span class="text-[#07317f]">Asset Groups</span>
                                 </div>
-                                <h1 class="mt-2 text-[1.7rem] font-extrabold leading-tight text-[#06143a]">Manage Asset Types</h1>
+                                <h1 class="mt-2 text-[1.7rem] font-extrabold leading-tight text-[#06143a]">Manage Asset Groups</h1>
                                 <p class="mt-1 max-w-2xl text-sm text-slate-500">Define and configure how asset categories are handled across the enterprise.</p>
                             </div>
                             {{ if index .Permissions "asset_type_create" }}
                             <button type="button" class="asset-primary-btn" data-open-modal="createModal">
                                 <i class="bx bx-plus text-lg"></i>
-                                <span>Create New Asset Type</span>
+                                <span>Create New Asset Group</span>
                             </button>
                             {{ end }}
                         </div>
@@ -146,7 +146,7 @@
                                         <tr>
                                             <th class="w-12 px-5 text-left"><input type="checkbox" class="rounded border-slate-300"></th>
                                             <th class="w-14 px-4 text-center">No</th>
-                                            <th class="px-4 text-left">Asset Type Name</th>
+                                            <th class="px-4 text-left">Asset Group Name</th>
                                             <th class="px-4 text-left">Code</th>
                                             <th class="px-4 text-left">Prefix</th>
                                             <th class="px-4 text-left">Status</th>
@@ -188,7 +188,7 @@
                                                     </button>
                                                     {{ end }}
                                                     {{ if index $.Permissions "asset_type_delete" }}
-                                                    <form method="post" action="/asset-types/delete/{{ .ID }}" class="inline"><button type="submit" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus asset type {{ .Code }}?">
+                                                    <form method="post" action="/asset-types/delete/{{ .ID }}" class="inline"><button type="submit" class="text-[#06143a] transition hover:text-rose-700" title="Delete" data-confirm="Hapus asset group {{ .Code }}?">
                                                         <i class="bx bx-trash text-base"></i>
                                                     </button></form>
                                                     {{ end }}
@@ -196,7 +196,7 @@
                                             </td>
                                         </tr>
                                         {{ else }}
-                                        <tr><td colspan="9" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada asset type</td></tr>
+                                        <tr><td colspan="9" class="px-5 py-12 text-center text-sm font-semibold text-slate-500">Belum ada asset group</td></tr>
                                         {{ end }}
                                     </tbody>
                                 </table>
@@ -225,9 +225,9 @@
                         <div class="asset-bottom-grid">
                             <div class="asset-panel guide-card">
                                 <div class="guide-media relative shadow-sm">
-                                    <img src="/assets/images/asset/asset-types-guide.png" alt="Asset types configuration illustration" class="h-full w-full object-cover">
+                                    <img src="/assets/images/asset/asset-types-guide.png" alt="Asset groups configuration illustration" class="h-full w-full object-cover">
                                     <div class="guide-badge">
-                                        Asetra - Asset Types Configuration
+                                        Asetra - Asset Groups Configuration
                                     </div>
                                 </div>
                                 <div class="min-w-0 md:pr-2">
@@ -244,7 +244,7 @@
                                         <i class="bx bxs-magic-wand"></i>
                                         <span>Asetra AI Suggestion</span>
                                     </div>
-                                    <p class="ai-message mt-6 max-w-[22rem]">Detected {{ .InactiveTypes }} asset types that need review.</p>
+                                    <p class="ai-message mt-6 max-w-[22rem]">Detected {{ .InactiveTypes }} asset groups that need review.</p>
                                 </div>
                                 <button type="button" class="ai-cta mt-7 w-full transition" data-open-modal="createModal">Run Auto-Classify</button>
                             </div>
@@ -258,7 +258,7 @@
         <div id="createModal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center">
             <form action="/asset-types" method="post" class="asset-modal">
                 <div class="asset-modal-header">
-                    <h2 class="asset-modal-title">Create Asset Type</h2>
+                    <h2 class="asset-modal-title">Create Asset Group</h2>
                     <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
                 </div>
                 <div class="asset-modal-body space-y-3">
@@ -276,7 +276,7 @@
             <form action="/asset-types/update" method="post" class="asset-modal">
                 <input type="hidden" name="id" id="edit_id">
                 <div class="asset-modal-header">
-                    <h2 class="asset-modal-title">Edit Asset Type</h2>
+                    <h2 class="asset-modal-title">Edit Asset Group</h2>
                     <button type="button" class="asset-modal-close" data-close-modal><i class="bx bx-x text-xl"></i></button>
                 </div>
                 <div class="asset-modal-body space-y-3">

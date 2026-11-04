@@ -214,7 +214,7 @@
                                                 <div class="detail-value">{{ if .Asset.SerialNumber }}{{ .Asset.SerialNumber }}{{ else }}-{{ end }}</div>
                                             </div>
                                             <div>
-                                                <div class="detail-label">Tipe Aset</div>
+                                                <div class="detail-label">Grup Aset</div>
                                                 <div class="detail-value">{{ .Asset.AssetTypeName }}</div>
                                             </div>
                                             <div>
@@ -405,7 +405,7 @@
                             <input name="asset_name" value="{{ .Asset.AssetName }}" class="detail-modal-control" required>
                         </div>
                         <div>
-                            <label class="detail-modal-label">Tipe Aset</label>
+                            <label class="detail-modal-label">Grup Aset</label>
                             <select name="asset_type_id" id="edit_asset_type" class="detail-modal-control" required>
                                 {{ range .Types }}<option value="{{ .ID }}" data-prefix="{{ .AssetPrefix }}" {{ if eq .ID $.Asset.AssetTypeID }}selected{{ end }}>{{ .Name }} ({{ .AssetPrefix }})</option>{{ end }}
                             </select>

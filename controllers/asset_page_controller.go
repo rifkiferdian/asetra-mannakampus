@@ -38,7 +38,7 @@ func renderAssetTypePage(c *gin.Context, service *services.AssetService, message
 	}
 	pageItems, pagination := paginateAssetSlice(c, items)
 	Render(c, "asset_type.html", gin.H{
-		"Title":           "Asset Types",
+		"Title":           "Asset Groups",
 		"Page":            "asset_type",
 		"Items":           pageItems,
 		"Pagination":      pagination,

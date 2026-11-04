@@ -86,7 +86,7 @@
                 </button>
                 <ul id="asset-submenu" class="mt-1 {{ if not $assetActive }}hidden {{ end }}space-y-1 border-l border-slate-200 pl-4" style="margin-left: 1rem;">
                     {{ if index .Permissions "asset_type_management_access" }}
-                    <li><a href="{{ baseURL "/asset-types" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_type" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-category text-base"></i><span>Asset Types</span></a></li>
+                    <li><a href="{{ baseURL "/asset-types" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_type" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-category text-base"></i><span>Asset Groups</span></a></li>
                     {{ end }}
                     {{ if index .Permissions "asset_category_management_access" }}
                     <li><a href="{{ baseURL "/asset-categories" }}" class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium {{ if eq .Page "asset_category" }}bg-brand-50 text-[#f26419]{{ else }}text-slate-500 hover:bg-brand-50 hover:text-[#f26419]{{ end }}"><i class="bx bx-purchase-tag-alt text-base"></i><span>Asset Categories</span></a></li>

@@ -96,7 +96,7 @@
                             <form action="/asset-depreciation/posting-history" method="get" class="dph-filter">
                                 <div><label class="dph-label" for="history-year">Tahun</label><select id="history-year" name="year" class="dph-control">{{ range .Years }}<option value="{{ . }}" {{ if eq $.Filter.Year . }}selected{{ end }}>{{ . }}</option>{{ end }}</select></div>
                                 <div><label class="dph-label" for="history-month">Bulan</label><select id="history-month" name="month" class="dph-control"><option value="0" {{ if eq .Filter.Month 0 }}selected{{ end }}>Semua Bulan</option>{{ range .Months }}<option value="{{ .Value }}" {{ if eq $.Filter.Month .Value }}selected{{ end }}>{{ .Label }}</option>{{ end }}</select></div>
-                                <div><label class="dph-label" for="history-search">Cari Aset</label><input id="history-search" name="search" value="{{ .Filter.Search }}" class="dph-control" placeholder="Kode, nama, atau tipe aset"></div>
+                                <div><label class="dph-label" for="history-search">Cari Aset</label><input id="history-search" name="search" value="{{ .Filter.Search }}" class="dph-control" placeholder="Kode, nama, atau grup aset"></div>
                                 <button type="submit" class="dph-btn"><i class="bx bx-filter-alt"></i>Terapkan Filter</button>
                             </form>
                             <div class="dph-toolbar"><div><strong class="text-sm text-slate-900">Daftar Posting dan Reversal</strong><p class="mt-1 text-xs text-slate-500">Menampilkan {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} dari {{ .Pagination.TotalRows }} riwayat</p></div></div>

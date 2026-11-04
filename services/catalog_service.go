@@ -89,7 +89,7 @@ func (s *CatalogService) SaveItem(input models.CatalogItemInput) error {
 		return errors.New("kode item hanya boleh berisi huruf, angka, tanda hubung, atau underscore")
 	}
 	if input.IsAssetCandidate && input.AssetTypeID <= 0 {
-		return errors.New("asset type wajib dipilih untuk item kandidat aset")
+		return errors.New("asset group wajib dipilih untuk item kandidat aset")
 	}
 	if !input.IsAssetCandidate {
 		input.AssetTypeID = 0
