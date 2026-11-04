@@ -92,7 +92,11 @@ func AssetDisposalIndex(c *gin.Context) {
 }
 
 func AssetDisposalStore(c *gin.Context) {
-	input := assetDisposalInput(c)
+	input, err := assetDisposalInput(c)
+	if err != nil {
+		redirectAssetDisposal(c, "", err.Error())
+		return
+	}
 	if err := assetDisposalService().SaveDisposal(input); err != nil {
 		redirectAssetDisposal(c, "", err.Error())
 		return
@@ -101,7 +105,11 @@ func AssetDisposalStore(c *gin.Context) {
 }
 
 func AssetDisposalUpdate(c *gin.Context) {
-	input := assetDisposalInput(c)
+	input, err := assetDisposalInput(c)
+	if err != nil {
+		redirectAssetDisposal(c, "", err.Error())
+		return
+	}
 	input.ID = parseInt64Form(c, "id")
 	if err := assetDisposalService().SaveDisposal(input); err != nil {
 		redirectAssetDisposal(c, "", err.Error())
@@ -136,13 +144,17 @@ func AssetDisposalReverse(c *gin.Context) {
 	redirectAssetDisposal(c, "Posting disposal berhasil direversal dan status aset dipulihkan", "")
 }
 
-func assetDisposalInput(c *gin.Context) models.AssetDisposalInput {
+func assetDisposalInput(c *gin.Context) (models.AssetDisposalInput, error) {
+	value, err := parseNonNegativeDecimalForm(c, "disposal_value", true)
+	if err != nil {
+		return models.AssetDisposalInput{}, err
+	}
 	return models.AssetDisposalInput{
 		AssetID: parseInt64Form(c, "asset_id"), DisposalTypeID: parseInt64Form(c, "disposal_type_id"),
-		DisposalDate: c.PostForm("disposal_date"), DisposalValue: parseFloatForm(c, "disposal_value"),
+		DisposalDate: c.PostForm("disposal_date"), DisposalValue: value,
 		BuyerName: c.PostForm("buyer_name"), DocumentReference: c.PostForm("document_reference"),
 		Reason: c.PostForm("reason"), Notes: c.PostForm("notes"), AuditContext: depreciationAuditContext(c),
-	}
+	}, nil
 }
 
 func assetDisposalFilter(c *gin.Context) models.AssetDisposalFilter {

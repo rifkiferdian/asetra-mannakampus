@@ -233,6 +233,14 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
+                                <p class="text-xs font-bold text-slate-500">Showing {{ .Pagination.PageStart }}-{{ .Pagination.PageEnd }} of {{ .Pagination.TotalRows }} assets</p>
+                                <div class="flex items-center gap-2 text-xs font-bold">
+                                    {{ if .Pagination.HasPrev }}<a href="/asset-register?page={{ .Pagination.PrevPage }}" class="asset-btn asset-btn-secondary"><i class="bx bx-chevron-left"></i></a>{{ end }}
+                                    <span class="rounded-lg bg-[#07317f] px-3 py-2 text-white">{{ .Pagination.CurrentPage }} / {{ .Pagination.TotalPages }}</span>
+                                    {{ if .Pagination.HasNext }}<a href="/asset-register?page={{ .Pagination.NextPage }}" class="asset-btn asset-btn-secondary"><i class="bx bx-chevron-right"></i></a>{{ end }}
+                                </div>
+                            </div>
                         </section>
                     </div>
                 </main>
@@ -254,7 +262,7 @@
                         <div><label class="asset-modal-label">Asset Type</label><select name="asset_type_id" id="create_asset_type" class="asset-modal-control" required><option value="">Pilih tipe</option>{{ range .Types }}{{ if .IsActive }}<option value="{{ .ID }}" data-prefix="{{ .AssetPrefix }}">{{ .Name }} ({{ .AssetPrefix }})</option>{{ end }}{{ end }}</select></div>
                         <div><label class="asset-modal-label">Asset Category</label><select name="asset_category_id" id="create_asset_category" class="asset-modal-control" required disabled><option value="">Pilih kategori</option>{{ range .Categories }}{{ if .IsActive }}<option value="{{ .ID }}" data-type-id="{{ .AssetTypeID }}" data-prefix="{{ .CategoryPrefix }}">{{ .Name }} ({{ .CategoryPrefix }})</option>{{ end }}{{ end }}</select></div>
                         <div><label class="asset-modal-label">Serial Number</label><input name="serial_number" class="asset-modal-control"></div>
-                        <div><label class="asset-modal-label">Status</label><select name="status" class="asset-modal-control"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="asset-modal-label">Status</label><select name="status" class="asset-modal-control"><option>AVAILABLE</option><option>IN_USE</option><option>MAINTENANCE</option><option>BROKEN</option></select><p class="mt-1 text-xs text-slate-500">Status disposed hanya melalui workflow disposal.</p></div>
                         <div><label class="asset-modal-label">Store</label><select name="store_id" class="asset-modal-control"><option value="">-</option>{{ range .Stores }}<option value="{{ .StoreID }}">{{ .StoreName }}</option>{{ end }}</select></div>
                         <div><label class="asset-modal-label">Location</label><select name="location_id" class="asset-modal-control"><option value="">-</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select></div>
                         <div><label class="asset-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" class="asset-modal-control"></div>

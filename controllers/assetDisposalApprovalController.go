@@ -176,11 +176,15 @@ func AssetDisposalSubmit(c *gin.Context) {
 }
 
 func assetDisposalApprovalRuleInput(c *gin.Context) (models.AssetDisposalApprovalRuleInput, error) {
-	input := models.AssetDisposalApprovalRuleInput{ID: parseInt64Form(c, "id"), Name: c.PostForm("name"), DisposalTypeID: parseInt64Form(c, "disposal_type_id"), AssetTypeID: parseInt64Form(c, "asset_type_id"), MinBookValue: parseFloatForm(c, "min_book_value"), Priority: int(parseInt64Form(c, "priority")), IsActive: c.PostForm("is_active") != "0", EffectiveFrom: strings.TrimSpace(c.PostForm("effective_from")), EffectiveUntil: strings.TrimSpace(c.PostForm("effective_until"))}
+	minimum, err := parseNonNegativeDecimalForm(c, "min_book_value", false)
+	if err != nil {
+		return models.AssetDisposalApprovalRuleInput{}, err
+	}
+	input := models.AssetDisposalApprovalRuleInput{ID: parseInt64Form(c, "id"), Name: c.PostForm("name"), DisposalTypeID: parseInt64Form(c, "disposal_type_id"), AssetTypeID: parseInt64Form(c, "asset_type_id"), MinBookValue: minimum, Priority: int(parseInt64Form(c, "priority")), IsActive: c.PostForm("is_active") != "0", EffectiveFrom: strings.TrimSpace(c.PostForm("effective_from")), EffectiveUntil: strings.TrimSpace(c.PostForm("effective_until"))}
 	if raw := strings.TrimSpace(c.PostForm("max_book_value")); raw != "" {
 		value, err := strconv.ParseFloat(raw, 64)
-		if err != nil {
-			return input, err
+		if err != nil || value < 0 {
+			return input, &formInputError{"max_book_value harus berupa angka nol atau lebih"}
 		}
 		input.MaxBookValue = &value
 	}
@@ -190,8 +194,14 @@ func assetDisposalApprovalRuleInput(c *gin.Context) (models.AssetDisposalApprova
 		return input, &formInputError{"data tahap approval tidak lengkap"}
 	}
 	for i := range orders {
-		order, _ := strconv.Atoi(orders[i])
-		roleID, _ := strconv.ParseInt(roles[i], 10, 64)
+		order, err := strconv.Atoi(orders[i])
+		if err != nil || order <= 0 {
+			return input, &formInputError{"urutan tahap approval tidak valid"}
+		}
+		roleID, err := strconv.ParseInt(roles[i], 10, 64)
+		if err != nil || roleID <= 0 {
+			return input, &formInputError{"role tahap approval tidak valid"}
+		}
 		input.Steps = append(input.Steps, models.AssetDisposalApprovalRuleStep{StepOrder: order, RoleID: roleID, Scope: scopes[i], IsParallel: parallel[i] == "1", IsRequired: required[i] != "0"})
 	}
 	return input, nil

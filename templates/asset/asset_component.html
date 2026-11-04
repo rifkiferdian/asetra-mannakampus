@@ -241,7 +241,7 @@
                         <div><label class="comp-modal-label">Model</label><input name="model" class="comp-modal-control"></div>
                         <div><label class="comp-modal-label">Specification</label><input name="specification" class="comp-modal-control"></div>
                         <div><label class="comp-modal-label">Serial Number</label><input name="serial_number" class="comp-modal-control"></div>
-                        <div><label class="comp-modal-label">Status</label><select name="status" class="comp-modal-control"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="comp-modal-label">Status</label><select name="status" class="comp-modal-control"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option></select></div>
                         <div><label class="comp-modal-label">Installed In Asset</label><select name="parent_asset_id" class="comp-modal-control"><option value="">-</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select></div>
                         <div><label class="comp-modal-label">Location</label><select name="location_id" class="comp-modal-control"><option value="">-</option>{{ range .Locations }}{{ if .IsActive }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}{{ end }}</select></div>
                         <div><label class="comp-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" class="comp-modal-control"></div>
@@ -271,7 +271,7 @@
                         <div><label class="comp-modal-label">Model</label><input name="model" id="edit_model" class="comp-modal-control"></div>
                         <div><label class="comp-modal-label">Specification</label><input name="specification" id="edit_spec" class="comp-modal-control"></div>
                         <div><label class="comp-modal-label">Serial Number</label><input name="serial_number" id="edit_serial" class="comp-modal-control"></div>
-                        <div><label class="comp-modal-label">Status</label><select name="status" id="edit_status" class="comp-modal-control"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option><option>DISPOSED</option></select></div>
+                        <div><label class="comp-modal-label">Status</label><select name="status" id="edit_status" class="comp-modal-control"><option>IN_STORAGE</option><option>INSTALLED</option><option>MAINTENANCE</option><option>BROKEN</option></select></div>
                         <div><label class="comp-modal-label">Installed In Asset</label><select name="parent_asset_id" id="edit_parent" class="comp-modal-control"><option value="">-</option>{{ range .Assets }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}</select></div>
                         <div><label class="comp-modal-label">Location</label><select name="location_id" id="edit_location" class="comp-modal-control"><option value="">-</option>{{ range .Locations }}<option value="{{ .ID }}">{{ .LocationName }}</option>{{ end }}</select></div>
                         <div><label class="comp-modal-label">Source GR Item ID</label><input type="number" name="source_gr_item_id" id="edit_gr" class="comp-modal-control"></div>

@@ -427,7 +427,7 @@
                                 <option value="IN_USE" {{ if eq .Asset.Status "IN_USE" }}selected{{ end }}>Digunakan</option>
                                 <option value="MAINTENANCE" {{ if eq .Asset.Status "MAINTENANCE" }}selected{{ end }}>Perawatan</option>
                                 <option value="BROKEN" {{ if eq .Asset.Status "BROKEN" }}selected{{ end }}>Rusak</option>
-                                <option value="DISPOSED" {{ if eq .Asset.Status "DISPOSED" }}selected{{ end }}>Dihapuskan</option>
+                                {{ if eq .Asset.Status "DISPOSED" }}<option value="DISPOSED" selected disabled>Dihapuskan</option>{{ end }}
                             </select>
                         </div>
                         <div>

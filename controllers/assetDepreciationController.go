@@ -121,9 +121,14 @@ func MonthlyDepreciationReverse(c *gin.Context) {
 
 func MonthlyDepreciationCorrectionUpdate(c *gin.Context) {
 	filter := monthlyDepreciationFilter(c)
+	value, err := parseNonNegativeDecimalForm(c, "depreciation_amount", true)
+	if err != nil {
+		redirectMonthlyDepreciation(c, filter, "", err.Error())
+		return
+	}
 	input := models.DepreciationCorrectionInput{
 		ScheduleID:        parseInt64Form(c, "schedule_id"),
-		DepreciationValue: parseFloatForm(c, "depreciation_amount"),
+		DepreciationValue: value,
 		Reason:            c.PostForm("correction_reason"),
 		AuditContext:      depreciationAuditContext(c),
 	}
@@ -201,13 +206,23 @@ func DepreciationProfileIndex(c *gin.Context) {
 }
 
 func DepreciationProfileSave(c *gin.Context) {
+	salvage, err := parseNonNegativeDecimalForm(c, "salvage_value", false)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(err.Error()))
+		return
+	}
+	basis, err := parseNonNegativeDecimalForm(c, "depreciable_basis", true)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/asset-depreciation/profiles?error="+url.QueryEscape(err.Error()))
+		return
+	}
 	input := models.DepreciationProfileInput{
 		ID:                 parseInt64Form(c, "id"),
 		AssetID:            parseInt64Form(c, "asset_id"),
 		MethodID:           parseInt64Form(c, "depreciation_method_id"),
 		UsefulLifeMonths:   parseIntForm(c, "useful_life_months"),
-		SalvageValue:       parseFloatForm(c, "salvage_value"),
-		DepreciableBasis:   parseFloatForm(c, "depreciable_basis"),
+		SalvageValue:       salvage,
+		DepreciableBasis:   basis,
 		StartDate:          c.PostForm("start_date"),
 		FirstMonthPolicyID: parseInt64Form(c, "first_month_policy_id"),
 		LastMonthPolicyID:  parseInt64Form(c, "last_month_policy_id"),

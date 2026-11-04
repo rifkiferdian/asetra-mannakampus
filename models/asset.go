@@ -111,7 +111,7 @@ type Asset struct {
 	AssignedPersonDepartment string
 	SourceGRItemID           int64
 	AcquisitionDate          string
-	AcquisitionValue         float64
+	AcquisitionValue         Money
 	AcquisitionValueInput    string
 	AcquisitionValueDisplay  string
 	Status                   string
@@ -134,9 +134,10 @@ type AssetInput struct {
 	AssignedPersonDepartment string
 	SourceGRItemID           int64
 	AcquisitionDate          string
-	AcquisitionValue         float64
+	AcquisitionValue         Money
 	Status                   string
 	Notes                    string
+	AuditContext             AuditContext
 }
 
 type AssetComponent struct {
@@ -155,7 +156,7 @@ type AssetComponent struct {
 	LocationName            string
 	SourceGRItemID          int64
 	AcquisitionDate         string
-	AcquisitionValue        float64
+	AcquisitionValue        Money
 	AcquisitionValueInput   string
 	AcquisitionValueDisplay string
 	Status                  string
@@ -177,9 +178,10 @@ type AssetComponentInput struct {
 	LocationID       int64
 	SourceGRItemID   int64
 	AcquisitionDate  string
-	AcquisitionValue float64
+	AcquisitionValue Money
 	Status           string
 	Notes            string
+	AuditContext     AuditContext
 }
 
 type AssetMovement struct {
@@ -206,6 +208,9 @@ type AssetMovementInput struct {
 	ToUserID     int
 	ActedBy      int
 	Notes        string
+	// ResultStatus is derived by AssetService, never accepted from the client.
+	ResultStatus string
+	AuditContext AuditContext
 }
 
 type AssetComponentMovement struct {
@@ -229,6 +234,10 @@ type AssetComponentMovementInput struct {
 	ToLocationID int64
 	ActedBy      int
 	Notes        string
+	// ResultStatus and ResultAssetID are derived by AssetService.
+	ResultStatus  string
+	ResultAssetID int64
+	AuditContext  AuditContext
 }
 
 type AssetSelectOption struct {

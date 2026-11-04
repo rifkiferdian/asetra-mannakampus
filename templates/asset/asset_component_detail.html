@@ -287,7 +287,7 @@
                                 <option {{ if eq .Component.Status "INSTALLED" }}selected{{ end }}>INSTALLED</option>
                                 <option {{ if eq .Component.Status "MAINTENANCE" }}selected{{ end }}>MAINTENANCE</option>
                                 <option {{ if eq .Component.Status "BROKEN" }}selected{{ end }}>BROKEN</option>
-                                <option {{ if eq .Component.Status "DISPOSED" }}selected{{ end }}>DISPOSED</option>
+                                {{ if eq .Component.Status "DISPOSED" }}<option selected disabled>DISPOSED</option>{{ end }}
                             </select>
                         </div>
                         <div>

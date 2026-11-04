@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"gobase-app/config"
+	"gobase-app/controllers"
 	"gobase-app/middleware"
 	"gobase-app/models"
 	"gobase-app/repositories"
@@ -35,6 +36,7 @@ func main() {
 	if err := permissionService.EnsureSystemPermissions(); err != nil {
 		log.Fatalf("failed to ensure system permissions: %v", err)
 	}
+	controllers.ConfigureAssetService(services.NewAssetService(&repositories.AssetRepository{DB: config.DB}))
 
 	// Initialize Gin engine // menampilkan logger di terminal
 	// r := gin.Default()
